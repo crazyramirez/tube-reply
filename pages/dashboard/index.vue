@@ -1,0 +1,395 @@
+<script setup lang="ts">
+import type { DashboardStats } from "~/shared/types";
+
+definePageMeta({ middleware: "auth" });
+
+const commentPage = ref(1);
+const { data: stats, refresh } = await useFetch<DashboardStats>(
+  "/api/dashboard/stats",
+  {
+    query: computed(() => ({ commentPage: commentPage.value })),
+  },
+);
+
+const totalCommentPages = computed(() =>
+  Math.ceil((stats.value?.recentCommentsTotal ?? 0) / 4),
+);
+
+const SYNC_COOLDOWN_MINUTES = 30;
+const SYNC_QUOTA_COST = 123; // ~100 videos + overhead
+
+const syncLoading = ref(false);
+const syncWarning = ref<{ minutesAgo: number; minutesLeft: number } | null>(
+  null,
+);
+
+async function triggerSync(force = false) {
+  if (!force) {
+    const status = await $fetch<{
+      lastSync: { completedAt: string | null } | null;
+    }>("/api/youtube/status");
+    if (status.lastSync?.completedAt) {
+      const minutesAgo = Math.floor(
+        (Date.now() - new Date(status.lastSync.completedAt).getTime()) / 60000,
+      );
+      if (minutesAgo < SYNC_COOLDOWN_MINUTES) {
+        syncWarning.value = {
+          minutesAgo,
+          minutesLeft: SYNC_COOLDOWN_MINUTES - minutesAgo,
+        };
+        setTimeout(() => {
+          syncWarning.value = null;
+        }, 6000);
+        return;
+      }
+    }
+  }
+  syncWarning.value = null;
+  syncLoading.value = true;
+  try {
+    await $fetch("/api/youtube/sync", {
+      method: "POST",
+      headers: useCsrfHeaders(),
+    });
+    setTimeout(() => refresh(), 3000);
+  } catch {
+  } finally {
+    syncLoading.value = false;
+  }
+}
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+const statusColor = (s: string) =>
+  s === "published"
+    ? "green"
+    : s === "suggested"
+      ? "blue"
+      : s === "dismissed"
+        ? "gray"
+        : "yellow";
+
+const statCards = computed(() => [
+  {
+    label: "Pending Review",
+    value: stats.value?.comments.pending ?? 0,
+    icon: "i-heroicons-clock",
+    color: "amber",
+    bg: "bg-amber-500/10",
+    text: "text-amber-400",
+    glow: "from-amber-400 to-orange-400",
+  },
+  {
+    label: "AI Suggested",
+    value: stats.value?.comments.suggested ?? 0,
+    icon: "i-heroicons-sparkles",
+    color: "indigo",
+    bg: "bg-indigo-500/10",
+    text: "text-indigo-400",
+    glow: "from-indigo-400 to-violet-400",
+  },
+  {
+    label: "Published Today",
+    value: stats.value?.comments.publishedToday ?? 0,
+    icon: "i-heroicons-check-circle",
+    color: "emerald",
+    bg: "bg-emerald-500/10",
+    text: "text-emerald-400",
+    glow: "from-emerald-400 to-teal-400",
+  },
+  {
+    label: "Total Published",
+    value: stats.value?.comments.totalPublished ?? 0,
+    icon: "i-heroicons-paper-airplane",
+    color: "slate",
+    bg: "bg-white/[0.06]",
+    text: "text-slate-300",
+    glow: "from-slate-300 to-slate-400",
+  },
+]);
+</script>
+
+<template>
+  <div>
+    <div class="flex items-end justify-between mb-8">
+      <div>
+        <div
+          class="flex items-center gap-2 text-[10px] font-bold text-indigo-400 uppercase tracking-[0.3em] mb-1"
+        >
+          <UIcon
+            name="i-heroicons-presentation-chart-line"
+            class="w-3.5 h-3.5"
+          />
+          Analytics & Control
+        </div>
+        <h1 class="text-3xl font-black text-white tracking-tighter">
+          Command Center
+        </h1>
+      </div>
+      <div class="flex items-center gap-3">
+        <Transition
+          enter-active-class="transition-all duration-300 ease-out"
+          enter-from-class="opacity-0 translate-x-3 scale-95"
+          enter-to-class="opacity-100 translate-x-0 scale-100"
+          leave-active-class="transition-all duration-200 ease-in"
+          leave-from-class="opacity-100 translate-x-0 scale-100"
+          leave-to-class="opacity-0 translate-x-3 scale-95"
+        >
+        <div
+          v-if="syncWarning"
+          class="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs"
+        >
+          <UIcon
+            name="i-heroicons-exclamation-triangle"
+            class="w-4 h-4 text-amber-400 shrink-0"
+          />
+          <div>
+            <p class="text-amber-300 font-semibold">
+              Último sync hace {{ syncWarning.minutesAgo }}m
+            </p>
+            <p class="text-amber-500/80">
+              ~{{ SYNC_QUOTA_COST }} units · espera
+              {{ syncWarning.minutesLeft }}m
+            </p>
+          </div>
+          <button
+            class="shrink-0 text-amber-400 hover:text-white font-bold cursor-pointer transition-colors ml-1"
+            @click="triggerSync(true)"
+          >
+            Forzar
+          </button>
+        </div>
+        </Transition>
+
+        <button
+          class="flex items-center gap-2 px-6 py-3 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-sm font-bold transition-all duration-300 cursor-pointer disabled:opacity-50 group"
+          :disabled="syncLoading"
+          @click="triggerSync()"
+        >
+          <UIcon
+            name="i-heroicons-arrow-path"
+            class="w-4 h-4 transition-transform duration-500"
+            :class="syncLoading ? 'animate-spin' : 'group-hover:rotate-180'"
+          />
+          {{ syncLoading ? "Synchronizing..." : "Force Sync" }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      <div
+        v-for="(card, idx) in statCards"
+        :key="card.label"
+        class="glass-card p-6 animate-slide-up"
+        :class="`stagger-${idx + 1}`"
+      >
+        <div class="flex items-start justify-between mb-4">
+          <div
+            class="w-12 h-12 rounded-2xl flex items-center justify-center border border-white/5 shadow-inner"
+            :class="card.bg"
+          >
+            <UIcon :name="card.icon" class="w-6 h-6" :class="card.text" />
+          </div>
+        </div>
+        <div
+          class="text-4xl font-black bg-gradient-to-br bg-clip-text text-transparent tracking-tighter"
+          :class="card.glow"
+        >
+          {{ card.value }}
+        </div>
+        <div
+          class="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-[0.2em]"
+        >
+          {{ card.label }}
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-2">
+        <div
+          class="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+        ></div>
+        <h2
+          class="font-black text-lg text-white tracking-tight uppercase tracking-widest"
+        >
+          Live Feed
+        </h2>
+      </div>
+      <NuxtLink
+        to="/comments"
+        class="flex items-center gap-2 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-all group"
+      >
+        ACCESS ALL
+        <UIcon
+          name="i-heroicons-arrow-right"
+          class="w-4 h-4 group-hover:translate-x-1 transition-transform"
+        />
+      </NuxtLink>
+    </div>
+
+    <div
+      v-if="!stats?.recentComments?.length"
+      class="bg-white/[0.02] border border-white/[0.08] border-dashed rounded-3xl py-24 text-center"
+    >
+      <div
+        class="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10"
+      >
+        <UIcon name="i-heroicons-inbox" class="w-8 h-8 text-slate-700" />
+      </div>
+      <p class="text-slate-400 font-bold uppercase tracking-widest text-sm">
+        No comments detected
+      </p>
+      <p class="text-slate-600 text-xs mt-2">
+        Initialize synchronization to fetch intelligence.
+      </p>
+    </div>
+
+    <div
+      v-else
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 dashboard-single-row"
+    >
+      <NuxtLink
+        v-for="(comment, idx) in stats.recentComments"
+        :key="comment.id"
+        :to="`/comments/${comment.id}`"
+        class="glass-card overflow-hidden flex flex-col group animate-slide-up"
+        :class="`stagger-${(idx % 4) + 1}`"
+      >
+        <!-- Video Preview -->
+        <div class="relative aspect-video bg-slate-900 overflow-hidden">
+          <img
+            v-if="comment.videoThumbnail"
+            :src="comment.videoThumbnail"
+            :alt="comment.videoTitle ?? ''"
+            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+            loading="lazy"
+          />
+          <div v-else class="w-full h-full flex items-center justify-center">
+            <UIcon
+              name="i-heroicons-video-camera"
+              class="text-slate-800 w-12 h-12"
+            />
+          </div>
+          <div
+            class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60"
+          />
+
+          <div class="absolute top-3 left-3 flex gap-2">
+            <UBadge
+              :color="statusColor(comment.status)"
+              variant="solid"
+              size="xs"
+              class="font-black tracking-tighter rounded-md"
+            >
+              {{ comment.status.toUpperCase() }}
+            </UBadge>
+          </div>
+
+          <div class="absolute bottom-3 left-3 right-3">
+            <p
+              class="text-[10px] font-bold text-slate-300 line-clamp-1 uppercase tracking-wider mb-1"
+            >
+              {{ comment.videoTitle }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div class="p-5 flex flex-col flex-1 gap-4">
+          <div class="flex items-center gap-3">
+            <div
+              class="w-8 h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-xs"
+            >
+              {{ comment.authorName?.[0] }}
+            </div>
+            <div class="flex flex-col min-w-0">
+              <span class="font-bold text-sm text-white truncate">{{
+                comment.authorName
+              }}</span>
+              <span class="mt-1 text-[12px] text-slate-500 font-medium">{{
+                timeAgo(comment.publishedAt)
+              }}</span>
+            </div>
+          </div>
+
+          <div class="bg-white/5 border border-white/5 rounded-xl p-4 flex-1">
+            <p
+              class="text-sm text-slate-300 leading-relaxed line-clamp-2 italic"
+            >
+              "{{ comment.text }}"
+            </p>
+          </div>
+
+          <div class="flex items-center justify-between pt-2">
+            <div class="flex items-center gap-3">
+              <span
+                v-if="comment.likeCount"
+                class="text-[10px] font-bold text-slate-500 flex items-center gap-1"
+              >
+                <UIcon
+                  name="i-heroicons-hand-thumb-up"
+                  class="w-3.5 h-3.5 text-indigo-500"
+                />
+                {{ comment.likeCount }}
+              </span>
+            </div>
+            <div
+              class="flex items-center gap-1 text-[10px] font-bold text-indigo-400 group-hover:translate-x-1 transition-transform"
+            >
+              REVIEW <UIcon name="i-heroicons-arrow-right" class="w-3 h-3" />
+            </div>
+          </div>
+        </div>
+      </NuxtLink>
+    </div>
+
+    <div class="flex justify-center items-center mt-8 mb-4">
+      <UPagination
+        v-if="totalCommentPages > 1"
+        v-model="commentPage"
+        :page-count="6"
+        size="lg"
+        :total="stats?.recentCommentsTotal ?? 0"
+      />
+    </div>
+  </div>
+</template>
+<style scoped>
+.dashboard-single-row > *:nth-child(n + 2) {
+  display: none;
+}
+@media (min-width: 768px) {
+  .dashboard-single-row > *:nth-child(n + 2) {
+    display: flex;
+  }
+  .dashboard-single-row > *:nth-child(n + 3) {
+    display: none;
+  }
+}
+@media (min-width: 1024px) {
+  .dashboard-single-row > *:nth-child(n + 3) {
+    display: flex;
+  }
+  .dashboard-single-row > *:nth-child(n + 4) {
+    display: none;
+  }
+}
+@media (min-width: 1536px) {
+  .dashboard-single-row > *:nth-child(n + 4) {
+    display: flex;
+  }
+  .dashboard-single-row > *:nth-child(n + 5) {
+    display: none;
+  }
+}
+</style>

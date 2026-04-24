@@ -1,0 +1,209 @@
+import { sqliteTable, text, integer, real, index, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import { sql } from 'drizzle-orm'
+
+// ─── Videos ──────────────────────────────────────────────────────────────────
+
+export const videos = sqliteTable('videos', {
+  id: text('id').primaryKey(), // YouTube video ID
+  channelId: text('channel_id').notNull(),
+  title: text('title').notNull(),
+  description: text('description'),
+  publishedAt: text('published_at').notNull(),
+  thumbnailUrl: text('thumbnail_url'),
+  duration: text('duration'),
+  tags: text('tags'), // JSON array
+  categoryId: text('category_id'),
+  defaultLanguage: text('default_language'),
+  viewCount: integer('view_count').default(0),
+  commentCount: integer('comment_count').default(0),
+  lastSyncedAt: text('last_synced_at'),
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').default(sql`(datetime('now'))`),
+}, (t) => ({
+  channelIdx: index('videos_channel_idx').on(t.channelId),
+}))
+
+// ─── Comments ─────────────────────────────────────────────────────────────────
+
+export const comments = sqliteTable('comments', {
+  id: text('id').primaryKey(), // YouTube comment ID
+  videoId: text('video_id').notNull().references(() => videos.id),
+  parentId: text('parent_id'), // null = top-level thread
+  authorName: text('author_name').notNull(),
+  authorChannelId: text('author_channel_id'),
+  text: text('text').notNull(),
+  textOriginal: text('text_original'),
+  likeCount: integer('like_count').default(0),
+  detectedLang: text('detected_lang'), // BCP-47 e.g. 'es', 'en'
+  langConfidence: real('lang_confidence'), // 0.0 - 1.0
+  publishedAt: text('published_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+  status: text('status', {
+    enum: ['pending', 'suggested', 'dismissed', 'published', 'skipped'],
+  }).default('pending').notNull(),
+  fetchedAt: text('fetched_at').default(sql`(datetime('now'))`),
+  processedAt: text('processed_at'),
+}, (t) => ({
+  videoIdx: index('comments_video_idx').on(t.videoId),
+  statusIdx: index('comments_status_idx').on(t.status),
+  publishedAtIdx: index('comments_published_at_idx').on(t.publishedAt),
+  ytCommentUniq: uniqueIndex('comments_yt_id_unique').on(t.id),
+}))
+
+// ─── Suggested Replies ────────────────────────────────────────────────────────
+
+export const suggestedReplies = sqliteTable('suggested_replies', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  commentId: text('comment_id').notNull().references(() => comments.id),
+  responseText: text('response_text').notNull(), // in commenter's language
+  responseEs: text('response_es'), // always Spanish translation
+  originalGenerated: text('original_generated').notNull(), // LLM raw output — immutable
+  editedText: text('edited_text'), // human edits
+  contextUsed: text('context_used'), // JSON
+  confidenceScore: real('confidence_score'), // 0.0 - 1.0
+  needsConfirmation: integer('needs_confirmation', { mode: 'boolean' }).default(false),
+  confirmationReason: text('confirmation_reason'),
+  videoLinksUsed: text('video_links_used'), // JSON array of verified IDs
+  detectedCommentLang: text('detected_comment_lang'),
+  modelUsed: text('model_used'),
+  promptTokens: integer('prompt_tokens'),
+  completionTokens: integer('completion_tokens'),
+  generatedAt: text('generated_at').default(sql`(datetime('now'))`),
+  reviewedAt: text('reviewed_at'),
+  status: text('status', {
+    enum: ['pending_review', 'approved', 'rejected', 'published'],
+  }).default('pending_review').notNull(),
+}, (t) => ({
+  commentIdx: index('suggestions_comment_idx').on(t.commentId),
+  statusIdx: index('suggestions_status_idx').on(t.status),
+}))
+
+// ─── Published Replies ────────────────────────────────────────────────────────
+
+export const publishedReplies = sqliteTable('published_replies', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  commentId: text('comment_id').notNull().references(() => comments.id),
+  suggestionId: integer('suggestion_id').references(() => suggestedReplies.id),
+  youtubeReplyId: text('youtube_reply_id').notNull(),
+  finalText: text('final_text').notNull(),
+  publishedAt: text('published_at').default(sql`(datetime('now'))`),
+  publishedBy: text('published_by').default('owner'),
+}, (t) => ({
+  commentIdx: index('published_comment_idx').on(t.commentId),
+  ytReplyUniq: uniqueIndex('published_yt_reply_unique').on(t.youtubeReplyId),
+}))
+
+// ─── Knowledge Base ───────────────────────────────────────────────────────────
+
+export const knowledgeBase = sqliteTable('knowledge_base', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  type: text('type', {
+    enum: ['channel_style', 'faq', 'topic', 'persona', 'rule', 'custom'],
+  }).notNull(),
+  title: text('title').notNull(),
+  content: text('content').notNull(),
+  tags: text('tags'), // JSON array
+  isActive: integer('is_active', { mode: 'boolean' }).default(true),
+  priority: integer('priority').default(0), // higher = included first in context
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').default(sql`(datetime('now'))`),
+}, (t) => ({
+  typeIdx: index('kb_type_idx').on(t.type),
+  activeIdx: index('kb_active_idx').on(t.isActive),
+}))
+
+// ─── Video Summaries ──────────────────────────────────────────────────────────
+
+export const videoSummaries = sqliteTable('video_summaries', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  videoId: text('video_id').notNull().references(() => videos.id),
+  summary: text('summary').notNull(),
+  keyTopics: text('key_topics'), // JSON array
+  faqs: text('faqs'), // JSON array of {q, a}
+  generatedAt: text('generated_at').default(sql`(datetime('now'))`),
+  generatedBy: text('generated_by').default('gemini'),
+  tokenCount: integer('token_count'),
+}, (t) => ({
+  videoUniq: uniqueIndex('video_summaries_video_unique').on(t.videoId),
+}))
+
+// ─── Sessions ─────────────────────────────────────────────────────────────────
+
+export const sessions = sqliteTable('sessions', {
+  id: text('id').primaryKey(), // 64 random hex chars
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
+  expiresAt: text('expires_at').notNull(),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  isValid: integer('is_valid', { mode: 'boolean' }).default(true),
+}, (t) => ({
+  expiresIdx: index('sessions_expires_idx').on(t.expiresAt),
+}))
+
+// ─── Login Attempts ───────────────────────────────────────────────────────────
+
+export const loginAttempts = sqliteTable('login_attempts', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  ipAddress: text('ip_address').notNull(),
+  attemptedAt: text('attempted_at').default(sql`(datetime('now'))`),
+  success: integer('success', { mode: 'boolean' }).default(false),
+  userAgent: text('user_agent'),
+}, (t) => ({
+  ipIdx: index('login_attempts_ip_idx').on(t.ipAddress),
+  timeIdx: index('login_attempts_time_idx').on(t.attemptedAt),
+}))
+
+// ─── OAuth Tokens ─────────────────────────────────────────────────────────────
+
+export const oauthTokens = sqliteTable('oauth_tokens', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  channelId: text('channel_id').notNull(),
+  accessToken: text('access_token').notNull(), // AES-256-GCM encrypted
+  refreshToken: text('refresh_token').notNull(), // AES-256-GCM encrypted
+  tokenType: text('token_type').default('Bearer'),
+  expiresAt: text('expires_at').notNull(),
+  scope: text('scope'),
+  channelTitle: text('channel_title'),
+  channelThumbnailUrl: text('channel_thumbnail_url'),
+  channelSubscriberCount: text('channel_subscriber_count'),
+  channelVideoCount: text('channel_video_count'),
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').default(sql`(datetime('now'))`),
+}, (t) => ({
+  channelUniq: uniqueIndex('oauth_channel_unique').on(t.channelId),
+}))
+
+// ─── Sync Log ─────────────────────────────────────────────────────────────────
+
+export const syncLog = sqliteTable('sync_log', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  syncType: text('sync_type', {
+    enum: ['videos', 'comments', 'replies_check', 'manual', 'scheduled'],
+  }).notNull(),
+  status: text('status', {
+    enum: ['running', 'completed', 'failed', 'partial'],
+  }).notNull(),
+  videosProcessed: integer('videos_processed').default(0),
+  commentsFound: integer('comments_found').default(0),
+  newComments: integer('new_comments').default(0),
+  quotaUsed: integer('quota_used').default(0),
+  errorMessage: text('error_message'),
+  startedAt: text('started_at').default(sql`(datetime('now'))`),
+  completedAt: text('completed_at'),
+})
+
+// ─── Error Logs ───────────────────────────────────────────────────────────────
+
+export const errorLogs = sqliteTable('error_logs', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  level: text('level', { enum: ['info', 'warn', 'error', 'fatal'] }).notNull(),
+  source: text('source').notNull(),
+  message: text('message').notNull(),
+  details: text('details'), // JSON
+  stackTrace: text('stack_trace'),
+  occurredAt: text('occurred_at').default(sql`(datetime('now'))`),
+}, (t) => ({
+  levelIdx: index('error_logs_level_idx').on(t.level),
+  sourceIdx: index('error_logs_source_idx').on(t.source),
+  timeIdx: index('error_logs_time_idx').on(t.occurredAt),
+}))

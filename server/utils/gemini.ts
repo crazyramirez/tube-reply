@@ -1,0 +1,212 @@
+import {
+  GoogleGenerativeAI,
+  HarmCategory,
+  HarmBlockThreshold,
+  FunctionCallingMode,
+  SchemaType,
+  type Tool,
+  type Part,
+} from '@google/generative-ai'
+
+let _client: GoogleGenerativeAI | null = null
+
+export function getGeminiClient() {
+  if (_client) return _client
+  const config = useRuntimeConfig()
+  if (!config.geminiApiKey) throw new Error('GEMINI_API_KEY not configured')
+  _client = new GoogleGenerativeAI(config.geminiApiKey)
+  return _client
+}
+
+const SAFETY_SETTINGS = [
+  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+]
+
+export function getModel(modelName?: string) {
+  const config = useRuntimeConfig()
+  const model = modelName ?? (config.geminiModel as string) ?? 'gemini-2.0-flash'
+  const client = getGeminiClient()
+  return client.getGenerativeModel({
+    model,
+    generationConfig: {
+      responseMimeType: 'application/json',
+      temperature: 0.4,
+      maxOutputTokens: 1024,
+      topP: 0.8,
+    },
+    safetySettings: SAFETY_SETTINGS,
+  })
+}
+
+// Tool-capable model — responseMimeType is incompatible with function calling
+function getToolModel(modelName?: string) {
+  const config = useRuntimeConfig()
+  const model = modelName ?? (config.geminiModel as string) ?? 'gemini-2.0-flash'
+  const client = getGeminiClient()
+  return client.getGenerativeModel({
+    model,
+    generationConfig: {
+      temperature: 0.4,
+      maxOutputTokens: 4096, // higher budget: tool rounds + JSON response
+      topP: 0.8,
+    },
+    safetySettings: SAFETY_SETTINGS,
+  })
+}
+
+export const searchVideosTool: Tool = {
+  functionDeclarations: [
+    {
+      name: 'search_videos',
+      description: 'Search for videos in the channel database by title keywords. Call this when the commenter is looking for a specific video, tutorial, or topic that might have a dedicated video on the channel.',
+      parameters: {
+        type: SchemaType.OBJECT,
+        properties: {
+          query: {
+            type: SchemaType.STRING,
+            description: 'Keywords to search video titles (e.g. "docker tutorial", "nginx ubuntu setup")',
+          },
+        },
+        required: ['query'],
+      },
+    },
+  ],
+}
+
+// Extract JSON object from model output — handles code fences, preamble text, trailing text
+function extractJSON(text: string): string {
+  // 1. Markdown code block: ```json ... ```
+  const codeBlock = text.match(/```(?:json)?\s*([\s\S]*?)```/)
+  if (codeBlock) return codeBlock[1].trim()
+
+  // 2. Find first { and last } — handles "Here is the JSON: { ... }"
+  const start = text.indexOf('{')
+  const end = text.lastIndexOf('}')
+  if (start !== -1 && end > start) return text.substring(start, end + 1)
+
+  return text.trim()
+}
+
+export type VideoSearchFn = (query: string) => Promise<Array<{ id: string; title: string; thumbnailUrl: string | null }>>
+
+export async function generateWithTools(
+  prompt: string,
+  searchFn: VideoSearchFn,
+  retries = 2,
+): Promise<{ text: string; promptTokens: number; completionTokens: number }> {
+  let lastError: Error | null = null
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const model = getToolModel()
+      let promptTokens = 0
+      let completionTokens = 0
+
+      // Use startChat for proper multi-turn function calling state management
+      const chat = model.startChat({
+        tools: [searchVideosTool],
+        toolConfig: { functionCallingConfig: { mode: FunctionCallingMode.AUTO } },
+      })
+
+      const result1 = await chat.sendMessage(prompt)
+      const response1 = result1.response
+      promptTokens += response1.usageMetadata?.promptTokenCount ?? 0
+      completionTokens += response1.usageMetadata?.candidatesTokenCount ?? 0
+
+      const functionCalls = response1.functionCalls()
+      console.log(`[gemini] first call finishReason: ${response1.candidates?.[0]?.finishReason}, functionCalls: ${functionCalls?.length ?? 0}`)
+
+      // No tool needed — return direct response
+      if (!functionCalls?.length) {
+        const directText = extractJSON(response1.text())
+        console.log(`[gemini] direct response, text length: ${directText.length}`)
+        return { text: directText, promptTokens, completionTokens }
+      }
+
+      // Tool-calling loop — model may call search_videos multiple times
+      const MAX_TOOL_ROUNDS = 3
+      const queryCache = new Map<string, Array<{ id: string; title: string }>>()
+      let currentResponse = response1
+
+      for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+        const calls = currentResponse.functionCalls()
+        if (!calls?.length) break
+
+        const toolParts: Part[] = await Promise.all(
+          calls.map(async (call) => {
+            const { query } = call.args as { query: string }
+            const cacheKey = query.toLowerCase().trim()
+            let results = queryCache.get(cacheKey)
+            if (!results) {
+              console.log(`[gemini] search_videos round ${round + 1}, query: "${query}"`)
+              results = await searchFn(query)
+              console.log(`[gemini] search_videos returned ${results.length} results`)
+              queryCache.set(cacheKey, results)
+            }
+            else {
+              console.log(`[gemini] search_videos round ${round + 1} — cached, skipping DB call`)
+            }
+            return {
+              functionResponse: {
+                name: call.name,
+                response: {
+                  found: results.length,
+                  videos: results.map(v => ({
+                    id: v.id,
+                    title: v.title,
+                    url: `https://youtu.be/${v.id}`,
+                    thumbnail_url: v.thumbnailUrl,
+                  })),
+                },
+              },
+            } as Part
+          }),
+        )
+
+        const nextResult = await chat.sendMessage(toolParts)
+        currentResponse = nextResult.response
+        promptTokens += currentResponse.usageMetadata?.promptTokenCount ?? 0
+        completionTokens += currentResponse.usageMetadata?.candidatesTokenCount ?? 0
+      }
+
+      const finalText = extractJSON(currentResponse.text())
+      console.log(`[gemini] final finishReason: ${currentResponse.candidates?.[0]?.finishReason}, text length: ${finalText.length}`)
+      return { text: finalText, promptTokens, completionTokens }
+    }
+    catch (err) {
+      lastError = err as Error
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)))
+      }
+    }
+  }
+
+  throw lastError!
+}
+
+export async function generateWithRetry(prompt: string, retries = 2): Promise<{ text: string; promptTokens: number; completionTokens: number }> {
+  let lastError: Error | null = null
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const model = getModel()
+      const result = await model.generateContent(prompt)
+      const response = result.response
+
+      return {
+        text: response.text(),
+        promptTokens: response.usageMetadata?.promptTokenCount ?? 0,
+        completionTokens: response.usageMetadata?.candidatesTokenCount ?? 0,
+      }
+    }
+    catch (err) {
+      lastError = err as Error
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)))
+      }
+    }
+  }
+
+  throw lastError
+}

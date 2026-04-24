@@ -1,0 +1,157 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background-color: #030712;
+  color: #f1f5f9;
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background-color: rgba(99, 102, 241, 0.3);
+  color: #e0e7ff;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+
+/* Premium Design System */
+.glass-card {
+  @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl transition-all duration-300;
+  box-shadow:
+    0 4px 24px -1px rgba(0, 0, 0, 0.2),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass-card:hover {
+  @apply border-white/[0.12] bg-white/[0.04] -translate-y-0.5;
+  box-shadow:
+    0 12px 40px -4px rgba(0, 0, 0, 0.3),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.tab-active {
+  @apply bg-indigo-600 text-white shadow-lg shadow-indigo-900/40;
+}
+
+.animate-slide-up {
+  opacity: 0;
+  transform: translateY(15px);
+  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stagger-1 {
+  animation-delay: 0.05s;
+}
+.stagger-2 {
+  animation-delay: 0.1s;
+}
+.stagger-3 {
+  animation-delay: 0.15s;
+}
+.stagger-4 {
+  animation-delay: 0.2s;
+}
+.stagger-5 {
+  animation-delay: 0.25s;
+}
+
+/* Utilities */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Background Effects */
+.bg-glow-wrapper {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.bg-bokeh-orange {
+  position: absolute;
+  top: -10%;
+  right: -35%;
+  width: 85vw;
+  height: 85vw;
+  background: radial-gradient(
+    circle,
+    rgba(249, 115, 22, 0.35) 0%,
+    transparent 70%
+  );
+  filter: blur(120px);
+  border-radius: 50%;
+  opacity: 0.8;
+  animation: float-orange 20s ease-in-out infinite;
+}
+
+.bg-bokeh-blue {
+  position: absolute;
+  bottom: -15%;
+  left: -35%;
+  width: 95vw;
+  height: 95vw;
+  background: radial-gradient(
+    circle,
+    rgba(59, 130, 246, 0.22) 0%,
+    transparent 70%
+  );
+  filter: blur(140px);
+  border-radius: 50%;
+  opacity: 0.7;
+  animation: float-blue 25s ease-in-out infinite;
+}
+
+@keyframes float-orange {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-5%, 5%) scale(1.1);
+  }
+}
+
+@keyframes float-blue {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(5%, -5%) scale(1.05);
+  }
+}
