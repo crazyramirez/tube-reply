@@ -1,7 +1,40 @@
 export default defineNuxtConfig({
   devtools: { enabled: false },
 
-  modules: ['@nuxt/ui'],
+  modules: ['@nuxt/ui', '@vite-pwa/nuxt'],
+
+  pwa: {
+    manifest: {
+      name: 'TubeReply',
+      short_name: 'TubeReply',
+      description: 'AI-powered YouTube comment management',
+      theme_color: '#000000',
+      background_color: '#000000',
+      display: 'standalone',
+      orientation: 'portrait',
+      icons: [
+        {
+          src: '/images/icons/web-app-manifest-192x192.png',
+          sizes: '192x192',
+          type: 'image/png',
+          purpose: 'any maskable',
+        },
+        {
+          src: '/images/icons/web-app-manifest-512x512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any maskable',
+        },
+      ],
+    },
+    workbox: {
+      navigateFallback: '/',
+    },
+    devOptions: {
+      enabled: true,
+      type: 'module',
+    },
+  },
 
   css: ['~/assets/css/main.css'],
 
@@ -56,9 +89,23 @@ export default defineNuxtConfig({
       title: 'Tube Reply',
       meta: [
         { name: 'robots', content: 'noindex, nofollow, noarchive, nosnippet' },
+        { name: 'description', content: 'AI-powered YouTube comment management. Sync, generate suggestions with Gemini, and reply faster.' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { name: 'theme-color', content: '#000000' },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:title', content: 'Tube Reply - AI YouTube Comment Management' },
+        { property: 'og:description', content: 'AI-powered YouTube comment management. Sync, generate suggestions with Gemini, and reply faster.' },
+        { property: 'og:image', content: '/images/ogimage.jpg' },
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: 'Tube Reply - AI YouTube Comment Management' },
+        { name: 'twitter:description', content: 'AI-powered YouTube comment management. Sync, generate suggestions with Gemini, and reply faster.' },
+        { name: 'twitter:image', content: '/images/ogimage.jpg' },
       ],
       link: [
+        { rel: 'icon', type: 'image/x-icon', href: '/images/icons/favicon.ico' },
+        { rel: 'icon', type: 'image/png', sizes: '96x96', href: '/images/icons/favicon-96x96.png' },
+        { rel: 'icon', type: 'image/svg+xml', href: '/images/icons/favicon.svg' },
+        { rel: 'apple-touch-icon', href: '/images/icons/apple-touch-icon.png' },
         {
           rel: 'preconnect',
           href: 'https://fonts.googleapis.com',

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./public/images/ogimage.jpg" alt="Tube Reply Banner" width="100%">
+</p>
+
 # Tube Reply
 
 AI-powered YouTube comment management tool. Syncs comments from your channel, generates AI reply suggestions via Google Gemini, and publishes responses back to YouTube — all from a single private dashboard.
@@ -16,6 +20,7 @@ AI-powered YouTube comment management tool. Syncs comments from your channel, ge
 - **Quota management** — tracks daily YouTube API quota, configurable cap
 - **Rate limiting** — per-IP limits on login, suggestion, and publish endpoints
 - **CSRF protection** — double-submit cookie pattern on all state-changing requests
+- **PWA support** — installable web app with offline capabilities and custom icons
 
 ---
 
@@ -30,6 +35,7 @@ AI-powered YouTube comment management tool. Syncs comments from your channel, ge
 | YouTube    | Google APIs OAuth2 (`googleapis`)       |
 | Auth       | Session cookie + bcrypt password hash   |
 | Encryption | AES-256-GCM (token storage)             |
+| PWA        | @vite-pwa/nuxt                          |
 
 ---
 
