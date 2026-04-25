@@ -139,6 +139,7 @@
     "not_found_desc": "Este comentario ya no existe en la base de datos local o ha sido eliminado.",
     "load_error": "Error al cargar",
     "load_error_desc": "Hubo un problema al recuperar los detalles del comentario.",
+    "detected_links": "Links Detectados",
     "go_back": "Volver a la lista"
   },
   "knowledge_base": {

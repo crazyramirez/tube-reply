@@ -4,7 +4,7 @@ import * as gemini from '../utils/gemini'
 import * as openai from '../utils/openai'
 import { getAiProvider } from '../utils/settings'
 import { generateVideoSummary } from './video-summary'
-import { buildContext, buildPrompt } from './context-builder'
+import { buildContext, buildPrompt, isYouTubeShort } from './context-builder'
 import { logger } from '../utils/logger'
 import { comments, suggestedReplies, videos, publishedReplies } from '../db/schema'
 
@@ -46,7 +46,7 @@ export async function generateSuggestion(commentId: string, langOverride: string
   const prompt = buildPrompt(ctx)
 
   // Search function — called by Gemini/OpenAI via function calling when it needs to find a specific video
-  async function searchVideos(query: string): Promise<Array<{ id: string; title: string; thumbnailUrl: string | null }>> {
+  async function searchVideos(query: string): Promise<Array<{ id: string; title: string; thumbnailUrl: string | null; isShort: boolean }>> {
     const words = query.toLowerCase().split(/\s+/).filter(w => w.length >= 3)
     if (!words.length) return []
     
@@ -57,12 +57,24 @@ export async function generateSuggestion(commentId: string, langOverride: string
       like(videos.tags, `%${w}%`)
     ))
 
-    return db
-      .select({ id: videos.id, title: videos.title, thumbnailUrl: videos.thumbnailUrl })
+    const results = await db
+      .select({ 
+        id: videos.id, 
+        title: videos.title, 
+        thumbnailUrl: videos.thumbnailUrl,
+        duration: videos.duration 
+      })
       .from(videos)
       .where(and(...conditions)) // Using AND to find videos that match all words (but in any of the fields)
       .orderBy(desc(videos.publishedAt))
       .limit(10)
+
+    return results.map(v => ({
+      id: v.id,
+      title: v.title,
+      thumbnailUrl: v.thumbnailUrl,
+      isShort: isYouTubeShort(v.duration)
+    }))
   }
 
   const provider = await getAiProvider()

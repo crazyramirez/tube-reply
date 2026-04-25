@@ -22,8 +22,18 @@ export interface CommentContext {
   existingReplies: Array<{ author: string; text: string }>
   knowledgeBaseEntries: Array<{ type: string; title: string; content: string }>
   channelStyle: string | null
-  recentVideos: Array<{ id: string; title: string; thumbnailUrl: string | null }>
+  recentVideos: Array<{ id: string; title: string; thumbnailUrl: string | null; isShort: boolean }>
   additionalContext: string | null
+}
+
+export function isYouTubeShort(duration: string | null): boolean {
+  if (!duration) return false
+  if (duration.includes('H')) return false
+  const match = duration.match(/PT(?:(\d+)M)?(?:(\d+)S)?/)
+  if (!match) return false
+  const minutes = parseInt(match[1] || '0')
+  const seconds = parseInt(match[2] || '0')
+  return (minutes * 60) + seconds < 60
 }
 
 const MAX_DESCRIPTION_CHARS = 2000
@@ -81,7 +91,7 @@ export async function buildContext(commentId: string, langOverride: string | nul
 
   // Only most-recent videos as baseline — search_videos tool handles specific lookups
   const recentVideos = await db.query.videos.findMany({
-    columns: { id: true, title: true, thumbnailUrl: true },
+    columns: { id: true, title: true, thumbnailUrl: true, duration: true },
     orderBy: [desc(videos.publishedAt)],
     limit: MAX_RECENT_VIDEOS,
   })
@@ -113,7 +123,12 @@ export async function buildContext(commentId: string, langOverride: string | nul
       content: e.content.substring(0, MAX_KB_CONTENT_CHARS),
     })),
     channelStyle: channelStyleEntry?.content ?? null,
-    recentVideos,
+    recentVideos: recentVideos.map(v => ({
+      id: v.id,
+      title: v.title,
+      thumbnailUrl: v.thumbnailUrl,
+      isShort: isYouTubeShort(v.duration),
+    })),
     additionalContext,
   }
 }
@@ -128,7 +143,7 @@ export function buildPrompt(ctx: CommentContext): string {
     : 'No existing replies on this comment.'
 
   const recentVideosText = ctx.recentVideos.length > 0
-    ? ctx.recentVideos.map(v => `- ID: ${v.id} | Title: ${v.title} | URL: https://youtu.be/${v.id}${v.thumbnailUrl ? ` | Thumbnail URL: ${v.thumbnailUrl}` : ''}`).join('\n')
+    ? ctx.recentVideos.map(v => `- ID: ${v.id} | Title: ${v.title}${v.isShort ? ' (Short)' : ''} | URL: https://youtu.be/${v.id}${v.thumbnailUrl ? ` | Thumbnail URL: ${v.thumbnailUrl}` : ''}`).join('\n')
     : 'No videos in database.'
 
   const systemPrompt = `You are Mona, an AI assistant that helps a YouTube channel owner respond to comments.
@@ -143,6 +158,7 @@ ABSOLUTE RULES — NEVER VIOLATE:
 7. Keep responses concise — 2-4 sentences unless the question requires more
 8. If an existing reply already covers this topic, acknowledge it
 9. NEVER use Markdown links (e.g., [Title](URL)) as they don't render in YouTube. Use plain URLs.
+10. SEARCH PREFERENCE: When a user asks "where is the video" or for a tutorial/explanation, PREFER long-form videos over "Shorts". Shorts are usually too brief for full answers.
 
 CHANNEL STYLE & PERSONA:
 ${ctx.channelStyle ?? 'No channel style configured. Use a friendly and professional tone.'}

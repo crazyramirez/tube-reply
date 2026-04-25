@@ -243,9 +243,46 @@ const confidenceTextClass = computed(() =>
       : "text-red-400",
 );
 
-const finalText = computed(
-  () => editedText.value || activeSuggestion.value?.responseText || "",
-);
+const isEditing = ref(false);
+
+const highlightedTextParts = computed(() => {
+  const text = editedText.value || "";
+  const urlRegex = /(https?:\/\/[^\s,]+|www\.[^\s,]+)/g;
+  const parts = [];
+  let lastIdx = 0;
+  let match;
+  
+  while ((match = urlRegex.exec(text)) !== null) {
+    if (match.index > lastIdx) {
+      parts.push({ text: text.substring(lastIdx, match.index), isUrl: false });
+    }
+    const url = match[0];
+    parts.push({ 
+      text: url, 
+      isUrl: true, 
+      href: url.startsWith('www.') ? 'https://' + url : url 
+    });
+    lastIdx = match.index + match[0].length;
+  }
+  
+  if (lastIdx < text.length) {
+    parts.push({ text: text.substring(lastIdx), isUrl: false });
+  }
+  
+  return parts;
+});
+
+function startEditing() {
+  if (data.value?.comment?.status === 'published') return;
+  isEditing.value = true;
+  nextTick(() => {
+    const textarea = document.querySelector('.premium-textarea') as HTMLTextAreaElement;
+    if (textarea) {
+      textarea.focus();
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    }
+  });
+}
 
 const showDeleteModal = ref(false);
 const showBanModal = ref(false);
@@ -400,15 +437,36 @@ async function confirmUnban() {
   animation-delay: 0.4s;
 }
 
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-}
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.premium-textarea-container {
+  @apply relative min-h-[140px] rounded-2xl bg-white/[0.02] border border-white/[0.06] transition-all duration-500 overflow-hidden;
+}
+
+.premium-textarea-container:hover {
+  @apply border-white/[0.1] bg-white/[0.04];
+}
+
+.premium-textarea-container.is-editing {
+  @apply ring-2 ring-indigo-500/20 border-indigo-500/40 bg-white/[0.05];
+}
+
+.reply-viewer, .premium-textarea {
+  @apply w-full p-6 text-base leading-relaxed font-medium whitespace-pre-wrap break-words;
+}
+
+.premium-textarea {
+  @apply bg-transparent text-slate-200 focus:outline-none resize-none;
+}
+
+.reply-viewer {
+  @apply text-slate-300 cursor-text;
+}
+
+.inline-url-badge {
+  @apply inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-bold hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all duration-300 cursor-pointer shadow-sm mx-0.5;
 }
 </style>
 
@@ -983,13 +1041,57 @@ async function confirmUnban() {
               </div>
             </div>
             <div class="p-6">
-              <textarea
-                v-model="editedText"
-                rows="3"
-                :placeholder="$t('comment_detail.refine_placeholder')"
-                :disabled="data.comment?.status === 'published'"
-                class="w-full bg-transparent text-base text-slate-200 placeholder-slate-700 resize-none focus:outline-none leading-relaxed font-medium disabled:opacity-70 disabled:cursor-not-allowed"
-              />
+              <div 
+                class="premium-textarea-container"
+                :class="{ 'is-editing': isEditing }"
+              >
+                <!-- Viewer Mode -->
+                <div 
+                  v-if="!isEditing" 
+                  class="reply-viewer animate-fade-in"
+                  @click="startEditing"
+                >
+                  <template v-for="(part, i) in highlightedTextParts" :key="i">
+                    <span v-if="!part.isUrl">{{ part.text }}</span>
+                    <a 
+                      v-else 
+                      :href="part.href" 
+                      target="_blank" 
+                      class="inline-url-badge group/badge"
+                      @click.stop
+                    >
+                      <UIcon name="i-heroicons-link" class="w-3.5 h-3.5" />
+                      {{ part.text.replace(/^https?:\/\//, '').replace(/^www\./, '') }}
+                      <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-3 h-3 opacity-0 group-hover/badge:opacity-100 transition-opacity" />
+                    </a>
+                  </template>
+                  <div v-if="!editedText && !activeSuggestion?.responseText" class="text-slate-600 italic">
+                    {{ $t('comment_detail.refine_placeholder') }}
+                  </div>
+                  
+                  <!-- Floating Edit Label -->
+                  <div class="absolute top-3 right-4 flex items-center gap-1.5 text-[9px] font-black text-slate-600 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                    <UIcon name="i-heroicons-pencil-square" class="w-3 h-3" />
+                    <span>{{ $t('comment_detail.manual_override') }}</span>
+                  </div>
+                </div>
+
+                <!-- Editor Mode -->
+                <textarea
+                  v-else
+                  v-model="editedText"
+                  rows="5"
+                  class="premium-textarea animate-fade-in"
+                  @blur="isEditing = false"
+                  :placeholder="$t('comment_detail.refine_placeholder')"
+                />
+              </div>
+
+              <!-- Premium Help Hint -->
+              <div v-if="!isEditing && highlightedTextParts.some(p => p.isUrl)" class="mt-4 flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest animate-fade-in">
+                <UIcon name="i-heroicons-cursor-arrow-rays" class="w-3 h-3 text-indigo-500" />
+                <span>{{ $t("comment_detail.click_to_open") || 'Click en un enlace para abrir o en el texto para editar' }}</span>
+              </div>
             </div>
             <div
               class="px-6 py-4 border-t border-white/[0.06] bg-white/[0.01] flex justify-between items-center"

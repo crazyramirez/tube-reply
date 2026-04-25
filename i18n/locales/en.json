@@ -139,6 +139,7 @@
     "not_found_desc": "This comment no longer exists in our database or has been deleted.",
     "load_error": "Failed to load",
     "load_error_desc": "There was a problem retrieving the comment details.",
+    "detected_links": "Detected Links",
     "go_back": "Go back to list"
   },
   "knowledge_base": {
