@@ -6,6 +6,7 @@ const error = ref("");
 const loading = ref(false);
 
 const { login } = useAuth();
+const { t } = useI18n();
 
 async function handleLogin() {
   if (!password.value.trim()) return;
@@ -18,7 +19,7 @@ async function handleLogin() {
       data?: { statusMessage?: string };
       statusMessage?: string;
     };
-    error.value = e.data?.statusMessage ?? e.statusMessage ?? "Login failed";
+    error.value = e.data?.statusMessage ?? e.statusMessage ?? t('login.error');
   } finally {
     loading.value = false;
   }
@@ -50,8 +51,8 @@ async function handleLogin() {
             class="w-full h-full object-cover"
           />
         </div>
-        <h1 class="text-2xl font-bold text-white tracking-tight">Tube Reply</h1>
-        <p class="text-slate-500 text-sm mt-1.5">YouTube Comment Assistant</p>
+        <h1 class="text-2xl font-bold text-white tracking-tight">{{ $t('nav.app_name') }}</h1>
+        <p class="text-slate-500 text-sm mt-1.5">{{ $t('login.subtitle') }}</p>
       </div>
 
       <div
@@ -59,13 +60,13 @@ async function handleLogin() {
       >
         <form @submit.prevent="handleLogin" class="space-y-4">
           <div>
-            <label class="block text-xs font-medium text-slate-400 mb-2"
-              >Password</label
-            >
+            <label class="block text-xs font-medium text-slate-400 mb-2">
+              {{ $t('login.password') }}
+            </label>
             <input
               v-model="password"
               type="password"
-              placeholder="Enter admin password"
+              :placeholder="$t('login.placeholder')"
               :disabled="loading"
               autofocus
               class="w-full bg-white/[0.05] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40 transition-all duration-150 disabled:opacity-50"
@@ -93,7 +94,7 @@ async function handleLogin() {
               name="i-heroicons-arrow-path"
               class="w-4 h-4 animate-spin"
             />
-            {{ loading ? "Signing in…" : "Sign In" }}
+            {{ loading ? $t('login.signing_in') : $t('login.submit') }}
           </button>
         </form>
       </div>

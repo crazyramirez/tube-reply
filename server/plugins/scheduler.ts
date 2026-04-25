@@ -4,10 +4,12 @@ export default defineNitroPlugin(() => {
   const config = useRuntimeConfig()
   const intervalMs = (config.syncIntervalMinutes ?? 30) * 60 * 1000
 
-  // Initial recent sync after 30 seconds (let server fully start)
-  setTimeout(async () => {
-    await syncComments('scheduled', 'recent').catch(() => {})
-  }, 30_000)
+  // Initial recent sync after 30 seconds (controlled via AUTO_SYNC_ON_START)
+  if (config.autoSyncOnStart) {
+    setTimeout(async () => {
+      await syncComments('scheduled', 'recent').catch(() => {})
+    }, 30_000)
+  }
 
   // Recurring recent sync — only videos from last 180 days
   setInterval(async () => {

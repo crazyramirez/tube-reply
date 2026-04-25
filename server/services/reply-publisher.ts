@@ -3,6 +3,7 @@ import { useDb } from '../utils/db'
 import { getAuthenticatedYouTube } from '../utils/youtube'
 import { logger } from '../utils/logger'
 import { comments, suggestedReplies, publishedReplies } from '../db/schema'
+import { assertQuotaAvailable } from '../utils/quota'
 
 export async function publishReply(commentId: string, suggestionId: number): Promise<{ youtubeReplyId: string }> {
   const db = useDb()
@@ -22,6 +23,9 @@ export async function publishReply(commentId: string, suggestionId: number): Pro
 
   // Use edited text if available, otherwise generated text
   const finalText = suggestion.editedText ?? suggestion.responseText
+
+  // Guard: comments.insert costs 50 quota units
+  await assertQuotaAvailable(50)
 
   // Call YouTube API
   const yt = await getAuthenticatedYouTube()

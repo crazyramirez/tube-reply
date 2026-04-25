@@ -2,6 +2,7 @@ import { getConnectedChannel } from '../../utils/youtube'
 import { useDb } from '../../utils/db'
 import { syncLog } from '../../db/schema'
 import { desc } from 'drizzle-orm'
+import { getDailyQuotaUsed } from '../../utils/quota'
 
 export default defineEventHandler(async (_event) => {
   const db = useDb()
@@ -12,6 +13,8 @@ export default defineEventHandler(async (_event) => {
     const lastSync = await db.query.syncLog.findFirst({
       orderBy: [desc(syncLog.startedAt)],
     })
+
+    const dailyQuotaUsed = await getDailyQuotaUsed()
 
     return {
       connected: !!channel,
@@ -24,10 +27,15 @@ export default defineEventHandler(async (_event) => {
             videoCount: channel.statistics?.videoCount,
           }
         : null,
+      dailyQuotaUsed,
       lastSync: lastSync
         ? {
-            completedAt: lastSync.completedAt,
+            syncType: lastSync.syncType,
             status: lastSync.status,
+            startedAt: lastSync.startedAt,
+            completedAt: lastSync.completedAt,
+            videosProcessed: lastSync.videosProcessed,
+            commentsFound: lastSync.commentsFound,
             newComments: lastSync.newComments,
             quotaUsed: lastSync.quotaUsed,
             errorMessage: lastSync.errorMessage,

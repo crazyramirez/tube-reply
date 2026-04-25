@@ -3,6 +3,8 @@ import type { KnowledgeBaseEntry, KBType } from "~/shared/types";
 
 definePageMeta({ middleware: "auth" });
 
+const { t } = useI18n();
+
 const { data, refresh } = await useFetch<{ items: KnowledgeBaseEntry[] }>(
   "/api/knowledge-base",
   {
@@ -48,19 +50,19 @@ async function saveEntry() {
         body: form.value,
         headers: useCsrfHeaders(),
       });
-      toast.add({ title: "Entry updated", color: "green" });
+      toast.add({ title: t('knowledge_base.updated'), color: "green" });
     } else {
       await $fetch("/api/knowledge-base", {
         method: "POST",
         body: form.value,
         headers: useCsrfHeaders(),
       });
-      toast.add({ title: "Entry created", color: "green" });
+      toast.add({ title: t('knowledge_base.created'), color: "green" });
     }
     showForm.value = false;
     await refresh();
   } catch {
-    toast.add({ title: "Save failed", color: "red" });
+    toast.add({ title: t('knowledge_base.save_failed'), color: "red" });
   } finally {
     saving.value = false;
   }
@@ -82,7 +84,6 @@ const typeConfig: Record<
     bg: string;
     border: string;
     text: string;
-    label: string;
     icon: string;
   }
 > = {
@@ -91,7 +92,6 @@ const typeConfig: Record<
     bg: "bg-purple-500/10",
     border: "border-purple-500/20",
     text: "text-purple-400",
-    label: "Channel Style",
     icon: "i-heroicons-sparkles",
   },
   faq: {
@@ -99,7 +99,6 @@ const typeConfig: Record<
     bg: "bg-blue-500/10",
     border: "border-blue-500/20",
     text: "text-blue-400",
-    label: "FAQ",
     icon: "i-heroicons-question-mark-circle",
   },
   topic: {
@@ -107,7 +106,6 @@ const typeConfig: Record<
     bg: "bg-emerald-500/10",
     border: "border-emerald-500/20",
     text: "text-emerald-400",
-    label: "Topic",
     icon: "i-heroicons-hashtag",
   },
   persona: {
@@ -115,7 +113,6 @@ const typeConfig: Record<
     bg: "bg-orange-500/10",
     border: "border-orange-500/20",
     text: "text-orange-400",
-    label: "Persona",
     icon: "i-heroicons-user-circle",
   },
   rule: {
@@ -123,7 +120,6 @@ const typeConfig: Record<
     bg: "bg-red-500/10",
     border: "border-red-500/20",
     text: "text-red-400",
-    label: "Rule",
     icon: "i-heroicons-shield-exclamation",
   },
   custom: {
@@ -131,19 +127,18 @@ const typeConfig: Record<
     bg: "bg-white/[0.06]",
     border: "border-white/10",
     text: "text-slate-400",
-    label: "Custom",
     icon: "i-heroicons-cog-6-tooth",
   },
 };
 
-const typeOptions: { label: string; value: KBType }[] = [
-  { label: "Channel Style", value: "channel_style" },
-  { label: "FAQ", value: "faq" },
-  { label: "Topic", value: "topic" },
-  { label: "Persona", value: "persona" },
-  { label: "Rule", value: "rule" },
-  { label: "Custom", value: "custom" },
-];
+const typeOptions = computed(() => [
+  { label: t('knowledge_base.types.channel_style'), value: "channel_style" },
+  { label: t('knowledge_base.types.faq'), value: "faq" },
+  { label: t('knowledge_base.types.topic'), value: "topic" },
+  { label: t('knowledge_base.types.persona'), value: "persona" },
+  { label: t('knowledge_base.types.rule'), value: "rule" },
+  { label: t('knowledge_base.types.custom'), value: "custom" },
+]);
 </script>
 
 <style scoped>
@@ -229,14 +224,13 @@ const typeOptions: { label: string; value: KBType }[] = [
           class="flex items-center gap-2 text-[10px] font-bold text-indigo-400 uppercase tracking-[0.3em]"
         >
           <UIcon name="i-heroicons-cpu-chip" class="w-3 h-3" />
-          Intelligence Center
+          {{ $t('knowledge_base.center_label') }}
         </div>
         <h1 class="text-3xl font-black text-white tracking-tighter">
-          Knowledge Base
+          {{ $t('knowledge_base.title') }}
         </h1>
         <p class="text-slate-500 text-sm mt-1">
-          Configure the core context used by the AI to craft high-quality
-          replies.
+          {{ $t('knowledge_base.subtitle') }}
         </p>
       </div>
       <button
@@ -247,7 +241,7 @@ const typeOptions: { label: string; value: KBType }[] = [
           name="i-heroicons-plus"
           class="w-5 h-5 group-hover:rotate-90 transition-transform duration-300"
         />
-        <span>Expand Intelligence</span>
+        <span>{{ $t('knowledge_base.add') }}</span>
       </button>
     </div>
 
@@ -264,10 +258,9 @@ const typeOptions: { label: string; value: KBType }[] = [
           class="relative w-20 h-20 text-indigo-500/40"
         />
       </div>
-      <h3 class="text-lg font-bold text-white mb-2">No intelligence found</h3>
+      <h3 class="text-lg font-bold text-white mb-2">{{ $t('knowledge_base.no_entries_title') }}</h3>
       <p class="text-slate-500 text-sm max-w-xs mx-auto">
-        Start by adding FAQs, channel guidelines, or specific topics to help the
-        AI understand your brand.
+        {{ $t('knowledge_base.no_entries_hint') }}
       </p>
     </div>
 
@@ -340,7 +333,7 @@ const typeOptions: { label: string; value: KBType }[] = [
         >
           <span
             class="text-[10px] font-bold text-slate-600 uppercase tracking-widest"
-            >{{ typeConfig[entry.type].label }}</span
+            >{{ $t('knowledge_base.types.' + entry.type) }}</span
           >
           <div v-if="entry.isActive" class="flex items-center gap-1.5">
             <div
@@ -348,13 +341,13 @@ const typeOptions: { label: string; value: KBType }[] = [
             ></div>
             <span
               class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest"
-              >Active</span
+              >{{ $t('knowledge_base.active') }}</span
             >
           </div>
           <span
             v-else
             class="text-[10px] font-bold text-slate-600 uppercase tracking-widest"
-            >Inactive</span
+            >{{ $t('knowledge_base.inactive') }}</span
           >
         </div>
       </div>
@@ -390,10 +383,10 @@ const typeOptions: { label: string; value: KBType }[] = [
           <div class="flex flex-col">
             <span
               class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest"
-              >{{ editingEntry ? "Modification" : "Creation" }}</span
+              >{{ editingEntry ? $t('knowledge_base.modification') : $t('knowledge_base.creation') }}</span
             >
             <h2 class="font-black text-xl text-white tracking-tight">
-              {{ editingEntry ? "Edit Intelligence" : "New Intelligence" }}
+              {{ editingEntry ? $t('knowledge_base.edit_title') : $t('knowledge_base.new_title') }}
             </h2>
           </div>
         </div>
@@ -403,7 +396,7 @@ const typeOptions: { label: string; value: KBType }[] = [
             <div class="space-y-2">
               <label
                 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1"
-                >Category</label
+                >{{ $t('knowledge_base.category') }}</label
               >
               <USelect
                 v-model="form.type"
@@ -422,7 +415,7 @@ const typeOptions: { label: string; value: KBType }[] = [
             <div class="space-y-2">
               <label
                 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1"
-                >Priority (0-100)</label
+                >{{ $t('knowledge_base.priority') }}</label
               >
               <UInput
                 v-model.number="form.priority"
@@ -443,11 +436,11 @@ const typeOptions: { label: string; value: KBType }[] = [
           <div class="space-y-2">
             <label
               class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1"
-              >Title</label
+              >{{ $t('knowledge_base.title_field') }}</label
             >
             <UInput
               v-model="form.title"
-              placeholder="Descriptive name for this entry..."
+              :placeholder="$t('knowledge_base.title_placeholder')"
               size="md"
               class="w-full"
               :ui="{
@@ -461,12 +454,12 @@ const typeOptions: { label: string; value: KBType }[] = [
           <div class="space-y-2">
             <label
               class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1"
-              >Content Intelligence</label
+              >{{ $t('knowledge_base.content_label') }}</label
             >
             <textarea
               v-model="form.content"
               rows="12"
-              placeholder="The core information the AI will use as context..."
+              :placeholder="$t('knowledge_base.content_placeholder')"
               class="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-slate-200 placeholder-slate-700 focus:outline-none focus:border-indigo-500/50 transition-colors resize-none font-medium leading-relaxed"
             />
           </div>
@@ -479,7 +472,7 @@ const typeOptions: { label: string; value: KBType }[] = [
             class="px-6 py-3 rounded-xl text-sm font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-300 cursor-pointer"
             @click="showForm = false"
           >
-            Cancel
+            {{ $t('knowledge_base.cancel') }}
           </button>
           <button
             class="premium-btn-primary flex items-center gap-2 py-3 px-8"
@@ -492,7 +485,7 @@ const typeOptions: { label: string; value: KBType }[] = [
               class="w-4 h-4 animate-spin"
             />
             <UIcon v-else name="i-heroicons-check-circle" class="w-4 h-4" />
-            {{ saving ? "Syncing…" : "Sync Intelligence" }}
+            {{ saving ? $t('knowledge_base.saving') : $t('knowledge_base.save') }}
           </button>
         </div>
       </div>

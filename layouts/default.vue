@@ -1,20 +1,13 @@
 <script setup lang="ts">
 const { logout } = useAuth();
 const route = useRoute();
+const { t } = useI18n();
 
 const navItems = [
-  { label: "Dashboard", icon: "i-heroicons-squares-2x2", to: "/dashboard" },
-  {
-    label: "Comments",
-    icon: "i-heroicons-chat-bubble-left-right",
-    to: "/comments",
-  },
-  {
-    label: "Knowledge Base",
-    icon: "i-heroicons-book-open",
-    to: "/knowledge-base",
-  },
-  { label: "Settings", icon: "i-heroicons-cog-6-tooth", to: "/settings" },
+  { key: "dashboard", icon: "i-heroicons-squares-2x2", to: "/dashboard" },
+  { key: "comments", icon: "i-heroicons-chat-bubble-left-right", to: "/comments" },
+  { key: "knowledge_base", icon: "i-heroicons-book-open", to: "/knowledge-base" },
+  { key: "settings", icon: "i-heroicons-cog-6-tooth", to: "/settings" },
 ];
 </script>
 
@@ -45,10 +38,10 @@ const navItems = [
           </div>
           <div class="min-w-0">
             <p class="font-semibold text-white text-sm tracking-tight truncate">
-              Tube Reply
+              {{ $t('nav.app_name') }}
             </p>
             <p class="text-[11px] text-slate-500 truncate">
-              YouTube AI Assistant
+              {{ $t('nav.subtitle') }}
             </p>
           </div>
         </div>
@@ -75,7 +68,7 @@ const navItems = [
                 : 'text-slate-600 group-hover:text-slate-400'
             "
           />
-          <span class="font-medium">{{ item.label }}</span>
+          <span class="font-medium">{{ $t('nav.' + item.key) }}</span>
         </NuxtLink>
       </nav>
 
@@ -88,7 +81,7 @@ const navItems = [
             name="i-heroicons-arrow-right-on-rectangle"
             class="w-4 h-4 shrink-0"
           />
-          <span class="font-medium">Sign Out</span>
+          <span class="font-medium">{{ $t('nav.sign_out') }}</span>
         </button>
       </div>
     </aside>

@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import type { SuggestedReply } from "~/shared/types";
+import type { SuggestedReply, CommentDetailResponse } from "~/shared/types";
 
 definePageMeta({ middleware: "auth" });
 
 const route = useRoute();
+const router = useRouter();
 const id = route.params.id as string;
+const { t } = useI18n();
 
-const { data, refresh } = await useFetch(`/api/comments/${id}`);
+const { data, refresh } = await useFetch<CommentDetailResponse>(
+  `/api/comments/${id}`,
+);
 
 const generating = ref(false);
 const publishing = ref(false);
@@ -49,13 +53,13 @@ const LANGUAGES = [
   { label: "🇨🇦 Catalan (ca)", value: "ca" },
 ];
 
-const STATUS_OPTIONS = [
-  { label: "⏳ Pending", value: "pending" },
-  { label: "✨ Suggested", value: "suggested" },
-  { label: "❌ Dismissed", value: "dismissed" },
-  { label: "✅ Published", value: "published" },
-  { label: "⏭️ Skipped", value: "skipped" },
-];
+const STATUS_OPTIONS = computed(() => [
+  { label: "⏳ " + t("status.pending"), value: "pending" },
+  { label: "✨ " + t("status.suggested"), value: "suggested" },
+  { label: "❌ " + t("status.dismissed"), value: "dismissed" },
+  { label: "✅ " + t("status.published"), value: "published" },
+  { label: "⏭️ " + t("status.skipped"), value: "skipped" },
+]);
 
 const selectedStatus = ref<string>("");
 watch(
@@ -75,7 +79,7 @@ watch(
       headers: useCsrfHeaders(),
     });
     if (data.value?.comment) data.value.comment.detectedLang = lang || null;
-    toast.add({ title: "Language saved", color: "green" });
+    toast.add({ title: t("comment_detail.language_saved"), color: "green" });
   },
   { immediate: false },
 );
@@ -90,7 +94,10 @@ watch(
       headers: useCsrfHeaders(),
     });
     if (data.value?.comment) data.value.comment.status = status as any;
-    toast.add({ title: `Status updated to ${status}`, color: "green" });
+    toast.add({
+      title: t("comment_detail.status_updated", { status }),
+      color: "green",
+    });
   },
   { immediate: false },
 );
@@ -126,11 +133,14 @@ async function generateSuggestion() {
         activeSuggestion.value.editedText ??
         activeSuggestion.value.responseText;
     }
-    toast.add({ title: "Suggestion generated", color: "green" });
+    toast.add({
+      title: t("comment_detail.suggestion_generated"),
+      color: "green",
+    });
   } catch (err: unknown) {
     const e = err as { data?: { statusMessage?: string } };
     toast.add({
-      title: e.data?.statusMessage ?? "Generation failed",
+      title: e.data?.statusMessage ?? t("comment_detail.generation_failed"),
       color: "red",
     });
   } finally {
@@ -145,7 +155,7 @@ async function saveEdit() {
     body: { editedText: editedText.value },
     headers: useCsrfHeaders(),
   });
-  toast.add({ title: "Reply saved", color: "green" });
+  toast.add({ title: t("comment_detail.reply_saved"), color: "green" });
 }
 
 async function dismissComment() {
@@ -153,8 +163,12 @@ async function dismissComment() {
     method: "POST",
     headers: useCsrfHeaders(),
   });
-  toast.add({ title: "Comment dismissed" });
-  await navigateTo("/comments");
+  toast.add({ title: t("comment_detail.comment_dismissed") });
+  if (window.history.length > 1) {
+    router.back();
+  } else {
+    await navigateTo("/comments");
+  }
 }
 
 async function undismissComment() {
@@ -162,7 +176,7 @@ async function undismissComment() {
     method: "POST",
     headers: useCsrfHeaders(),
   });
-  toast.add({ title: "Comment restored to pending", color: "green" });
+  toast.add({ title: t("comment_detail.comment_restored"), color: "green" });
   await refresh();
 }
 
@@ -181,13 +195,17 @@ async function publishReply() {
       body: { suggestionId: activeSuggestion.value.id },
       headers: useCsrfHeaders(),
     });
-    toast.add({ title: "Reply published to YouTube!", color: "green" });
+    toast.add({ title: t("comment_detail.reply_published"), color: "green" });
     showPublishModal.value = false;
-    await navigateTo("/comments");
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      await navigateTo("/comments");
+    }
   } catch (err: unknown) {
     const e = err as { data?: { statusMessage?: string } };
     toast.add({
-      title: e.data?.statusMessage ?? "Publish failed",
+      title: e.data?.statusMessage ?? t("comment_detail.publish_failed"),
       color: "red",
     });
   } finally {
@@ -308,7 +326,6 @@ const finalText = computed(
   animation-delay: 0.4s;
 }
 
-/* Custom scrollbar for thread replies */
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
 }
@@ -325,24 +342,24 @@ const finalText = computed(
   <div>
     <div class="flex items-center justify-between mb-8 animate-fade-in">
       <div class="flex items-center gap-4">
-        <NuxtLink
-          to="/comments"
-          class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all duration-300 group"
+        <button
+          @click="router.back()"
+          class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all duration-300 group cursor-pointer"
         >
           <UIcon
             name="i-heroicons-chevron-left"
             class="w-5 h-5 group-hover:-translate-x-0.5 transition-transform"
           />
-        </NuxtLink>
+        </button>
         <div class="flex flex-col">
           <div
             class="flex items-center gap-2 text-[10px] font-bold text-indigo-400 uppercase tracking-[0.3em]"
           >
             <UIcon name="i-heroicons-shield-check" class="w-3 h-3" />
-            Verification Terminal
+            {{ $t("comment_detail.terminal_label") }}
           </div>
           <h1 class="text-2xl font-black text-white tracking-tighter">
-            Comment Intelligence
+            {{ $t("comment_detail.title") }}
           </h1>
         </div>
       </div>
@@ -353,7 +370,7 @@ const finalText = computed(
         <div
           class="w-8 h-8 border-2 border-indigo-500/40 border-t-indigo-500 rounded-full animate-spin mx-auto mb-3"
         />
-        <p class="text-slate-500 text-sm">Loading comment…</p>
+        <p class="text-slate-500 text-sm">{{ $t("comment_detail.loading") }}</p>
       </div>
     </div>
 
@@ -370,9 +387,9 @@ const finalText = computed(
                 name="i-heroicons-chat-bubble-left-right"
                 class="w-4 h-4 text-indigo-400"
               />
-              <span class="font-bold text-sm text-slate-200 tracking-tight"
-                >User Perspective</span
-              >
+              <span class="font-bold text-sm text-slate-200 tracking-tight">{{
+                $t("comment_detail.user_perspective")
+              }}</span>
             </div>
             <div class="flex items-center gap-2">
               <UBadge
@@ -426,14 +443,14 @@ const finalText = computed(
                 <p
                   class="text-[10px] uppercase tracking-[0.2em] text-indigo-400 font-bold"
                 >
-                  Source Video
+                  {{ $t("comment_detail.source_video") }}
                 </p>
                 <a
                   :href="`https://www.youtube.com/watch?v=${data.video.id}`"
                   target="_blank"
                   class="text-[10px] font-bold text-slate-500 hover:text-indigo-400 transition-colors flex items-center gap-1"
                 >
-                  VIEW ON YOUTUBE
+                  {{ $t("comment_detail.view_on_youtube") }}
                   <UIcon
                     name="i-heroicons-arrow-top-right-on-square"
                     class="w-3 h-3"
@@ -488,7 +505,11 @@ const finalText = computed(
           <div class="px-6 py-3.5 border-b border-white/[0.06] bg-white/[0.01]">
             <span
               class="font-bold text-xs text-slate-400 uppercase tracking-widest"
-              >Conversation Flow ({{ data.replies.length }})</span
+              >{{
+                $t("comment_detail.conversation_flow", {
+                  n: data.replies.length,
+                })
+              }}</span
             >
           </div>
           <div class="p-6 space-y-4 max-h-56 overflow-y-auto custom-scrollbar">
@@ -515,7 +536,7 @@ const finalText = computed(
             <div class="space-y-2">
               <label
                 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1"
-                >Current State</label
+                >{{ $t("comment_detail.current_state") }}</label
               >
               <USelect
                 v-model="selectedStatus"
@@ -534,7 +555,7 @@ const finalText = computed(
             <div class="space-y-2">
               <label
                 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1"
-                >Reply Language</label
+                >{{ $t("comment_detail.reply_language") }}</label
               >
               <USelect
                 v-model="selectedLang"
@@ -567,13 +588,12 @@ const finalText = computed(
               class="w-4 h-4 flex-shrink-0 text-amber-500"
             />
             <p>
-              Detected
-              <span class="font-bold text-amber-400">{{
-                data.comment.detectedLang
-              }}</span
-              >, but you are replying in
-              <span class="font-bold text-amber-400">{{ selectedLang }}</span
-              >.
+              {{
+                $t("comment_detail.lang_mismatch", {
+                  detected: data.comment.detectedLang,
+                  reply: selectedLang,
+                })
+              }}
             </p>
           </div>
         </div>
@@ -593,13 +613,13 @@ const finalText = computed(
             />
             <span
               class="font-bold text-[10px] text-slate-500 uppercase tracking-widest"
-              >Additional Context (Optional)</span
+              >{{ $t("comment_detail.additional_context") }}</span
             >
           </div>
           <textarea
             v-model="additionalContext"
             rows="4"
-            placeholder="E.g. 'Tell them we have a discount code', 'Ask for their email'..."
+            :placeholder="$t('comment_detail.context_placeholder')"
             class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500/50 transition-colors resize-none"
           />
         </div>
@@ -624,10 +644,10 @@ const finalText = computed(
             />
             <span>{{
               generating
-                ? "AI is thinking…"
+                ? $t("comment_detail.ai_thinking")
                 : data.suggestions?.length
-                  ? "Regenerate Intelligence"
-                  : "Generate Intelligence"
+                  ? $t("comment_detail.regenerate")
+                  : $t("comment_detail.generate")
             }}</span>
           </button>
 
@@ -638,7 +658,7 @@ const finalText = computed(
               @click="undismissComment"
             >
               <UIcon name="i-heroicons-arrow-uturn-left" class="w-4 h-4" />
-              Restore
+              {{ $t("comment_detail.restore") }}
             </button>
             <button
               v-if="data.comment?.status !== 'dismissed'"
@@ -647,7 +667,7 @@ const finalText = computed(
               @click="dismissComment"
             >
               <UIcon name="i-heroicons-trash" class="w-4 h-4" />
-              Dismiss
+              {{ $t("comment_detail.dismiss") }}
             </button>
           </div>
         </div>
@@ -669,10 +689,11 @@ const finalText = computed(
               class="relative w-20 h-20 text-indigo-500/40"
             />
           </div>
-          <h3 class="text-lg font-bold text-white mb-2">Ready to respond?</h3>
+          <h3 class="text-lg font-bold text-white mb-2">
+            {{ $t("comment_detail.ready_title") }}
+          </h3>
           <p class="text-slate-500 text-sm max-w-xs mx-auto">
-            Click "Generate Intelligence" to let Mona craft a personalized reply
-            for you.
+            {{ $t("comment_detail.ready_hint") }}
           </p>
         </div>
 
@@ -692,7 +713,7 @@ const finalText = computed(
           <p
             class="text-indigo-300 font-bold tracking-widest text-xs uppercase animate-pulse"
           >
-            Consulting Knowledge Base…
+            {{ $t("comment_detail.consulting_kb") }}
           </p>
         </div>
 
@@ -703,7 +724,7 @@ const finalText = computed(
               <div class="flex flex-col">
                 <span
                   class="text-[10px] font-bold text-slate-500 uppercase tracking-widest"
-                  >AI Intelligence Level</span
+                  >{{ $t("comment_detail.ai_level") }}</span
                 >
                 <div class="flex items-center gap-2 mt-1">
                   <span
@@ -718,7 +739,7 @@ const finalText = computed(
                     size="xs"
                     class="font-bold"
                   >
-                    HIGH RISK
+                    {{ $t("comment_detail.high_risk") }}
                   </UBadge>
                 </div>
               </div>
@@ -728,7 +749,7 @@ const finalText = computed(
               >
                 <UIcon
                   :name="
-                    confidence.value >= 0.7
+                    confidence.valueOf() >= 0.7
                       ? 'i-heroicons-check-badge'
                       : 'i-heroicons-exclamation-circle'
                   "
@@ -757,7 +778,7 @@ const finalText = computed(
             <div class="flex flex-col gap-1">
               <span
                 class="font-bold text-orange-400 uppercase tracking-wider text-[10px]"
-                >Verification Required</span
+                >{{ $t("comment_detail.verification_required") }}</span
               >
               <p class="leading-relaxed">
                 {{
@@ -778,14 +799,14 @@ const finalText = computed(
                   name="i-heroicons-sparkles"
                   class="w-4 h-4 text-indigo-400"
                 />
-                <span class="font-bold text-sm text-slate-200 tracking-tight"
-                  >Proposed Intelligence</span
-                >
+                <span class="font-bold text-sm text-slate-200 tracking-tight">{{
+                  $t("comment_detail.proposed_intel")
+                }}</span>
               </div>
               <div class="flex items-center gap-2">
                 <span
                   class="text-[10px] font-bold text-slate-600 uppercase tracking-widest"
-                  >Manual Override Active</span
+                  >{{ $t("comment_detail.manual_override") }}</span
                 >
               </div>
             </div>
@@ -793,7 +814,7 @@ const finalText = computed(
               <textarea
                 v-model="editedText"
                 rows="7"
-                placeholder="Refine the intelligence…"
+                :placeholder="$t('comment_detail.refine_placeholder')"
                 class="w-full bg-transparent text-base text-slate-200 placeholder-slate-700 resize-none focus:outline-none leading-relaxed font-medium"
               />
             </div>
@@ -803,14 +824,14 @@ const finalText = computed(
               <p
                 class="text-[10px] text-slate-600 font-bold uppercase tracking-widest"
               >
-                {{ editedText.length }} Characters
+                {{ $t("comment_detail.characters", { n: editedText.length }) }}
               </p>
               <button
                 class="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer flex items-center gap-1.5"
                 @click="saveEdit"
               >
                 <UIcon name="i-heroicons-check-circle" class="w-4 h-4" />
-                Commit Edits
+                {{ $t("comment_detail.commit_edits") }}
               </button>
             </div>
           </div>
@@ -826,7 +847,7 @@ const finalText = computed(
               >
                 <span
                   class="font-bold text-[10px] text-slate-500 uppercase tracking-widest"
-                  >Verification Translation</span
+                  >{{ $t("comment_detail.verification_translation") }}</span
                 >
               </div>
               <div class="p-5">
@@ -846,7 +867,7 @@ const finalText = computed(
               >
                 <span
                   class="font-bold text-[10px] text-slate-500 uppercase tracking-widest"
-                  >Context Engine</span
+                  >{{ $t("comment_detail.context_engine") }}</span
                 >
               </div>
               <div
@@ -870,7 +891,7 @@ const finalText = computed(
                     name="i-heroicons-video-camera"
                     class="w-4 h-4 flex-shrink-0 text-indigo-500"
                   />
-                  Video context used
+                  {{ $t("comment_detail.video_context_used") }}
                 </p>
                 <p
                   v-if="activeSuggestion.contextUsed.existing_replies_count"
@@ -880,9 +901,11 @@ const finalText = computed(
                     name="i-heroicons-chat-bubble-left-right"
                     class="w-4 h-4 flex-shrink-0 text-indigo-500"
                   />
-                  Analyzed
-                  {{ activeSuggestion.contextUsed.existing_replies_count }}
-                  threads
+                  {{
+                    $t("comment_detail.analyzed_threads", {
+                      n: activeSuggestion.contextUsed.existing_replies_count,
+                    })
+                  }}
                 </p>
               </div>
             </div>
@@ -898,7 +921,7 @@ const finalText = computed(
               <p
                 class="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]"
               >
-                Referenced Intelligence
+                {{ $t("comment_detail.referenced_intel") }}
               </p>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -957,7 +980,7 @@ const finalText = computed(
                 name="i-heroicons-paper-airplane"
                 class="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform"
               />
-              <span>Deploy to YouTube</span>
+              <span>{{ $t("comment_detail.deploy_to_youtube") }}</span>
             </button>
 
             <div
@@ -965,7 +988,7 @@ const finalText = computed(
               class="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-bold shadow-[0_0_20px_rgba(16,185,129,0.1)]"
             >
               <UIcon name="i-heroicons-check-badge" class="w-6 h-6" />
-              Intelligence Deployed
+              {{ $t("comment_detail.intel_deployed") }}
             </div>
           </div>
         </template>
@@ -999,10 +1022,10 @@ const finalText = computed(
           <div class="flex flex-col">
             <span
               class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest"
-              >Final Confirmation</span
+              >{{ $t("comment_detail.final_confirmation") }}</span
             >
             <h2 class="font-black text-xl text-white tracking-tight">
-              Deploy Intelligence
+              {{ $t("comment_detail.deploy_intelligence") }}
             </h2>
           </div>
         </div>
@@ -1016,8 +1039,7 @@ const finalText = computed(
               class="w-6 h-6 flex-shrink-0 text-amber-500"
             />
             <p class="leading-relaxed font-medium">
-              This intelligence will be deployed publicly to the YouTube thread.
-              This action is recorded.
+              {{ $t("comment_detail.deploy_warning") }}
             </p>
           </div>
 
@@ -1050,7 +1072,7 @@ const finalText = computed(
             <span
               class="text-sm font-bold text-slate-400 group-hover:text-slate-200 transition-colors"
             >
-              I have audited this intelligence and approve deployment
+              {{ $t("comment_detail.audit_confirm") }}
             </span>
           </label>
         </div>
@@ -1062,7 +1084,7 @@ const finalText = computed(
             class="px-6 py-3 rounded-xl text-sm font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-300 cursor-pointer"
             @click="showPublishModal = false"
           >
-            Cancel
+            {{ $t("comment_detail.cancel") }}
           </button>
           <button
             class="premium-btn-success flex items-center gap-2 py-3 px-8"
@@ -1075,7 +1097,11 @@ const finalText = computed(
               class="w-4 h-4 animate-spin"
             />
             <UIcon v-else name="i-heroicons-rocket-launch" class="w-4 h-4" />
-            {{ publishing ? "Deploying…" : "Deploy Now" }}
+            {{
+              publishing
+                ? $t("comment_detail.deploying")
+                : $t("comment_detail.deploy_now")
+            }}
           </button>
         </div>
       </div>

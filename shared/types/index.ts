@@ -152,6 +152,7 @@ export interface PaginatedResponse<T> {
 
 export interface YouTubeStatus {
   connected: boolean
+  dailyQuotaUsed: number
   channel: {
     id: string
     title: string | null | undefined
@@ -160,10 +161,25 @@ export interface YouTubeStatus {
     videoCount: string | null | undefined
   } | null
   lastSync: {
-    completedAt: string | null
+    syncType: string
     status: string
+    startedAt: string | null
+    completedAt: string | null
+    videosProcessed: number | null
+    commentsFound: number | null
     newComments: number | null
     quotaUsed: number | null
     errorMessage: string | null | undefined
   } | null
+}
+
+export interface CommentDetailResponse {
+  comment: Comment
+  video: Video | null
+  replies: Pick<
+    Comment,
+    "id" | "authorName" | "text" | "publishedAt" | "authorChannelId"
+  >[]
+  suggestions: SuggestedReply[]
+  publishedReply: any | null
 }

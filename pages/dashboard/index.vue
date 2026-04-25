@@ -3,6 +3,8 @@ import type { DashboardStats } from "~/shared/types";
 
 definePageMeta({ middleware: "auth" });
 
+const { t } = useI18n();
+
 const commentPage = ref(1);
 const { data: stats, refresh } = await useFetch<DashboardStats>(
   "/api/dashboard/stats",
@@ -16,7 +18,7 @@ const totalCommentPages = computed(() =>
 );
 
 const SYNC_COOLDOWN_MINUTES = 30;
-const SYNC_QUOTA_COST = 123; // ~100 videos + overhead
+const SYNC_QUOTA_COST = 123;
 
 const syncLoading = ref(false);
 const syncWarning = ref<{ minutesAgo: number; minutesLeft: number } | null>(
@@ -61,11 +63,11 @@ async function triggerSync(force = false) {
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t('time.just_now');
+  if (mins < 60) return t('time.minutes_ago', { m: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+  if (hrs < 24) return t('time.hours_ago', { h: hrs });
+  return t('time.days_ago', { d: Math.floor(hrs / 24) });
 }
 
 const statusColor = (s: string) =>
@@ -79,7 +81,7 @@ const statusColor = (s: string) =>
 
 const statCards = computed(() => [
   {
-    label: "Pending Review",
+    label: t('dashboard.pending_review'),
     value: stats.value?.comments.pending ?? 0,
     icon: "i-heroicons-clock",
     color: "amber",
@@ -88,7 +90,7 @@ const statCards = computed(() => [
     glow: "from-amber-400 to-orange-400",
   },
   {
-    label: "AI Suggested",
+    label: t('dashboard.ai_suggested'),
     value: stats.value?.comments.suggested ?? 0,
     icon: "i-heroicons-sparkles",
     color: "indigo",
@@ -97,7 +99,7 @@ const statCards = computed(() => [
     glow: "from-indigo-400 to-violet-400",
   },
   {
-    label: "Published Today",
+    label: t('dashboard.published_today'),
     value: stats.value?.comments.publishedToday ?? 0,
     icon: "i-heroicons-check-circle",
     color: "emerald",
@@ -106,7 +108,7 @@ const statCards = computed(() => [
     glow: "from-emerald-400 to-teal-400",
   },
   {
-    label: "Total Published",
+    label: t('dashboard.total_published'),
     value: stats.value?.comments.totalPublished ?? 0,
     icon: "i-heroicons-paper-airplane",
     color: "slate",
@@ -128,10 +130,10 @@ const statCards = computed(() => [
             name="i-heroicons-presentation-chart-line"
             class="w-3.5 h-3.5"
           />
-          Analytics & Control
+          {{ $t('dashboard.analytics_label') }}
         </div>
         <h1 class="text-3xl font-black text-white tracking-tighter">
-          Command Center
+          {{ $t('dashboard.title') }}
         </h1>
       </div>
       <div class="flex items-center gap-3">
@@ -153,18 +155,17 @@ const statCards = computed(() => [
           />
           <div>
             <p class="text-amber-300 font-semibold">
-              Último sync hace {{ syncWarning.minutesAgo }}m
+              {{ $t('dashboard.sync_warning_title', { m: syncWarning.minutesAgo }) }}
             </p>
             <p class="text-amber-500/80">
-              ~{{ SYNC_QUOTA_COST }} units · espera
-              {{ syncWarning.minutesLeft }}m
+              {{ $t('dashboard.sync_warning_cost', { cost: SYNC_QUOTA_COST, m: syncWarning.minutesLeft }) }}
             </p>
           </div>
           <button
             class="shrink-0 text-amber-400 hover:text-white font-bold cursor-pointer transition-colors ml-1"
             @click="triggerSync(true)"
           >
-            Forzar
+            {{ $t('dashboard.force') }}
           </button>
         </div>
         </Transition>
@@ -179,7 +180,7 @@ const statCards = computed(() => [
             class="w-4 h-4 transition-transform duration-500"
             :class="syncLoading ? 'animate-spin' : 'group-hover:rotate-180'"
           />
-          {{ syncLoading ? "Synchronizing..." : "Force Sync" }}
+          {{ syncLoading ? $t('dashboard.synchronizing') : $t('dashboard.force_sync') }}
         </button>
       </div>
     </div>
@@ -222,14 +223,14 @@ const statCards = computed(() => [
         <h2
           class="font-black text-lg text-white tracking-tight uppercase tracking-widest"
         >
-          Live Feed
+          {{ $t('dashboard.live_feed') }}
         </h2>
       </div>
       <NuxtLink
         to="/comments"
         class="flex items-center gap-2 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-all group"
       >
-        ACCESS ALL
+        {{ $t('dashboard.access_all') }}
         <UIcon
           name="i-heroicons-arrow-right"
           class="w-4 h-4 group-hover:translate-x-1 transition-transform"
@@ -247,10 +248,10 @@ const statCards = computed(() => [
         <UIcon name="i-heroicons-inbox" class="w-8 h-8 text-slate-700" />
       </div>
       <p class="text-slate-400 font-bold uppercase tracking-widest text-sm">
-        No comments detected
+        {{ $t('dashboard.no_comments') }}
       </p>
       <p class="text-slate-600 text-xs mt-2">
-        Initialize synchronization to fetch intelligence.
+        {{ $t('dashboard.init_sync') }}
       </p>
     </div>
 
@@ -346,7 +347,7 @@ const statCards = computed(() => [
             <div
               class="flex items-center gap-1 text-[10px] font-bold text-indigo-400 group-hover:translate-x-1 transition-transform"
             >
-              REVIEW <UIcon name="i-heroicons-arrow-right" class="w-3 h-3" />
+              {{ $t('comments.review') }} <UIcon name="i-heroicons-arrow-right" class="w-3 h-3" />
             </div>
           </div>
         </div>

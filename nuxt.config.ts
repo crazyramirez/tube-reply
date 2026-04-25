@@ -1,7 +1,32 @@
 export default defineNuxtConfig({
-  devtools: { enabled: false },
+  compatibilityDate: '2026-04-25',
 
-  modules: ['@nuxt/ui', '@vite-pwa/nuxt'],
+  devtools: { enabled: false },
+  experimental: {
+    scrollRestoration: true,
+    appManifest: false
+  },
+
+  modules: ['@nuxt/ui', '@vite-pwa/nuxt', '@nuxtjs/i18n'],
+
+  i18n: {
+    locales: [
+      { code: 'en', name: 'English', file: 'en.json' },
+      { code: 'es', name: 'Español', file: 'es.json' },
+    ],
+    defaultLocale: 'en',
+    strategy: 'no_prefix',
+    langDir: 'locales/',
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'tube_reply_locale',
+      redirectOn: 'root',
+      alwaysRedirect: false,
+    },
+    bundle: {
+      optimizeTranslationDirective: false,
+    },
+  },
 
   pwa: {
     manifest: {
@@ -29,10 +54,10 @@ export default defineNuxtConfig({
     },
     workbox: {
       navigateFallback: '/',
+      globPatterns: [],
     },
     devOptions: {
-      enabled: true,
-      type: 'module',
+      enabled: false,
     },
   },
 
@@ -76,6 +101,7 @@ export default defineNuxtConfig({
     sessionDurationHours: Number(process.env.SESSION_DURATION_HOURS ?? 24),
     syncIntervalMinutes: Number(process.env.SYNC_INTERVAL_MINUTES ?? 30),
     maxQuotaPerDay: Number(process.env.MAX_QUOTA_PER_DAY ?? 8500),
+    autoSyncOnStart: process.env.AUTO_SYNC_ON_START !== 'false',
     rateLimitLoginMax: Number(process.env.RATE_LIMIT_LOGIN_MAX ?? 5),
     rateLimitLoginWindowMinutes: Number(process.env.RATE_LIMIT_LOGIN_WINDOW_MINUTES ?? 15),
     lockoutDurationMinutes: Number(process.env.LOCKOUT_DURATION_MINUTES ?? 30),

@@ -4,6 +4,7 @@ import { getAuthenticatedYouTube, refreshChannelMetadata } from '../utils/youtub
 import { logger } from '../utils/logger'
 import { detectLanguage } from './language-detect'
 import { videos, comments, syncLog, oauthTokens } from '../db/schema'
+import { getRemainingQuota } from '../utils/quota'
 
 type SyncType = 'videos' | 'comments' | 'manual' | 'scheduled'
 
@@ -31,6 +32,14 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
   const config = useRuntimeConfig()
   let logId: number | null = null
   let totalQuota = 0
+
+  // Guard: check real daily quota before starting
+  const remaining = await getRemainingQuota()
+  if (remaining < 10) {
+    await logger.warn('comment-sync', 'Daily quota exhausted, skipping sync', { remaining })
+    isRunning = false
+    return
+  }
   let totalNew = 0
   let totalFound = 0
   let videosProcessed = 0
@@ -71,9 +80,9 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
     await logger.info('comment-sync', `Syncing ${videosToSync.length}/${allVideos.length} videos (scope: ${scope})`)
 
     for (const video of videosToSync) {
-      // Abort if approaching quota limit
-      if (totalQuota >= config.maxQuotaPerDay - 100) {
-        await logger.warn('comment-sync', 'Approaching quota limit, stopping sync', { totalQuota })
+      // Abort if this run consumed most of its share (real daily guard is at start)
+      if (totalQuota >= remaining - 10) {
+        await logger.warn('comment-sync', 'Approaching quota limit, stopping sync', { totalQuota, remaining })
         break
       }
 

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import type { PaginatedResponse, CommentListItem } from "~/shared/types";
 
-definePageMeta({ middleware: "auth" });
+definePageMeta({ middleware: "auth", keepalive: true });
 
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
+const { t } = useI18n();
 
 const status = ref((route.query.status as string) || "pending");
 const page = ref(Number(route.query.page || 1));
@@ -36,7 +37,7 @@ async function undismiss(commentId: string) {
     method: "POST",
     headers: useCsrfHeaders(),
   });
-  toast.add({ title: "Comment restored to pending", color: "green" });
+  toast.add({ title: t('comments.restored'), color: "green" });
   await refresh();
 }
 
@@ -55,11 +56,11 @@ const langFlag: Record<string, string> = {
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t('time.just_now');
+  if (mins < 60) return t('time.minutes_ago', { m: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+  if (hrs < 24) return t('time.hours_ago', { h: hrs });
+  return t('time.days_ago', { d: Math.floor(hrs / 24) });
 }
 
 const statusColor = (s: string) =>
@@ -75,12 +76,12 @@ const viewMode = useCookie<"grid" | "list">("comment-view-mode", {
   default: () => "list",
 });
 
-const statusTabs = [
-  { label: "Pending", value: "pending", icon: "i-heroicons-clock" },
-  { label: "Suggested", value: "suggested", icon: "i-heroicons-sparkles" },
-  { label: "Published", value: "published", icon: "i-heroicons-check-circle" },
-  { label: "Dismissed", value: "dismissed", icon: "i-heroicons-trash" },
-];
+const statusTabs = computed(() => [
+  { label: t('status.pending'), value: "pending", icon: "i-heroicons-clock" },
+  { label: t('status.suggested'), value: "suggested", icon: "i-heroicons-sparkles" },
+  { label: t('status.published'), value: "published", icon: "i-heroicons-check-circle" },
+  { label: t('status.dismissed'), value: "dismissed", icon: "i-heroicons-trash" },
+]);
 
 // --- Bulk Actions ---
 const selectedIds = ref<string[]>([]);
@@ -107,7 +108,6 @@ function toggleSelection(id: string) {
   }
 }
 
-// Clear selection on navigation
 watch([status, page], () => {
   selectedIds.value = [];
 });
@@ -123,8 +123,8 @@ async function bulkStatusUpdate(newStatus: string) {
     });
 
     toast.add({
-      title: `Bulk update successful`,
-      description: `Moved ${selectedIds.value.length} comments to ${newStatus}`,
+      title: t('comments.bulk_success'),
+      description: t('comments.bulk_moved', { n: selectedIds.value.length, status: newStatus }),
       color: "green",
     });
 
@@ -132,12 +132,16 @@ async function bulkStatusUpdate(newStatus: string) {
     await refresh();
   } catch (err) {
     toast.add({
-      title: "Bulk update failed",
+      title: t('comments.bulk_failed'),
       description: (err as any).message,
       color: "red",
     });
   }
 }
+
+onActivated(() => {
+  refresh();
+});
 </script>
 
 <template>
@@ -151,10 +155,10 @@ async function bulkStatusUpdate(newStatus: string) {
             name="i-heroicons-chat-bubble-bottom-center-text"
             class="w-3.5 h-3.5"
           />
-          Intelligence Hub
+          {{ $t('comments.hub_label') }}
         </div>
         <h1 class="text-3xl font-black text-white tracking-tighter">
-          Community Voice
+          {{ $t('comments.title') }}
         </h1>
       </div>
 
@@ -170,7 +174,7 @@ async function bulkStatusUpdate(newStatus: string) {
               : 'text-slate-500 hover:text-slate-300'
           "
           @click="viewMode = 'list'"
-          title="List View"
+          :title="$t('comments.list_view')"
         >
           <UIcon name="i-heroicons-bars-3" class="w-5 h-5" />
         </button>
@@ -182,7 +186,7 @@ async function bulkStatusUpdate(newStatus: string) {
               : 'text-slate-500 hover:text-slate-300'
           "
           @click="viewMode = 'grid'"
-          title="Grid View"
+          :title="$t('comments.grid_view')"
         >
           <UIcon name="i-heroicons-squares-2x2" class="w-5 h-5" />
         </button>
@@ -224,7 +228,7 @@ async function bulkStatusUpdate(newStatus: string) {
           class="font-bold text-[10px] tracking-widest uppercase"
           @click="toggleSelectAll"
         >
-          {{ isAllSelected ? "Deselect All" : "Select All" }}
+          {{ isAllSelected ? $t('comments.deselect_all') : $t('comments.select_all') }}
         </UButton>
       </div>
     </div>
@@ -247,7 +251,7 @@ async function bulkStatusUpdate(newStatus: string) {
         name="i-heroicons-check-circle"
         class="w-12 h-12 mx-auto mb-3 text-emerald-700"
       />
-      <p class="text-slate-500 text-sm">No {{ status }} comments</p>
+      <p class="text-slate-500 text-sm">{{ $t('comments.no_comments', { status }) }}</p>
     </div>
 
     <!-- Grid View -->
@@ -370,7 +374,7 @@ async function bulkStatusUpdate(newStatus: string) {
               <div
                 class="flex items-center gap-1 text-[10px] font-bold text-indigo-400 group-hover:translate-x-1 transition-transform"
               >
-                REVIEW <UIcon name="i-heroicons-arrow-right" class="w-3 h-3" />
+                {{ $t('comments.review') }} <UIcon name="i-heroicons-arrow-right" class="w-3 h-3" />
               </div>
             </div>
           </div>
@@ -381,13 +385,13 @@ async function bulkStatusUpdate(newStatus: string) {
             @click.prevent="undismiss(c.id)"
           >
             <UIcon name="i-heroicons-arrow-uturn-left" class="w-3.5 h-3.5" />
-            Restore Comment
+            {{ $t('comments.restore') }}
           </button>
         </div>
       </div>
     </div>
 
-    <!-- List View (Refined) -->
+    <!-- List View -->
     <div v-else class="space-y-3">
       <div
         v-for="(c, idx) in data.items"
@@ -498,7 +502,7 @@ async function bulkStatusUpdate(newStatus: string) {
               v-if="status === 'dismissed'"
               class="w-10 h-10 flex items-center justify-center rounded-xl bg-emerald-500/5 border border-emerald-500/10 text-emerald-500 hover:bg-emerald-500/10 transition-colors"
               @click.prevent="undismiss(c.id)"
-              title="Restore"
+              :title="$t('comments.restore')"
             >
               <UIcon name="i-heroicons-arrow-uturn-left" class="w-5 h-5" />
             </button>
@@ -548,7 +552,7 @@ async function bulkStatusUpdate(newStatus: string) {
           <div class="flex flex-col">
             <span
               class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest"
-              >Selected Items</span
+              >{{ $t('comments.selected_items') }}</span
             >
             <span class="text-xl font-black text-white leading-none">{{
               selectedIds.length
@@ -563,7 +567,7 @@ async function bulkStatusUpdate(newStatus: string) {
               color="gray"
               variant="soft"
               icon="i-heroicons-clock"
-              label="Pending"
+              :label="$t('status.pending')"
               @click="bulkStatusUpdate('pending')"
             />
             <UButton
@@ -571,7 +575,7 @@ async function bulkStatusUpdate(newStatus: string) {
               color="blue"
               variant="soft"
               icon="i-heroicons-sparkles"
-              label="Suggested"
+              :label="$t('status.suggested')"
               @click="bulkStatusUpdate('suggested')"
             />
             <UButton
@@ -579,7 +583,7 @@ async function bulkStatusUpdate(newStatus: string) {
               color="emerald"
               variant="soft"
               icon="i-heroicons-check-circle"
-              label="Published"
+              :label="$t('status.published')"
               @click="bulkStatusUpdate('published')"
             />
             <UButton
@@ -587,7 +591,7 @@ async function bulkStatusUpdate(newStatus: string) {
               color="red"
               variant="soft"
               icon="i-heroicons-trash"
-              label="Dismiss"
+              :label="$t('status.dismissed')"
               @click="bulkStatusUpdate('dismissed')"
             />
             <UButton
@@ -595,7 +599,7 @@ async function bulkStatusUpdate(newStatus: string) {
               color="orange"
               variant="soft"
               icon="i-heroicons-forward"
-              label="Skip"
+              :label="$t('status.skipped')"
               @click="bulkStatusUpdate('skipped')"
             />
           </div>
@@ -608,7 +612,7 @@ async function bulkStatusUpdate(newStatus: string) {
             icon="i-heroicons-x-mark"
             @click="selectedIds = []"
           >
-            Cancel
+            {{ $t('comments.cancel') }}
           </UButton>
         </div>
       </div>
