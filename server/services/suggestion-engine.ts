@@ -169,12 +169,20 @@ export async function generateSuggestion(commentId: string, langOverride: string
     )
   }
 
-  type VideoRow = { id: string; title: string; thumbnailUrl: string | null; duration: string | null }
+  type VideoRow = {
+    id: string
+    title: string
+    thumbnailUrl: string | null
+    duration: string | null
+    viewCount: number | null
+    commentCount: number | null
+  }
 
   /**
    * Scores a video row against a list of keywords.
    * Title hit = 10 pts, tags hit = 5 pts, description hit = 1 pt.
    * Bonus +5 per keyword that is consecutive in the title (phrase match).
+   * Engagement bonus (log-scale) so popular videos rank slightly higher on ties.
    */
   function scoreRow(row: VideoRow, keywords: string[]): number {
     const nt = normalizeQuery(row.title)
@@ -191,6 +199,10 @@ export async function generateSuggestion(commentId: string, langOverride: string
       const phrase = keywords.join(' ')
       if (nt.includes(phrase)) score += keywords.length * 5
     }
+    // Engagement bonus: log scale so relevance still dominates (max ~2 pts at 1M views)
+    const viewBonus = Math.max(0, Math.log10((row.viewCount ?? 0) + 10) - 1) * 0.6
+    const commentBonus = Math.max(0, Math.log10((row.commentCount ?? 0) + 10) - 1) * 0.4
+    score += viewBonus + commentBonus
     return score
   }
 
@@ -211,6 +223,8 @@ export async function generateSuggestion(commentId: string, langOverride: string
       title: videos.title,
       thumbnailUrl: videos.thumbnailUrl,
       duration: videos.duration,
+      viewCount: videos.viewCount,
+      commentCount: videos.commentCount,
     }
     const LIMIT = 15
 
@@ -307,7 +321,7 @@ export async function generateSuggestion(commentId: string, langOverride: string
   // Enrich with thumbnails from DB to ensure accuracy
   validated.video_links_used = validated.video_links_used.map(link => ({
     ...link,
-    thumbnail_url: (videoMap.get(link.video_id) ?? link.thumbnail_url ?? null)?.replace('mqdefault.jpg', 'hqdefault.jpg') || null,
+    thumbnail_url: (videoMap.get(link.video_id) ?? link.thumbnail_url ?? undefined)?.replace('mqdefault.jpg', 'hqdefault.jpg') || undefined,
   }))
 
   const config = useRuntimeConfig()

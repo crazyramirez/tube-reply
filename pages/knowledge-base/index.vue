@@ -15,6 +15,29 @@ const { data, refresh } = await useFetch<{ items: KnowledgeBaseEntry[] }>(
   },
 );
 
+const page = ref(1);
+const itemsPerPage = 12;
+
+const paginatedItems = computed(() => {
+  if (!data.value?.items) return [];
+  const start = (page.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return data.value.items.slice(start, end);
+});
+
+const totalItems = computed(() => data.value?.items?.length || 0);
+
+// Reset page when search or filters change (if any added later) or when data is refreshed
+watch(
+  () => data.value?.items?.length,
+  () => {
+    const maxPage = Math.ceil(totalItems.value / itemsPerPage);
+    if (page.value > maxPage && maxPage > 0) {
+      page.value = maxPage;
+    }
+  },
+);
+
 const showForm = ref(false);
 const editingEntry = ref<KnowledgeBaseEntry | null>(null);
 const saving = ref(false);
@@ -396,9 +419,12 @@ async function saveBulkEntries() {
       </p>
     </div>
 
-    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div
+      v-else
+      class="grid rounded-md grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
+    >
       <div
-        v-for="(entry, index) in data.items"
+        v-for="(entry, index) in paginatedItems"
         :key="entry.id"
         class="glass-card p-6 flex flex-col animate-slide-up"
         :class="[
@@ -495,6 +521,19 @@ async function saveBulkEntries() {
           >
         </div>
       </div>
+    </div>
+
+    <!-- Pagination -->
+    <div
+      v-if="totalItems > itemsPerPage"
+      class="flex justify-center mt-8 mb-4 animate-fade-in stagger-4"
+    >
+      <UPagination
+        v-model="page"
+        :page-count="itemsPerPage"
+        :total="totalItems"
+        size="lg"
+      />
     </div>
 
     <!-- Form modal -->

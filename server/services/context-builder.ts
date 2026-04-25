@@ -2,25 +2,41 @@ import { eq, and, desc, isNotNull } from 'drizzle-orm'
 import { useDb } from '../utils/db'
 import { comments, videos, videoSummaries, knowledgeBase } from '../db/schema'
 
+export type CommentIntent =
+  | 'video_request'
+  | 'question'
+  | 'help_needed'
+  | 'complaint'
+  | 'compliment'
+  | 'general'
+
 export interface CommentContext {
   comment: {
     id: string
     text: string
     authorName: string
+    authorChannelId: string | null
+    likeCount: number
+    ageInDays: number
     publishedAt: string
     detectedLang: string
     langConfidence: number
     langOverride: string | null
+    intent: CommentIntent
   }
   video: {
     id: string
     title: string
     descriptionExcerpt: string
     tags: string[]
+    viewCount: number
+    commentCount: number
   }
   videoSummary: string | null
+  videoKeyTopics: string[]
+  videoFaqs: Array<{ q: string; a: string }>
   existingReplies: Array<{ author: string; text: string }>
-  knowledgeBaseEntries: Array<{ type: string; title: string; content: string }>
+  knowledgeBaseEntries: Array<{ type: string; title: string; content: string; tags: string[] }>
   channelStyle: string | null
   recentVideos: Array<{ id: string; title: string; thumbnailUrl: string | null; isShort: boolean }>
   additionalContext: string | null
@@ -36,12 +52,125 @@ export function isYouTubeShort(duration: string | null): boolean {
   return (minutes * 60) + seconds < 60
 }
 
+/**
+ * Lightweight multilingual intent classifier.
+ * Checks patterns in order of specificity — first match wins.
+ */
+export function detectIntent(text: string): CommentIntent {
+  const t = text.toLowerCase()
+
+  // video_request: explicit video/tutorial lookup in any language
+  if (
+    /(\?|donde|dónde|where|où|onde|wo|dove|где|اين|أين).{0,40}(video|vídeo|tutorial|link|url)/i.test(t)
+    || /(video|vídeo|tutorial|link|url).{0,40}(\?|busco|find|cherch|buscar|where|donde)/i.test(t)
+    || /(tienes|tiene|have you|avez|tem|haben).{0,30}(video|vídeo|tutorial)/i.test(t)
+    || /\b(link del|link de|link to|url del|dame el|send me|pásame|share the)\b/.test(t)
+  ) return 'video_request'
+
+  // help_needed: urgency / assistance signals
+  if (
+    /\b(ayuda(me)?|help me|please help|por favor ayuda|need help|socorro|emergencia|urgente|urgent|asap)\b/i.test(t)
+  ) return 'help_needed'
+
+  // complaint: problem / error signals
+  if (
+    /\b(no funciona|doesn.t work|not working|error|wrong|incorrect|problema|problem|broken|fix|arregla|falla|crash|bug|issue)\b/i.test(t)
+  ) return 'complaint'
+
+  // question: explicit question mark OR starts with interrogative
+  if (
+    t.includes('?')
+    || /^(how|what|when|where|why|can |could |do you|does |is there|have you|did |which |who )/i.test(t)
+    || /^(como|cómo|qué|que |cuando|cuándo|dónde|donde|por qué|porqué|cuánto|cuanto|tienes|tienen|hay |puedes|puede|se puede)/i.test(t)
+    || /^(comment|où |quand|quel|quelle|avez|est-ce)/i.test(t)
+    || /^(onde|quando|como|qual|tem |você|voce|há )/i.test(t)
+    || /^(где|как|когда|что|кто|есть ли|можно)/i.test(t)
+    || /^(أين|كيف|متى|ماذا|هل )/i.test(t)
+  ) return 'question'
+
+  // compliment: positive appreciation without a question
+  if (
+    /\b(gracias|thank|excelente|amazing|love|encanta|incre[íi]ble|beautiful|wonderful|great|felicitaciones|congrats|bravo|genial|hermosa|hermoso|perfecto|perfect|adorable|bello|bella|chevere|chévere)\b/i.test(t)
+    && !t.includes('?')
+  ) return 'compliment'
+
+  return 'general'
+}
+
+/**
+ * Normalize text for scoring: NFD decompose, strip diacritics, lowercase, collapse punctuation.
+ */
+function normalizeForScoring(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[ً-ٟ]/g, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/**
+ * Score a KB entry's relevance to the comment + video context.
+ * Title hit = 3pts, tags hit = 2pts, content hit = 1pt (per matching word).
+ * Phrase bonus for 2+ consecutive words matching in title/content.
+ * Video tags add topical context.
+ */
+function scoreKbEntry(
+  commentText: string,
+  videoTags: string[],
+  entry: { title: string; content: string; tags: string | null },
+): number {
+  const commentNorm = normalizeForScoring(commentText)
+  const videoTagsNorm = normalizeForScoring(videoTags.join(' '))
+
+  const commentWords = commentNorm.split(/\s+/).filter(w => w.length > 3)
+  const videoTagWords = videoTagsNorm.split(/\s+/).filter(w => w.length > 2)
+
+  const titleNorm = normalizeForScoring(entry.title)
+  const contentNorm = normalizeForScoring(entry.content)
+  const entryTagsRaw = entry.tags ? (JSON.parse(entry.tags) as string[]).join(' ') : ''
+  const entryTagsNorm = normalizeForScoring(entryTagsRaw)
+
+  let score = 0
+
+  // Comment words vs KB entry
+  for (const word of commentWords) {
+    if (titleNorm.includes(word)) score += 3
+    if (entryTagsNorm.includes(word)) score += 2
+    if (contentNorm.includes(word)) score += 1
+  }
+
+  // Video tags vs KB entry (topical alignment)
+  for (const word of videoTagWords) {
+    if (titleNorm.includes(word)) score += 1
+    if (entryTagsNorm.includes(word)) score += 1
+  }
+
+  // Phrase bonus: consecutive word pairs/triplets in title → more specific match
+  if (commentWords.length >= 2) {
+    for (let i = 0; i < commentWords.length - 1; i++) {
+      const pair = `${commentWords[i]} ${commentWords[i + 1]}`
+      if (titleNorm.includes(pair)) score += 4
+      else if (contentNorm.includes(pair)) score += 2
+      if (i < commentWords.length - 2) {
+        const triple = `${commentWords[i]} ${commentWords[i + 1]} ${commentWords[i + 2]}`
+        if (titleNorm.includes(triple)) score += 6
+      }
+    }
+  }
+
+  return score
+}
+
 const MAX_DESCRIPTION_CHARS = 2000
 const MAX_KB_ENTRIES = 5
 const MAX_KB_CONTENT_CHARS = 1000
 const MAX_REPLIES = 5
 const MAX_REPLY_CHARS = 200
 const MAX_RECENT_VIDEOS = 10
+const MAX_VIDEO_FAQS = 8
 
 export async function buildContext(commentId: string, langOverride: string | null = null, additionalContext: string | null = null): Promise<CommentContext> {
   const db = useDb()
@@ -71,7 +200,6 @@ export async function buildContext(commentId: string, langOverride: string | nul
     columns: { authorName: true, text: true },
   })
 
-  // Collect ALL style entries and merge them into the channel style
   const styleEntries = await db.query.knowledgeBase.findMany({
     where: and(
       eq(knowledgeBase.type, 'style'),
@@ -83,7 +211,6 @@ export async function buildContext(commentId: string, langOverride: string | nul
     ? styleEntries.map(e => `[${e.title}]\n${e.content}`).join('\n\n')
     : null
 
-  // Collect rule entries — always included, they are hard constraints
   const ruleEntries = await db.query.knowledgeBase.findMany({
     where: and(
       eq(knowledgeBase.type, 'rule'),
@@ -92,57 +219,69 @@ export async function buildContext(commentId: string, langOverride: string | nul
     orderBy: [desc(knowledgeBase.priority)],
   })
 
-  // Collect faq + info entries and score by relevance to the comment
   const allFaqInfo = await db.query.knowledgeBase.findMany({
-    where: and(
-      eq(knowledgeBase.isActive, true),
-    ),
+    where: eq(knowledgeBase.isActive, true),
     orderBy: [desc(knowledgeBase.priority)],
   })
 
-  const commentLower = (comment.text ?? '').toLowerCase()
+  const videoTags = video.tags ? (JSON.parse(video.tags) as string[]) : []
+
+  // Score FAQ/info entries by relevance to comment + video context
   const scoredKb = allFaqInfo
     .filter(e => e.type === 'faq' || e.type === 'info')
-    .map(e => {
-      const haystack = `${e.title} ${e.content}`.toLowerCase()
-      // Simple keyword overlap score
-      const words = commentLower.split(/\s+/).filter(w => w.length > 3)
-      const score = words.filter(w => haystack.includes(w)).length
-      return { e, score }
-    })
-    .sort((a, b) => b.score - a.score || 0)
+    .map(e => ({ e, score: scoreKbEntry(comment.text ?? '', videoTags, e) }))
+    .sort((a, b) => b.score - a.score || (b.e.priority ?? 0) - (a.e.priority ?? 0))
     .slice(0, MAX_KB_ENTRIES)
     .map(({ e }) => e)
 
   const filteredKb = [
     ...ruleEntries,
     ...scoredKb,
-  ].slice(0, MAX_KB_ENTRIES + ruleEntries.length)
+  ]
 
-  // Only most-recent videos as baseline — search_videos tool handles specific lookups
   const recentVideos = await db.query.videos.findMany({
     columns: { id: true, title: true, thumbnailUrl: true, duration: true },
     orderBy: [desc(videos.publishedAt)],
     limit: MAX_RECENT_VIDEOS,
   })
 
+  // Compute comment age in days
+  const commentDate = new Date(comment.publishedAt)
+  const ageInDays = Math.floor((Date.now() - commentDate.getTime()) / 86_400_000)
+
+  // Parse video summary extras
+  const videoKeyTopics: string[] = summary?.keyTopics
+    ? (JSON.parse(summary.keyTopics) as string[])
+    : []
+  const videoFaqs: Array<{ q: string; a: string }> = summary?.faqs
+    ? (JSON.parse(summary.faqs) as Array<{ q: string; a: string }>).slice(0, MAX_VIDEO_FAQS)
+    : []
+
   return {
     comment: {
       id: comment.id,
       text: comment.text,
       authorName: comment.authorName,
+      authorChannelId: comment.authorChannelId ?? null,
+      likeCount: comment.likeCount ?? 0,
+      ageInDays,
       publishedAt: comment.publishedAt,
       detectedLang: comment.detectedLang ?? 'und',
       langConfidence: comment.langConfidence ?? 0,
       langOverride,
+      intent: detectIntent(comment.text ?? ''),
     },
     video: {
       id: video.id,
       title: video.title,
       descriptionExcerpt: (video.description ?? '').substring(0, MAX_DESCRIPTION_CHARS),
-      tags: video.tags ? (JSON.parse(video.tags) as string[]).slice(0, 10) : [],
+      tags: videoTags.slice(0, 10),
+      viewCount: video.viewCount ?? 0,
+      commentCount: video.commentCount ?? 0,
     },
     videoSummary: summary?.summary ?? null,
+    videoKeyTopics,
+    videoFaqs,
     existingReplies: existingReplies.map(r => ({
       author: r.authorName,
       text: r.text.substring(0, MAX_REPLY_CHARS),
@@ -151,6 +290,7 @@ export async function buildContext(commentId: string, langOverride: string | nul
       type: e.type,
       title: e.title,
       content: e.content.substring(0, MAX_KB_CONTENT_CHARS),
+      tags: e.tags ? (JSON.parse(e.tags) as string[]) : [],
     })),
     channelStyle: mergedStyle,
     recentVideos: recentVideos.map(v => ({
@@ -165,7 +305,10 @@ export async function buildContext(commentId: string, langOverride: string | nul
 
 export function buildPrompt(ctx: CommentContext): string {
   const kbText = ctx.knowledgeBaseEntries.length > 0
-    ? ctx.knowledgeBaseEntries.map(e => `[${e.type.toUpperCase()}] ${e.title}:\n${e.content}`).join('\n\n')
+    ? ctx.knowledgeBaseEntries.map((e) => {
+        const tagsStr = e.tags.length > 0 ? ` [tags: ${e.tags.join(', ')}]` : ''
+        return `[${e.type.toUpperCase()}]${tagsStr} ${e.title}:\n${e.content}`
+      }).join('\n\n')
     : 'No knowledge base entries configured yet.'
 
   const repliesText = ctx.existingReplies.length > 0
@@ -175,6 +318,15 @@ export function buildPrompt(ctx: CommentContext): string {
   const recentVideosText = ctx.recentVideos.length > 0
     ? ctx.recentVideos.map(v => `- ID: ${v.id} | Title: ${v.title}${v.isShort ? ' (Short)' : ''} | URL: https://youtu.be/${v.id}${v.thumbnailUrl ? ` | Thumbnail URL: ${v.thumbnailUrl}` : ''}`).join('\n')
     : 'No videos in database.'
+
+  const intentGuide: Record<CommentIntent, string> = {
+    video_request: 'User is looking for a specific video/tutorial. CALL search_videos immediately with the topic keywords. If found, provide the exact URL. If not found after 2 tries, suggest the closest recent video or acknowledge the content may not exist yet.',
+    question: 'User has a specific question. Answer directly and concisely. Check VIDEO FAQs first — if the exact question is answered there, use that answer. Call search_videos if the answer lives in a specific video. Use KB entries if they contain relevant information.',
+    help_needed: 'User needs assistance — show empathy first. Provide actionable, step-by-step guidance if possible. If the solution is in a tutorial video, find and share it. Be warm and encouraging.',
+    complaint: 'User has a problem or complaint. Acknowledge the issue without being defensive. Offer a concrete solution, alternative, or next step. If it relates to a video, verify the video context before referencing it.',
+    compliment: 'User is being appreciative/positive. Respond warmly and authentically. Keep it brief — 1-2 sentences. Optionally mention related content they might enjoy without being pushy.',
+    general: 'Engage naturally with the comment. Match the tone and energy. Be friendly and genuine.',
+  }
 
   const systemPrompt = `You are Mona, an AI assistant that helps a YouTube channel owner respond to comments.
 
@@ -200,12 +352,22 @@ ABSOLUTE RULES — NEVER VIOLATE:
    d. If search_videos returns 0 results, try ONE more call with a shorter/synonym query before giving up
    e. Maximum 2 search_videos calls per response
 4. If uncertain: set needs_confirmation=true and explain why in confirmation_reason
-5. Respond in the SAME LANGUAGE as the comment (use detected_language) — UNLESS langOverride is specified, use that language
+5. Respond in the SAME LANGUAGE as the comment (use detected_language) — UNLESS langOverride is specified
 6. Always include response_es (Spanish translation of the reply)
-7. Keep responses concise — 2-4 sentences unless the question requires more
-8. If an existing reply already covers this topic, acknowledge it
+7. RESPONSE LENGTH — calibrate by intent and importance:
+   - video_request / question / help_needed: 2–4 sentences, be complete
+   - complaint: 2–3 sentences, acknowledge then solve
+   - compliment: 1–2 sentences, warm and genuine
+   - general: 1–3 sentences, match the energy
+   - HIGH IMPORTANCE (≥10 likes): lean toward the longer end of the range
+8. If an existing reply already covers this topic, acknowledge it or build on it — never repeat verbatim
 9. NEVER use Markdown links (e.g., [Title](URL)) as they don't render in YouTube. Use plain URLs.
-10. SEARCH PREFERENCE: When a user asks "where is the video" or for a tutorial/explanation, PREFER long-form videos over "Shorts". Shorts are usually too brief for full answers.
+10. SEARCH PREFERENCE: When a user asks for a tutorial/explanation, PREFER long-form videos over Shorts. Shorts are usually too brief for full answers.
+11. TEMPORAL AWARENESS: If the comment is old (≥180 days), acknowledge that context may have changed if relevant (prices, availability, links, etc.)
+12. VIDEO FAQs are pre-analyzed Q&A pairs extracted from the video. Use them to answer questions directly when they match — this is the most accurate source for video-specific answers.
+
+INTENT-BASED GUIDANCE (comment intent: ${ctx.comment.intent}):
+${intentGuide[ctx.comment.intent]}
 
 CHANNEL STYLE & PERSONA:
 ${ctx.channelStyle ?? 'No channel style configured. Use a friendly and professional tone.'}
@@ -234,20 +396,62 @@ Return ONLY valid JSON matching this exact schema. No markdown, no explanation o
   "detected_language": "BCP-47 code"
 }`
 
+  // Build video engagement context string
+  const videoEngagement = ctx.video.viewCount > 0
+    ? `Views: ${ctx.video.viewCount.toLocaleString()} | Comments: ${ctx.video.commentCount.toLocaleString()}`
+    : 'Engagement data not available'
+
+  // Build comment importance label
+  const importanceLabel = ctx.comment.likeCount >= 20
+    ? `HIGH (${ctx.comment.likeCount} likes — this is an important comment from the community)`
+    : ctx.comment.likeCount >= 5
+      ? `MEDIUM (${ctx.comment.likeCount} likes)`
+      : ctx.comment.likeCount > 0
+        ? `${ctx.comment.likeCount} likes`
+        : 'no likes'
+
+  // Build comment age label
+  const ageLabel = ctx.comment.ageInDays === 0
+    ? 'today'
+    : ctx.comment.ageInDays === 1
+      ? 'yesterday'
+      : ctx.comment.ageInDays < 7
+        ? `${ctx.comment.ageInDays} days ago`
+        : ctx.comment.ageInDays < 30
+          ? `${Math.round(ctx.comment.ageInDays / 7)} weeks ago`
+          : ctx.comment.ageInDays < 365
+            ? `${Math.round(ctx.comment.ageInDays / 30)} months ago`
+            : `${Math.round(ctx.comment.ageInDays / 365)} year(s) ago`
+
+  // Build video FAQs section
+  const faqsText = ctx.videoFaqs.length > 0
+    ? ctx.videoFaqs.map((f, i) => `  ${i + 1}. Q: ${f.q}\n     A: ${f.a}`).join('\n')
+    : null
+
+  // Build key topics section
+  const topicsText = ctx.videoKeyTopics.length > 0
+    ? ctx.videoKeyTopics.join(', ')
+    : null
+
   const userPrompt = `COMMENT TO REPLY TO:
 Author: ${ctx.comment.authorName}
+Intent: ${ctx.comment.intent}
 Language detected: ${ctx.comment.detectedLang} (confidence: ${ctx.comment.langConfidence.toFixed(2)})
-Published: ${ctx.comment.publishedAt}
+Importance: ${importanceLabel}
+Age: ${ageLabel}
 Text: "${ctx.comment.text}"
 
 VIDEO THIS COMMENT IS ON:
 ID: ${ctx.video.id}
 Title: ${ctx.video.title}
+${videoEngagement}
 Description (excerpt): ${ctx.video.descriptionExcerpt}
 Tags: ${ctx.video.tags.join(', ') || 'none'}
+${topicsText ? `Key topics: ${topicsText}` : ''}
 
 VIDEO SUMMARY:
 ${ctx.videoSummary ?? 'No summary available. Use video title and description only.'}
+${faqsText ? `\nVIDEO FAQs (pre-analyzed viewer questions — use these to answer directly):\n${faqsText}` : ''}
 
 EXISTING REPLIES ON THIS COMMENT THREAD (check for duplicate topics):
 ${repliesText}
