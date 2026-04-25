@@ -24,6 +24,7 @@ export interface CommentListItem extends Comment {
   videoTitle: string | null
   videoThumbnail: string | null
   replyText?: string | null
+  suggestedReplyText?: string | null
 }
 
 // ─── Suggestion ──────────────────────────────────────────────────────────────

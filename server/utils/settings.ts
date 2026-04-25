@@ -34,6 +34,11 @@ export async function setSetting(key: string, value: string): Promise<void> {
   }
 }
 
+export async function getAutoSuggestEnabled(): Promise<boolean> {
+  const val = await getSetting('auto_suggest_enabled', 'false')
+  return val === 'true'
+}
+
 export async function getAiProvider(): Promise<'gemini' | 'openai'> {
   const config = useRuntimeConfig()
   const envProvider = (config.aiProvider as string) || 'gemini'

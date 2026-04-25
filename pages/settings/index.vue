@@ -148,8 +148,26 @@ const { data: settings, refresh: refreshSettings } = await useFetch<{
   syncIntervalMinutes: number;
   maxQuotaPerDay: number;
   lockoutDurationMinutes: number;
+  autoSuggestEnabled: boolean;
 }>("/api/settings");
 const activeAiProvider = computed(() => settings.value?.aiProvider ?? "gemini");
+const autoSuggestEnabled = computed(
+  () => settings.value?.autoSuggestEnabled ?? false,
+);
+
+async function updateAutoSuggest(enabled: boolean) {
+  try {
+    await $fetch("/api/settings", {
+      method: "PATCH",
+      body: { autoSuggestEnabled: enabled },
+      headers: useCsrfHeaders(),
+    });
+    toast.add({ title: t("settings.auto_suggest_saved"), color: "green" });
+    await refreshSettings();
+  } catch {
+    toast.add({ title: t("settings.auto_suggest_failed"), color: "red" });
+  }
+}
 
 async function updateAiProvider(provider: string) {
   try {
@@ -657,6 +675,50 @@ async function updateAiProvider(provider: string) {
                       : settings.geminiModel
                   }}
                 </code>
+              </div>
+            </div>
+
+            <!-- Auto-Suggest Row -->
+            <div
+              class="flex items-center justify-between p-2 rounded-xl hover:bg-white/[0.02] transition-colors"
+            >
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center"
+                >
+                  <UIcon
+                    name="i-heroicons-bolt"
+                    class="w-4 h-4 text-emerald-400"
+                  />
+                </div>
+                <div>
+                  <span class="text-sm font-medium text-slate-300">{{
+                    $t("settings.auto_suggest_title")
+                  }}</span>
+                  <p class="text-[10px] text-slate-600 mt-0.5">
+                    {{ $t("settings.auto_suggest_hint") }}
+                  </p>
+                </div>
+              </div>
+              <div
+                class="flex bg-black/40 p-1 rounded-xl border border-white/[0.05] shadow-inner"
+              >
+                <button
+                  v-for="opt in [
+                    { label: $t('settings.auto_suggest_on'), value: true },
+                    { label: $t('settings.auto_suggest_off'), value: false },
+                  ]"
+                  :key="String(opt.value)"
+                  class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer whitespace-nowrap"
+                  :class="
+                    autoSuggestEnabled === opt.value
+                      ? 'bg-white/[0.08] text-white shadow-[0_0_10px_rgba(255,255,255,0.05)] ring-1 ring-white/10'
+                      : 'text-slate-500 hover:text-slate-300'
+                  "
+                  @click="updateAutoSuggest(opt.value)"
+                >
+                  {{ opt.label }}
+                </button>
               </div>
             </div>
           </div>

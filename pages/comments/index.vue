@@ -8,7 +8,7 @@ const router = useRouter();
 const toast = useToast();
 const { t } = useI18n();
 
-const status = ref((route.query.status as string) || "pending");
+const status = ref((route.query.status as string) || "inbox");
 const page = ref(Number(route.query.page || 1));
 
 const { data, refresh, pending } = await useFetch<
@@ -77,8 +77,7 @@ const viewMode = useCookie<"grid" | "list">("comment-view-mode", {
 });
 
 const statusTabs = computed(() => [
-  { label: t('status.pending'), value: "pending", icon: "i-heroicons-clock" },
-  { label: t('status.suggested'), value: "suggested", icon: "i-heroicons-sparkles" },
+  { label: t('status.inbox'), value: "inbox", icon: "i-heroicons-inbox" },
   { label: t('status.published'), value: "published", icon: "i-heroicons-check-circle" },
   { label: t('status.dismissed'), value: "dismissed", icon: "i-heroicons-trash" },
 ]);
@@ -251,7 +250,7 @@ onActivated(() => {
         name="i-heroicons-check-circle"
         class="w-12 h-12 mx-auto mb-3 text-emerald-700"
       />
-      <p class="text-slate-500 text-sm">{{ $t(`comments.no_comments_${status}`) }}</p>
+      <p class="text-slate-500 text-sm">{{ $t(`comments.no_comments_${status === 'inbox' ? 'inbox' : status}`) }}</p>
     </div>
 
     <!-- Grid View -->
@@ -358,15 +357,25 @@ onActivated(() => {
               </p>
             </div>
 
-            <!-- Response -->
-            <div v-if="c.replyText" class="mt-1 pl-4 border-l-2 border-emerald-500/30">
+            <!-- AI suggestion preview (inbox) -->
+            <div v-if="c.suggestedReplyText" class="mt-1 pl-4 border-l-2 border-indigo-500/30">
+              <div class="flex items-center gap-1.5 mb-1">
+                <UIcon name="i-heroicons-sparkles" class="w-3 h-3 text-indigo-400" />
+                <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">{{ $t('comments.ai_suggestion') }}</span>
+              </div>
+              <p class="text-xs text-slate-400 line-clamp-2 italic">{{ c.suggestedReplyText }}</p>
+            </div>
+            <!-- Published reply preview -->
+            <div v-else-if="c.replyText" class="mt-1 pl-4 border-l-2 border-emerald-500/30">
               <div class="flex items-center gap-1.5 mb-1">
                 <UIcon name="i-heroicons-chat-bubble-left-right" class="w-3 h-3 text-emerald-400" />
                 <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">{{ $t('comments.your_response') }}</span>
               </div>
-              <p class="text-xs text-slate-400 line-clamp-2 italic">
-                {{ c.replyText }}
-              </p>
+              <p class="text-xs text-slate-400 line-clamp-2 italic">{{ c.replyText }}</p>
+            </div>
+            <!-- Pending — no suggestion yet -->
+            <div v-else-if="status === 'inbox'" class="mt-1 pl-4 border-l-2 border-white/10">
+              <span class="text-[10px] font-bold text-slate-700 uppercase tracking-wider">{{ $t('comments.awaiting_ai') }}</span>
             </div>
 
             <div class="flex items-center justify-between pt-2">
@@ -499,7 +508,15 @@ onActivated(() => {
             <p class="text-sm text-slate-400 line-clamp-1 italic">
               "{{ c.text }}"
             </p>
-            <div v-if="c.replyText" class="mt-1 pl-3 border-l-2 border-emerald-500/30">
+            <div v-if="c.suggestedReplyText" class="mt-1 pl-3 border-l-2 border-indigo-500/30">
+              <p class="text-[11px] text-slate-500 line-clamp-1 italic">
+                <span class="font-bold text-indigo-400/70 mr-1 inline-flex items-center gap-1">
+                  <UIcon name="i-heroicons-sparkles" class="w-2.5 h-2.5" />{{ $t('comments.ai_suggestion') }}:
+                </span>
+                {{ c.suggestedReplyText }}
+              </p>
+            </div>
+            <div v-else-if="c.replyText" class="mt-1 pl-3 border-l-2 border-emerald-500/30">
               <p class="text-[11px] text-slate-500 line-clamp-1 italic">
                 <span class="font-bold text-emerald-500/70 mr-1">{{ $t('comments.your_response') }}:</span>
                 {{ c.replyText }}
@@ -580,20 +597,12 @@ onActivated(() => {
 
           <div class="flex items-center gap-2">
             <UButton
-              v-if="status !== 'pending'"
+              v-if="status !== 'pending' && status !== 'inbox'"
               color="gray"
               variant="soft"
               icon="i-heroicons-clock"
               :label="$t('status.pending')"
               @click="bulkStatusUpdate('pending')"
-            />
-            <UButton
-              v-if="status !== 'suggested'"
-              color="blue"
-              variant="soft"
-              icon="i-heroicons-sparkles"
-              :label="$t('status.suggested')"
-              @click="bulkStatusUpdate('suggested')"
             />
             <UButton
               v-if="status !== 'published'"

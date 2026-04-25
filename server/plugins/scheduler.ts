@@ -1,4 +1,13 @@
+import { autoSuggestPendingComments } from '../services/auto-suggest'
 import { syncComments } from '../services/comment-sync'
+import { getSetting } from '../utils/settings'
+
+async function maybeTriggerAutoSuggest(): Promise<void> {
+  const enabled = (await getSetting('auto_suggest_enabled', 'false')) === 'true'
+  if (enabled) {
+    autoSuggestPendingComments().catch(() => {})
+  }
+}
 
 export default defineNitroPlugin(() => {
   const config = useRuntimeConfig()
@@ -8,18 +17,21 @@ export default defineNitroPlugin(() => {
   if (config.autoSyncOnStart) {
     setTimeout(async () => {
       await syncComments('scheduled', 'recent').catch(() => {})
+      await maybeTriggerAutoSuggest()
     }, 30_000)
   }
 
   // Recurring recent sync — only videos from last 180 days
   setInterval(async () => {
     await syncComments('scheduled', 'recent').catch(() => {})
+    await maybeTriggerAutoSuggest()
   }, intervalMs)
 
-  // Deep scan — all 500 videos, twice per day (every 12h)
+  // Deep scan — all videos, twice per day (every 12h)
   setInterval(async () => {
     await syncComments('scheduled', 'all').catch(() => {})
+    await maybeTriggerAutoSuggest()
   }, 12 * 60 * 60 * 1000)
 
-  console.log(`[scheduler] Recent sync every ${config.syncIntervalMinutes}min | Deep scan every 24h`)
+  console.log(`[scheduler] Recent sync every ${config.syncIntervalMinutes}min | Deep scan every 12h`)
 })

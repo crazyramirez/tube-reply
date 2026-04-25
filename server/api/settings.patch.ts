@@ -13,5 +13,9 @@ export default defineEventHandler(async (event) => {
     await setSetting('ai_provider', body.aiProvider)
   }
 
+  if (typeof body.autoSuggestEnabled === 'boolean') {
+    await setSetting('auto_suggest_enabled', body.autoSuggestEnabled ? 'true' : 'false')
+  }
+
   return { success: true }
 })
