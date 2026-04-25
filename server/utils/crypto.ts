@@ -5,11 +5,14 @@ const IV_LENGTH = 12 // 96 bits for GCM
 const TAG_LENGTH = 16
 
 function getKey(): Buffer {
-  const keyHex = process.env.TOKEN_ENCRYPTION_KEY ?? ''
-  if (keyHex.length !== 64) {
-    throw new Error('TOKEN_ENCRYPTION_KEY must be exactly 64 hex characters (32 bytes)')
+  const config = useRuntimeConfig()
+  // Try runtime config first, fallback to process.env, and ALWAYS trim whitespace
+  const rawKey = (config.tokenEncryptionKey || process.env.TOKEN_ENCRYPTION_KEY || '').trim()
+  
+  if (rawKey.length !== 64) {
+    throw new Error(`TOKEN_ENCRYPTION_KEY must be exactly 64 hex characters (32 bytes). Current length: ${rawKey.length}`)
   }
-  return Buffer.from(keyHex, 'hex')
+  return Buffer.from(rawKey, 'hex')
 }
 
 export function encrypt(plaintext: string): string {
