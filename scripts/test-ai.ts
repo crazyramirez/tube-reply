@@ -1,44 +1,87 @@
 /**
  * AI TEST SCRIPT
- * 
- * This script allows you to test the AI suggestion engine from the terminal
- * using the exact same parameters and logic as the web application.
- * 
+ *
+ * Tests the full AI suggestion pipeline from the terminal using the
+ * exact same parameters and logic as the web application.
+ *
  * USAGE:
  *   npx tsx scripts/test-ai.ts [query] [options]
- * 
+ *
  * ARGUMENTS:
- *   query              The comment text to simulate (optional, default: "Como se hace...")
- * 
+ *   query              Comment text to simulate (optional — use -L for a language preset)
+ *
  * OPTIONS:
+ *   -L, --comment-lang Language preset for a pre-built test comment (see table below)
  *   -p, --provider     AI provider: 'gemini' or 'openai' (overrides DB setting)
- *   -m, --model        Specific model ID (e.g. 'gpt-4o', 'gemini-3-flash-preview')
- *   -v, --video        Specific Video ID from the database to attach the comment to
- *   -l, --lang         Force the reply language (e.g. 'en', 'es', 'pt')
- *   -c, --context      Additional instructions for the AI (e.g. "be very professional")
- * 
+ *   -m, --model        Model ID (e.g. 'gpt-4o', 'gemini-3-flash-preview')
+ *   -v, --video        Specific Video ID to attach the comment to
+ *   -l, --lang         Force the REPLY language (e.g. 'en', 'es', 'pt')
+ *   -c, --context      Additional AI instructions (e.g. "usa un tono muy alegre")
+ *       --list-langs   Show all available language presets and exit
+ *
+ * LANGUAGE PRESETS (-L flag):
+ *   es   ¿Dónde puedo ver el tutorial de la Blusa Lulú?
+ *   en   Where can I find the Lulu blouse tutorial?
+ *   fr   Où est la vidéo du chemisier Lulu ?
+ *   pt   Onde está o vídeo da blusa lulú?
+ *   br   Cadê o vídeo da blusa lulu?
+ *   it   Dove posso vedere il tutorial della blusa Lulú?
+ *   ro   Unde pot vedea tutorialul bluzei Lulu?
+ *   ru   где видео про блузу Лулу?
+ *   ar   أين فيديو البلوزة لولو؟
+ *   de   Wo finde ich das Tutorial zur Lulu Bluse?
+ *
  * EXAMPLES:
- *   # Simple test with default video
- *   npx tsx scripts/test-ai.ts "How do I make a magic ring?"
- * 
- *   # Test with specific video and provider
+ *   # Test with a Spanish preset comment
+ *   npx tsx scripts/test-ai.ts -L es
+ *
+ *   # Test with a Russian preset, Gemini provider, reply forced to English
+ *   npx tsx scripts/test-ai.ts -L ru -p gemini -l en
+ *
+ *   # Test Italian preset with OpenAI
+ *   npx tsx scripts/test-ai.ts -L it -p openai
+ *
+ *   # Test a fully custom comment
  *   npx tsx scripts/test-ai.ts "Me encanta el bolso" -v N3oVoGOl89U -p openai
- * 
- *   # Test with additional context and forced language
- *   npx tsx scripts/test-ai.ts "Tutorial please" -l es -c "usa un tono muy alegre"
- * 
- * NOTE: Use scripts/cleanup-tests.ts to remove generated test data from the database.
+ *
+ *   # List all available language presets
+ *   npx tsx scripts/test-ai.ts --list-langs
+ *
+ * NOTE: Use scripts/cleanup-tests.ts to remove test data from the database.
  */
 
 import dotenv from 'dotenv'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-// 1. Setup environment
 const __dirname = dirname(fileURLToPath(import.meta.url))
 dotenv.config({ path: resolve(__dirname, '../.env') })
 
-// Simple argument parser
+// ─── ANSI colors ──────────────────────────────────────────────────────────────
+const R  = '\x1b[0m'
+const B  = '\x1b[1m'
+const DIM = '\x1b[2m'
+const CY = '\x1b[36m'
+const GR = '\x1b[32m'
+const YL = '\x1b[33m'
+const MG = '\x1b[35m'
+const RD = '\x1b[31m'
+
+// ─── Multilingual comment presets ─────────────────────────────────────────────
+const PRESETS: Record<string, { label: string; comment: string; detectedLang: string }> = {
+  es: { label: 'Español',    comment: '¿Dónde puedo ver el tutorial de la Blusa Lulú?',         detectedLang: 'es' },
+  en: { label: 'English',    comment: 'Where can I find the Lulu blouse tutorial?',             detectedLang: 'en' },
+  fr: { label: 'Français',   comment: 'Où est la vidéo du chemisier Lulu ?',                   detectedLang: 'fr' },
+  pt: { label: 'Português',  comment: 'Onde está o vídeo da blusa lulú?',                       detectedLang: 'pt' },
+  br: { label: 'Brasileiro', comment: 'Cadê o vídeo da blusa lulu?',                            detectedLang: 'pt' },
+  it: { label: 'Italiano',   comment: 'Dove posso vedere il tutorial della blusa Lulú?',        detectedLang: 'it' },
+  ro: { label: 'Română',     comment: 'Unde pot vedea tutorialul bluzei Lulu?',                 detectedLang: 'ro' },
+  ru: { label: 'Русский',    comment: 'где видео про блузу Лулу?',                              detectedLang: 'ru' },
+  ar: { label: 'العربية',    comment: 'أين فيديو البلوزة لولو؟',                               detectedLang: 'ar' },
+  de: { label: 'Deutsch',    comment: 'Wo finde ich das Tutorial zur Lulu Bluse?',              detectedLang: 'de' },
+}
+
+// ─── Argument parsing ─────────────────────────────────────────────────────────
 const args = process.argv.slice(2)
 const getArg = (name: string) => {
   const idx = args.indexOf(name)
@@ -46,15 +89,44 @@ const getArg = (name: string) => {
   return null
 }
 
-const query = args.find(a => !a.startsWith('-')) || 'Como se hace, no encuentro el paso a paso'
+const listLangs  = args.includes('--list-langs')
+const langPreset = getArg('--comment-lang') || getArg('-L')
 const providerArg = getArg('--provider') || getArg('-p')
-const modelArg = getArg('--model') || getArg('-m')
-const langArg = getArg('--lang') || getArg('-l')
-const contextArg = getArg('--context') || getArg('-c')
-const videoArg = getArg('--video') || getArg('-v')
+const modelArg    = getArg('--model')    || getArg('-m')
+const langArg     = getArg('--lang')     || getArg('-l')
+const contextArg  = getArg('--context')  || getArg('-c')
+const videoArg    = getArg('--video')    || getArg('-v')
+const customQuery = args.find(a => !a.startsWith('-') && a !== (langPreset ?? '') && a !== (providerArg ?? '') && a !== (modelArg ?? '') && a !== (langArg ?? '') && a !== (contextArg ?? '') && a !== (videoArg ?? ''))
 
-// 2. Mock useRuntimeConfig BEFORE importing any project files
-// This matches the exact defaults used in server/utils/openai.ts and server/utils/gemini.ts
+// ─── --list-langs early exit ──────────────────────────────────────────────────
+if (listLangs) {
+  console.log(`\n${B}Available language presets (-L flag):${R}\n`)
+  console.log(`  ${'Code'.padEnd(6)} ${'Language'.padEnd(12)} Comment`)
+  console.log(`  ${'────'.padEnd(6)} ${'────────'.padEnd(12)} ───────`)
+  for (const [code, { label, comment }] of Object.entries(PRESETS)) {
+    console.log(`  ${CY}${code.padEnd(6)}${R} ${label.padEnd(12)} ${DIM}${comment}${R}`)
+  }
+  console.log()
+  process.exit(0)
+}
+
+// ─── Resolve comment text ─────────────────────────────────────────────────────
+let query: string
+let presetDetectedLang: string | null = null
+
+if (langPreset) {
+  const preset = PRESETS[langPreset.toLowerCase()]
+  if (!preset) {
+    console.error(`${RD}Unknown language preset: "${langPreset}". Run with --list-langs to see available options.${R}`)
+    process.exit(1)
+  }
+  query = preset.comment
+  presetDetectedLang = preset.detectedLang
+} else {
+  query = customQuery || '¿Dónde puedo ver el tutorial de la Blusa Lulú?'
+}
+
+// ─── Mock Nuxt runtime config ─────────────────────────────────────────────────
 global.useRuntimeConfig = () => ({
   dbUrl: process.env.DATABASE_URL ?? './data/youtube.db',
   geminiApiKey: process.env.GEMINI_API_KEY,
@@ -64,129 +136,121 @@ global.useRuntimeConfig = () => ({
   aiProvider: providerArg || process.env.AI_PROVIDER || 'gemini',
 })
 
-// 3. Import project services
+// ─── Project imports (after runtime config mock) ──────────────────────────────
 import { useDb } from '../server/utils/db'
 import { generateSuggestion } from '../server/services/suggestion-engine'
 import { comments, videos } from '../server/db/schema'
 import { eq, desc } from 'drizzle-orm'
 import { setSetting } from '../server/utils/settings'
 
+// ─── Main ─────────────────────────────────────────────────────────────────────
 async function main() {
-  console.log('--- AI TEST SCRIPT ---')
-  console.log(`Query: "${query}"`)
-  
   const config = (global as any).useRuntimeConfig()
-  
-  // If provider is explicitly passed, override it in the DB to ensure getAiProvider() picks it up
-  if (providerArg) {
-    console.log(`Setting provider to: ${providerArg}`)
-    await setSetting('ai_provider', providerArg)
-  }
 
-  console.log(`Provider: ${config.aiProvider}`)
-  console.log(`Model: ${config.aiProvider === 'openai' ? config.openaiModel : config.geminiModel}`)
-  if (langArg) console.log(`Lang Override: ${langArg}`)
-  if (contextArg) console.log(`Additional Context: ${contextArg}`)
-  if (videoArg) console.log(`Video ID: ${videoArg}`)
+  console.log(`\n${B}${CY}══════════════════════════════════════════════${R}`)
+  console.log(`${B}${CY}   AI SUGGESTION TEST — tube-reply${R}`)
+  console.log(`${B}${CY}══════════════════════════════════════════════${R}`)
+
+  if (langPreset) {
+    const preset = PRESETS[langPreset.toLowerCase()]
+    console.log(`${B}Preset:${R}   ${CY}${langPreset.toUpperCase()}${R} — ${preset.label}`)
+  }
+  console.log(`${B}Comment:${R}  "${query}"`)
+
+  if (providerArg) await setSetting('ai_provider', providerArg)
+
+  const provider = config.aiProvider as string
+  const model = provider === 'openai' ? config.openaiModel : config.geminiModel
+  console.log(`${B}Provider:${R} ${GR}${provider}${R}  ${B}Model:${R} ${GR}${model}${R}`)
+  if (langArg)    console.log(`${B}Reply lang override:${R} ${langArg}`)
+  if (contextArg) console.log(`${B}Extra context:${R} ${contextArg}`)
+  if (videoArg)   console.log(`${B}Video ID:${R} ${videoArg}`)
 
   const db = useDb()
 
-  // Find a video to attach the test comment to
-  let targetVideo;
-  
+  // ─── Find target video ────────────────────────────────────────────────────
+  let targetVideo: any
   if (videoArg) {
-    targetVideo = await db.query.videos.findFirst({
-      where: eq(videos.id, videoArg)
-    })
-    if (!targetVideo) {
-      console.error(`Video with ID ${videoArg} not found in database.`)
-      process.exit(1)
-    }
+    targetVideo = await db.query.videos.findFirst({ where: eq(videos.id, videoArg) })
+    if (!targetVideo) { console.error(`${RD}Video "${videoArg}" not found.${R}`); process.exit(1) }
   } else {
-    targetVideo = await db.query.videos.findFirst({
-      orderBy: [desc(videos.publishedAt)]
-    })
+    targetVideo = await db.query.videos.findFirst({ orderBy: [desc(videos.publishedAt)] })
   }
+  if (!targetVideo) { console.error(`${RD}No videos in database. Run a sync first.${R}`); process.exit(1) }
+  console.log(`${B}Video:${R}    ${targetVideo.title} ${DIM}(${targetVideo.id})${R}`)
 
-  if (!targetVideo) {
-    console.error('No videos found in database. Please sync some videos first.')
-    process.exit(1)
-  }
-
-  console.log(`Using video: ${targetVideo.title} (${targetVideo.id})`)
-
-  // Create a temporary test comment
+  // ─── Insert temporary test comment ───────────────────────────────────────
   const testCommentId = `test_${Date.now()}`
   await db.insert(comments).values({
-    id: testCommentId,
-    videoId: targetVideo.id,
-    text: query,
-    authorName: 'Tester',
+    id:          testCommentId,
+    videoId:     targetVideo.id,
+    text:        query,
+    authorName:  'Tester',
     publishedAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    status: 'pending',
-    detectedLang: 'es'
+    updatedAt:   new Date().toISOString(),
+    status:      'pending',
+    detectedLang: presetDetectedLang ?? langPreset ?? 'es',
   })
 
-  console.log(`Created test comment: ${testCommentId}`)
+  console.log(`\n${DIM}Generating AI suggestion…${R}`)
 
   try {
-    console.log('\nGenerating AI suggestion...')
-    const startTime = Date.now()
-    // Use the exact service function with all parameters
+    const t0 = Date.now()
     const { suggestionId } = await generateSuggestion(testCommentId, langArg, contextArg)
-    const duration = (Date.now() - startTime) / 1000
+    const elapsed = ((Date.now() - t0) / 1000).toFixed(2)
 
-    // Fetch the result
-    const suggestion = await db.query.suggestedReplies.findFirst({
-      where: (table, { eq }) => eq(table.id, suggestionId)
+    const sug = await db.query.suggestedReplies.findFirst({
+      where: (t, { eq }) => eq(t.id, suggestionId)
     })
+    if (!sug) throw new Error('Suggestion record not found after generation')
 
-    if (!suggestion) {
-      throw new Error('Suggestion not found after generation')
+    const confidence = ((sug.confidenceScore ?? 0) * 100).toFixed(0)
+    const confColor  = Number(confidence) >= 80 ? GR : Number(confidence) >= 50 ? YL : RD
+
+    console.log(`\n${B}${CY}── RESULT ────────────────────────────────────${R}`)
+    console.log(`${B}Time:${R}         ${elapsed}s`)
+    console.log(`${B}Model:${R}        ${sug.modelUsed}`)
+    console.log(`${B}Tokens:${R}       ${sug.promptTokens} prompt / ${sug.completionTokens} completion`)
+    console.log(`${B}Detected lang:${R} ${sug.detectedCommentLang}`)
+    console.log(`${B}Confidence:${R}   ${confColor}${confidence}%${R}`)
+
+    console.log(`\n${B}${GR}▶ Response (${sug.detectedCommentLang}):${R}`)
+    console.log(sug.responseText)
+
+    if (sug.responseEs && sug.responseEs !== sug.responseText) {
+      console.log(`\n${B}${MG}▶ Respuesta en español:${R}`)
+      console.log(sug.responseEs)
     }
 
-    console.log(`\n--- RESULT (Took ${duration.toFixed(2)}s) ---`)
-    console.log(`Model Used: ${suggestion.modelUsed}`)
-    console.log(`Tokens: ${suggestion.promptTokens} prompt / ${suggestion.completionTokens} completion`)
-    console.log(`Detected Lang: ${suggestion.detectedCommentLang}`)
-    console.log(`Confidence: ${(suggestion.confidenceScore * 100).toFixed(0)}%`)
-    
-    console.log(`\nResponse (Original):`)
-    console.log(suggestion.responseText)
-    
-    if (suggestion.responseEs && suggestion.responseEs !== suggestion.responseText) {
-      console.log(`\nResponse (Spanish):`)
-      console.log(suggestion.responseEs)
-    }
+    const ctx   = JSON.parse(sug.contextUsed as string ?? '{}')
+    const links = JSON.parse(sug.videoLinksUsed as string ?? '[]')
 
-    const contextUsed = JSON.parse(suggestion.contextUsed as string)
-    console.log(`\nContext Details:`)
-    console.log(`- KB Entries: ${contextUsed.kb_entries?.join(', ') || 'None'}`)
-    console.log(`- Video Summary Used: ${contextUsed.video_summary_used}`)
-    console.log(`- Existing Replies Count: ${contextUsed.existing_replies_count}`)
-    
-    const linksUsed = JSON.parse(suggestion.videoLinksUsed as string)
-    console.log(`\nLinks Referenced:`)
-    if (linksUsed.length === 0) {
-      console.log('None')
+    console.log(`\n${B}Context used:${R}`)
+    console.log(`  KB entries:     ${ctx.kb_entries?.join(', ') || 'none'}`)
+    console.log(`  Summary used:   ${ctx.video_summary_used}`)
+    console.log(`  Existing replies: ${ctx.existing_replies_count}`)
+
+    console.log(`\n${B}Video links referenced:${R}`)
+    if (links.length === 0) {
+      console.log(`  ${DIM}none${R}`)
     } else {
-      linksUsed.forEach((l: any) => {
-        console.log(`- ${l.video_title} (${l.url})`)
-      })
+      for (const l of links) {
+        console.log(`  ${GR}★${R} ${l.video_title}`)
+        console.log(`    ${DIM}${l.url}${R}`)
+      }
     }
 
-    if (suggestion.needsConfirmation) {
-      console.log(`\n[!] NEEDS CONFIRMATION: ${suggestion.confirmationReason}`)
+    if (sug.needsConfirmation) {
+      console.log(`\n${YL}${B}[!] Needs confirmation:${R} ${sug.confirmationReason}`)
     }
 
-    console.log('\n-----------------------')
-    console.log(`Test comment ID: ${testCommentId}`)
-    console.log(`Suggestion ID: ${suggestionId}`)
-    console.log('You can now see this in the web UI under "Community Voice" if you filter for this video.')
+    console.log(`\n${B}${CY}══════════════════════════════════════════════${R}`)
+    console.log(`${DIM}Comment ID:    ${testCommentId}${R}`)
+    console.log(`${DIM}Suggestion ID: ${suggestionId}${R}`)
+    console.log(`${DIM}Visible in UI → Community Voice (filter by this video)${R}\n`)
 
   } catch (err) {
-    console.error('\nError during AI generation:', err)
+    console.error(`\n${RD}Error during AI generation:${R}`, err)
   }
 }
 

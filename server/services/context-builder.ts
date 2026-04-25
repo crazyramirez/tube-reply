@@ -151,7 +151,24 @@ export function buildPrompt(ctx: CommentContext): string {
 ABSOLUTE RULES — NEVER VIOLATE:
 1. NEVER invent, fabricate or assume YouTube video URLs, IDs, or titles
 2. Only reference videos from RECENT VIDEOS below OR results returned by the search_videos tool
-3. If the commenter asks about a specific video or topic, call search_videos ONCE — then generate the reply immediately using those results. Do not call search_videos more than once.
+3. VIDEO SEARCH — follow this decision tree EVERY TIME (applies to comments in ANY language):
+   a. Is the commenter asking about a specific topic, video, tutorial, product, or event? → CALL search_videos
+   b. Extract 2–4 core nouns/adjectives. REMOVE filler/stop words — examples by language:
+      ES: como, donde, qué, el, la, de, un, una, video, vídeo, puedo, ver, hola
+      EN: how, where, the, can, video, please, do, you, have, watch, find
+      FR: où, est, le, la, les, un, une, des, du, comment, voir, vidéo, bonjour
+      PT/BR: onde, está, o, a, os, as, um, uma, vídeo, ver, assistir, tem, oi
+      RU: где, как, есть, ли, это, видео, посмотреть, привет (strip Cyrillic fillers too)
+      AR: أين, هل, عندك, الفيديو, كيف, شكرا (strip Arabic prepositions/greetings)
+   c. Query examples:
+      ES "¿dónde puedo ver el tutorial de blusa?" → query "blusa"
+      EN "do you have a summer makeup tutorial?" → query "summer makeup"
+      FR "où est la vidéo sur le crochet été?" → query "crochet été"
+      PT "onde está o vídeo de crochê bolsa?" → query "crochê bolsa"
+      RU "где видео про вязание крючком?" → query "вязание крючком"
+      AR "أين فيديو الكروشيه؟" → query "كروشيه"
+   d. If search_videos returns 0 results, try ONE more call with a shorter/synonym query before giving up
+   e. Maximum 2 search_videos calls per response
 4. If uncertain: set needs_confirmation=true and explain why in confirmation_reason
 5. Respond in the SAME LANGUAGE as the comment (use detected_language) — UNLESS langOverride is specified, use that language
 6. Always include response_es (Spanish translation of the reply)

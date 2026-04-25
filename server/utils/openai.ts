@@ -69,13 +69,25 @@ export async function openaiGenerateWithTools(
       type: 'function',
       function: {
         name: 'search_videos',
-        description: 'Search for videos in the channel database by keywords in title, description or tags.',
+        description: [
+          'Search for videos in the channel database using semantic keywords.',
+          'WHEN TO CALL: Call this tool whenever the commenter is asking about a specific video, topic, tutorial, product, technique, date, or event — in ANY language.',
+          'WHEN NOT TO CALL: Do NOT call for generic greetings, pure compliments, spam, or questions answerable from the recent-videos list provided.',
+          'QUERY STRATEGY: Extract 2–4 core topic nouns/adjectives. Remove filler/stop words in any language.',
+          'ES: "¿dónde puedo ver el tutorial de blusa de septiembre?" → query "blusa septiembre".',
+          'EN: "do you have a crochet bag tutorial?" → query "crochet bag".',
+          'FR: "où est la vidéo sur le crochet?" → query "crochet".',
+          'PT/BR: "onde está o vídeo de crochê bolsa?" → query "crochê bolsa".',
+          'RU: "где видео про вязание крючком?" → query "вязание крючком".',
+          'AR: "أين فيديو الكروشيه؟" → query "كروشيه".',
+          'If the first search returns 0 results, retry with a shorter or synonym query.',
+        ].join(' '),
         parameters: {
           type: 'object',
           properties: {
             query: {
               type: 'string',
-              description: 'Keywords to search videos (e.g. "blusa septiembre")',
+              description: 'Focused topic keywords (2–4 words max, any language). No filler/stop words — only subject matter nouns/adjectives. The search engine handles accents, diacritics, emojis and spelling variants automatically.',
             },
           },
           required: ['query'],

@@ -59,13 +59,25 @@ export const searchVideosTool: Tool = {
   functionDeclarations: [
     {
       name: 'search_videos',
-      description: 'Search for videos in the channel database by keywords in title, description or tags. Call this when the commenter is looking for a specific video, tutorial, or topic.',
+      description: [
+        'Search for videos in the channel database using semantic keywords.',
+        'WHEN TO CALL: Call this tool whenever the commenter is asking about a specific video, topic, tutorial, product, technique, date, or event — in ANY language.',
+        'WHEN NOT TO CALL: Do NOT call for generic greetings, pure compliments, spam, or questions answerable from the recent-videos list provided.',
+        'QUERY STRATEGY: Extract 2–4 core topic nouns/adjectives from the comment. Remove filler/stop words in any language.',
+        'ES examples: "¿dónde puedo ver el tutorial de blusa de septiembre?" → query "blusa septiembre"; "¿tienes receta de arroz negro?" → query "arroz negro".',
+        'EN examples: "do you have a crochet bag tutorial?" → query "crochet bag"; "where is the summer makeup video?" → query "summer makeup".',
+        'FR examples: "où est la vidéo sur le crochet?" → query "crochet"; "tu as un tutoriel maquillage été?" → query "maquillage été".',
+        'PT/BR examples: "onde está o vídeo de crochê bolsa?" → query "crochê bolsa"; "tem tutorial de maquiagem?" → query "maquiagem".',
+        'RU examples: "где видео про вязание крючком?" → query "вязание крючком"; "есть урок по макияжу?" → query "макияж".',
+        'AR examples: "أين فيديو الكروشيه؟" → query "كروشيه"; "هل عندك درس مكياج؟" → query "مكياج".',
+        'If the first search returns 0 results, retry with a shorter or synonym query (e.g. drop one keyword, try a synonym).',
+      ].join(' '),
       parameters: {
         type: SchemaType.OBJECT,
         properties: {
           query: {
             type: SchemaType.STRING,
-            description: 'Keywords to search videos (e.g. "blusa septiembre", "crochet tutorial")',
+            description: 'Focused topic keywords (2–4 words max, any language). No filler/stop words — only subject matter nouns/adjectives. The search engine handles accents, diacritics, emojis and spelling variants automatically.',
           },
         },
         required: ['query'],

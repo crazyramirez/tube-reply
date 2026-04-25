@@ -28,14 +28,35 @@ export function useDb() {
   sqlite.pragma('journal_mode = WAL')
   sqlite.pragma('foreign_keys = ON')
 
-  // Custom function: strip diacritics + emojis for accent-insensitive search
+  // Custom function: strip diacritics + emojis for accent-insensitive search.
+  // Covers: Latin/Greek combining marks (U+0300–U+036F) + Arabic tashkeel (U+064B–U+065F)
   sqlite.function('normalize_text', (text: string | null) => {
     if (!text) return ''
     return text
       .normalize('NFD')
-      .replace(/[̀-ͯ]/g, '')
+      .replace(/[\u0300-\u036f]/g, '')   // Latin/Greek diacritics
+      .replace(/[\u064b-\u065f]/g, '')   // Arabic tashkeel (fatha, kasra, shadda, etc.)
       .replace(/\p{Extended_Pictographic}/gu, '')
       .toLowerCase()
+  })
+
+  // Relevance scorer: returns a numeric score based on where the keyword matches.
+  // title match = 10 pts, tags match = 5 pts, description match = 1 pt.
+  // Called from searchVideos for result ranking.
+  sqlite.function('score_relevance', (title: string | null, tags: string | null, description: string | null, keyword: string) => {
+    const norm = (s: string | null) => (s ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[\u064b-\u065f]/g, '')
+      .replace(/\p{Extended_Pictographic}/gu, '')
+      .toLowerCase()
+    const kw = norm(keyword)
+    if (!kw) return 0
+    let score = 0
+    if (norm(title).includes(kw)) score += 10
+    if (norm(tags).includes(kw)) score += 5
+    if (norm(description).includes(kw)) score += 1
+    return score
   })
 
   _db = drizzle(sqlite, { schema })
