@@ -80,6 +80,11 @@ In a typical scenario with **200 videos in your database** and an active **Knowl
 - **100 replies**: ~$0.05 USD
 - **1,000 replies**: ~$0.50 USD
 
+**Estimated Cost (Gemini 3 Flash Preview):**
+
+- **100 replies**: ~$0.19 USD
+- **1,000 replies**: ~$1.85 USD
+
 ### Intelligence Features
 
 - **DDBB-Backed Context (RAG)**: The app uses its internal **SQLite database** to provide real-time context. If a user asks _"Where is the video about X?"_, the AI uses **Function Calling** to search the DDBB for relevant video titles and thumbnails to provide a grounded answer with valid links.
@@ -235,3 +240,9 @@ If you are using **Plesk**, deployment is straightforward using the built-in Nod
    - Click **Restart App** to apply changes.
 
 Update `YOUTUBE_REDIRECT_URI` and all secrets in your production environment. Never commit `.env` to version control.
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE) - 100% free to use, modify, and distribute.

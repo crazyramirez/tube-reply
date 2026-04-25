@@ -79,6 +79,10 @@ En un escenario típico con **200 vídeos en tu base de datos** y una **Base de 
 - **100 respuestas**: ~$0.05 USD
 - **1,000 respuestas**: ~$0.50 USD
 
+**Coste Estimado (Gemini 3 Flash Preview):**
+- **100 respuestas**: ~$0.19 USD
+- **1,000 respuestas**: ~$1.85 USD
+
 ### Funciones de Inteligencia
 - **Contexto Basado en DDBB (RAG)**: La aplicación utiliza su **base de datos SQLite** interna para proporcionar contexto en tiempo real. Si un usuario pregunta *"¿Dónde está el vídeo sobre X?"*, la IA utiliza **Function Calling** para buscar en la DDBB títulos y miniaturas de vídeos relevantes, ofreciendo una respuesta fundamentada con enlaces válidos.
 - **Protección contra Alucinaciones**: Cada enlace generado por la IA se comprueba con la base de datos. Cualquier ID de vídeo "alucinado" (inexistente) se elimina automáticamente antes de guardar la sugerencia.
@@ -232,3 +236,9 @@ Si utilizas **Plesk**, el despliegue es sencillo usando la extensión integrada 
    - Haz clic en **Restart App** (Reiniciar App) para aplicar los cambios.
 
 Actualiza `YOUTUBE_REDIRECT_URI` y todos los secretos en tu entorno de producción. Nunca hagas commit del archivo `.env` en tu control de versiones.
+
+---
+
+## Licencia
+
+Este proyecto está bajo la [Licencia MIT](LICENSE) - 100% gratis para usar, modificar y distribuir.
