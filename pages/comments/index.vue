@@ -362,21 +362,21 @@ watch(justAutoSuggestCompleted, (done) => {
               </p>
             </div>
 
-            <!-- AI suggestion preview (inbox) -->
-            <div v-if="c.suggestedReplyText" class="mt-1 pl-4 border-l-2 border-indigo-500/30">
-              <div class="flex items-center gap-1.5 mb-1">
-                <UIcon name="i-heroicons-sparkles" class="w-3 h-3 text-indigo-400" />
-                <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">{{ $t('comments.ai_suggestion') }}</span>
-              </div>
-              <p class="text-xs text-slate-400 line-clamp-2 italic">{{ c.suggestedReplyText }}</p>
-            </div>
             <!-- Published reply preview -->
-            <div v-else-if="c.replyText" class="mt-1 pl-4 border-l-2 border-emerald-500/30">
+            <div v-if="c.replyText" class="mt-1 pl-4 border-l-2 border-emerald-500/30">
               <div class="flex items-center gap-1.5 mb-1">
                 <UIcon name="i-heroicons-chat-bubble-left-right" class="w-3 h-3 text-emerald-400" />
                 <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">{{ $t('comments.your_response') }}</span>
               </div>
               <p class="text-xs text-slate-400 line-clamp-2 italic">{{ c.replyText }}</p>
+            </div>
+            <!-- AI suggestion preview (inbox) -->
+            <div v-else-if="c.suggestedReplyText" class="mt-1 pl-4 border-l-2 border-indigo-500/30">
+              <div class="flex items-center gap-1.5 mb-1">
+                <UIcon name="i-heroicons-sparkles" class="w-3 h-3 text-indigo-400" />
+                <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">{{ $t('comments.ai_suggestion') }}</span>
+              </div>
+              <p class="text-xs text-slate-400 line-clamp-2 italic">{{ c.suggestedReplyText }}</p>
             </div>
             <!-- Pending — no suggestion yet -->
             <div v-else-if="status === 'inbox'" class="mt-1 pl-4 border-l-2 border-white/10">
@@ -513,18 +513,18 @@ watch(justAutoSuggestCompleted, (done) => {
             <p class="text-sm text-slate-400 line-clamp-1 italic">
               "{{ c.text }}"
             </p>
-            <div v-if="c.suggestedReplyText" class="mt-1 pl-3 border-l-2 border-indigo-500/30">
+            <div v-if="c.replyText" class="mt-1 pl-3 border-l-2 border-emerald-500/30">
+              <p class="text-[11px] text-slate-500 line-clamp-1 italic">
+                <span class="font-bold text-emerald-500/70 mr-1">{{ $t('comments.your_response') }}:</span>
+                {{ c.replyText }}
+              </p>
+            </div>
+            <div v-else-if="c.suggestedReplyText" class="mt-1 pl-3 border-l-2 border-indigo-500/30">
               <p class="text-[11px] text-slate-500 line-clamp-1 italic">
                 <span class="font-bold text-indigo-400/70 mr-1 inline-flex items-center gap-1">
                   <UIcon name="i-heroicons-sparkles" class="w-2.5 h-2.5" />{{ $t('comments.ai_suggestion') }}:
                 </span>
                 {{ c.suggestedReplyText }}
-              </p>
-            </div>
-            <div v-else-if="c.replyText" class="mt-1 pl-3 border-l-2 border-emerald-500/30">
-              <p class="text-[11px] text-slate-500 line-clamp-1 italic">
-                <span class="font-bold text-emerald-500/70 mr-1">{{ $t('comments.your_response') }}:</span>
-                {{ c.replyText }}
               </p>
             </div>
             <div class="mt-1 flex items-center gap-1.5">

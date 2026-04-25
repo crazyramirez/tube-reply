@@ -120,6 +120,14 @@ export async function generateSuggestion(commentId: string, langOverride: string
     ? (config.openaiModel as string ?? 'gpt-4o-mini')
     : (config.geminiModel as string ?? 'gemini-3-flash-preview')
 
+  // Mark previous pending suggestions as rejected
+  await db.update(suggestedReplies)
+    .set({ status: 'rejected' })
+    .where(and(
+      eq(suggestedReplies.commentId, commentId),
+      eq(suggestedReplies.status, 'pending_review')
+    ))
+
   const [inserted] = await db.insert(suggestedReplies).values({
     commentId,
     responseText: validated.response_text,

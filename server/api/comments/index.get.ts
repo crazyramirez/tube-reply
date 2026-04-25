@@ -46,7 +46,7 @@ export default defineEventHandler(async (event) => {
       videoThumbnail: videos.thumbnailUrl,
       replyText: publishedReplies.finalText,
       suggestedReplyText: sql<string | null>`(
-        SELECT response_text FROM suggested_replies
+        SELECT COALESCE(edited_text, response_text) FROM suggested_replies
         WHERE comment_id = ${comments.id}
         AND status = 'pending_review'
         ORDER BY generated_at DESC
