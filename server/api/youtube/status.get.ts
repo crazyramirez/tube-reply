@@ -3,6 +3,7 @@ import { useDb } from '../../utils/db'
 import { syncLog } from '../../db/schema'
 import { desc } from 'drizzle-orm'
 import { getDailyQuotaUsed } from '../../utils/quota'
+import { getAutoSuggestStatus } from '../../services/auto-suggest'
 
 export default defineEventHandler(async (_event) => {
   const db = useDb()
@@ -28,6 +29,7 @@ export default defineEventHandler(async (_event) => {
           }
         : null,
       dailyQuotaUsed,
+      autoSuggestRunning: getAutoSuggestStatus().isRunning,
       lastSync: lastSync
         ? {
             syncType: lastSync.syncType,

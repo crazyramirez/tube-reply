@@ -7,9 +7,13 @@ export function useSyncStatus() {
 
   const isRunning = computed(() => data.value?.lastSync?.status === 'running')
   const lastSync = computed(() => data.value?.lastSync ?? null)
+  const isAutoSuggesting = computed(() => data.value?.autoSuggestRunning ?? false)
 
   const justCompleted = ref(false)
+  const justAutoSuggestCompleted = ref(false)
+
   let completedTimer: ReturnType<typeof setTimeout> | null = null
+  let autoSuggestTimer: ReturnType<typeof setTimeout> | null = null
   let pollTimer: ReturnType<typeof setTimeout> | null = null
 
   watch(isRunning, (running, wasRunning) => {
@@ -21,8 +25,18 @@ export function useSyncStatus() {
     }
   })
 
+  watch(isAutoSuggesting, (running, wasRunning) => {
+    if (wasRunning && !running) {
+      justAutoSuggestCompleted.value = true
+      autoSuggestTimer = setTimeout(() => {
+        justAutoSuggestCompleted.value = false
+      }, 100) // brief — just enough for watchers to react
+    }
+  })
+
   function scheduleNext() {
-    const delay = isRunning.value ? 3000 : 15000
+    // Poll faster when either sync or auto-suggest is active
+    const delay = (isRunning.value || isAutoSuggesting.value) ? 3000 : 15000
     pollTimer = setTimeout(async () => {
       await refresh()
       scheduleNext()
@@ -36,7 +50,8 @@ export function useSyncStatus() {
   onUnmounted(() => {
     if (pollTimer) clearTimeout(pollTimer)
     if (completedTimer) clearTimeout(completedTimer)
+    if (autoSuggestTimer) clearTimeout(autoSuggestTimer)
   })
 
-  return { isRunning, justCompleted, lastSync }
+  return { isRunning, justCompleted, lastSync, isAutoSuggesting, justAutoSuggestCompleted }
 }

@@ -7,6 +7,10 @@ import { generateSuggestion } from './suggestion-engine'
 // In-memory guard — mirrors isRunning in comment-sync.ts (single Nitro process)
 let isAutoSuggesting = false
 
+export function getAutoSuggestStatus() {
+  return { isRunning: isAutoSuggesting }
+}
+
 export async function autoSuggestPendingComments(): Promise<void> {
   if (isAutoSuggesting) {
     await logger.info('auto-suggest', 'Auto-suggest already running, skipping')

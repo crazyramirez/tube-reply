@@ -157,6 +157,7 @@ export interface PaginatedResponse<T> {
 export interface YouTubeStatus {
   connected: boolean
   dailyQuotaUsed: number
+  autoSuggestRunning?: boolean
   channel: {
     id: string
     title: string | null | undefined

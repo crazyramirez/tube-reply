@@ -141,6 +141,11 @@ async function bulkStatusUpdate(newStatus: string) {
 onActivated(() => {
   refresh();
 });
+
+const { justAutoSuggestCompleted } = useSyncStatus();
+watch(justAutoSuggestCompleted, (done) => {
+  if (done) refresh();
+});
 </script>
 
 <template>

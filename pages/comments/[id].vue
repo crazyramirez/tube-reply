@@ -650,7 +650,14 @@ async function confirmUnban() {
                 {{ data.comment?.authorName?.[0] }}
               </div>
               <div class="flex flex-col min-w-0">
-                <span class="font-bold text-white truncate">{{
+                <a
+                  v-if="data.comment?.authorChannelId"
+                  :href="`https://www.youtube.com/channel/${data.comment.authorChannelId}`"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="font-bold text-white truncate hover:text-indigo-400 transition-colors"
+                >{{ data.comment.authorName }}</a>
+                <span v-else class="font-bold text-white truncate">{{
                   data.comment?.authorName
                 }}</span>
                 <span class="text-xs text-slate-500 font-medium mt-2">{{
