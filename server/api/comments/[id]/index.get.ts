@@ -1,6 +1,6 @@
 import { eq, and, isNotNull } from 'drizzle-orm'
 import { useDb } from '../../../utils/db'
-import { comments, videos, suggestedReplies, publishedReplies } from '../../../db/schema'
+import { comments, videos, suggestedReplies, publishedReplies, bannedAuthors } from '../../../db/schema'
 
 export default defineEventHandler(async (event) => {
   const db = useDb()
@@ -32,8 +32,20 @@ export default defineEventHandler(async (event) => {
     where: eq(publishedReplies.commentId, id),
   })
 
+  // Check if author is banned
+  let isBanned = false
+  if (comment.authorChannelId) {
+    const ban = await db.query.bannedAuthors.findFirst({
+      where: eq(bannedAuthors.channelId, comment.authorChannelId),
+    })
+    isBanned = !!ban
+  }
+
   return {
-    comment,
+    comment: {
+      ...comment,
+      isBanned,
+    },
     video,
     replies,
     suggestions: suggestions.map(s => ({

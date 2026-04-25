@@ -215,3 +215,10 @@ export const errorLogs = sqliteTable('error_logs', {
   sourceIdx: index('error_logs_source_idx').on(t.source),
   timeIdx: index('error_logs_time_idx').on(t.occurredAt),
 }))
+// ─── Banned Authors ──────────────────────────────────────────────────────────
+export const bannedAuthors = sqliteTable('banned_authors', {
+  channelId: text('channel_id').primaryKey(),
+  authorName: text('author_name').notNull(),
+  bannedAt: text('banned_at').default(sql`(datetime('now'))`),
+  reason: text('reason'),
+})

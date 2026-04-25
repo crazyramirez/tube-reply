@@ -249,8 +249,10 @@ const finalText = computed(
 
 const showDeleteModal = ref(false);
 const showBanModal = ref(false);
+const showUnbanModal = ref(false);
 const deleting = ref(false);
 const banning = ref(false);
+const unbanning = ref(false);
 
 async function confirmDelete() {
   deleting.value = true;
@@ -281,7 +283,7 @@ async function confirmBan() {
     });
     toast.add({ title: t("comment_detail.user_banned"), color: "green" });
     showBanModal.value = false;
-    await navigateTo("/comments");
+    await refresh();
   } catch (err: any) {
     toast.add({
       title: err.data?.statusMessage ?? "Failed to ban user",
@@ -289,6 +291,29 @@ async function confirmBan() {
     });
   } finally {
     banning.value = false;
+  }
+}
+
+async function confirmUnban() {
+  unbanning.value = true;
+  try {
+    const res = await $fetch<{ message: string }>(`/api/comments/${id}/unban`, {
+      method: "POST",
+      headers: useCsrfHeaders(),
+    });
+    toast.add({ title: t("comment_detail.user_unbanned"), color: "green" });
+    if (res.message) {
+      toast.add({ title: res.message, color: "blue", timeout: 10000 });
+    }
+    showUnbanModal.value = false;
+    await refresh();
+  } catch (err: any) {
+    toast.add({
+      title: err.data?.statusMessage ?? "Failed to unban user",
+      color: "red",
+    });
+  } finally {
+    unbanning.value = false;
   }
 }
 </script>
@@ -414,15 +439,31 @@ async function confirmBan() {
       </div>
     </div>
 
-    <div v-if="error" class="flex flex-col items-center justify-center py-20 text-center animate-fade-in">
-      <div class="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
-        <UIcon name="i-heroicons-exclamation-circle" class="w-10 h-10 text-red-500" />
+    <div
+      v-if="error"
+      class="flex flex-col items-center justify-center py-20 text-center animate-fade-in"
+    >
+      <div
+        class="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20"
+      >
+        <UIcon
+          name="i-heroicons-exclamation-circle"
+          class="w-10 h-10 text-red-500"
+        />
       </div>
       <h2 class="text-xl font-black text-white mb-2 tracking-tight">
-        {{ error.statusCode === 404 ? $t("comment_detail.not_found") : $t("comment_detail.load_error") }}
+        {{
+          error.statusCode === 404
+            ? $t("comment_detail.not_found")
+            : $t("comment_detail.load_error")
+        }}
       </h2>
       <p class="text-slate-500 text-sm max-w-xs mx-auto mb-8">
-        {{ error.statusCode === 404 ? $t("comment_detail.not_found_desc") : $t("comment_detail.load_error_desc") }}
+        {{
+          error.statusCode === 404
+            ? $t("comment_detail.not_found_desc")
+            : $t("comment_detail.load_error_desc")
+        }}
       </p>
       <UButton
         color="white"
@@ -473,7 +514,7 @@ async function confirmBan() {
             </div>
           </div>
           <div class="p-6 space-y-4">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 mb-2">
               <div
                 class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center text-indigo-400 font-bold text-sm"
               >
@@ -483,24 +524,20 @@ async function confirmBan() {
                 <span class="font-bold text-white truncate">{{
                   data.comment?.authorName
                 }}</span>
-                <span class="text-[10px] text-slate-500 font-medium">{{
+                <span class="text-xs text-slate-500 font-medium mt-2">{{
                   new Date(data.comment?.publishedAt).toLocaleString()
                 }}</span>
               </div>
               <div
                 v-if="data.comment?.detectedLang"
-                class="ml-auto bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded text-[10px] font-bold text-indigo-400 uppercase tracking-wider"
+                class="ml-auto bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded text-md font-bold text-indigo-400 uppercase tracking-wider"
               >
                 {{ data.comment.detectedLang }}
               </div>
             </div>
 
             <div class="relative">
-              <UIcon
-                name="i-heroicons-chat-bubble-bottom-center-text"
-                class="absolute -top-1 -left-1 w-8 h-8 text-white/[0.03] pointer-events-none"
-              />
-              <p class="text-slate-200 text-base leading-relaxed pl-2">
+              <p class="text-slate-200 italic text-base leading-relaxed pt-2">
                 {{ data.comment?.text }}
               </p>
             </div>
@@ -625,11 +662,11 @@ async function confirmBan() {
               class="relative pl-6 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-indigo-500/30"
             >
               <div class="flex items-center gap-2 mb-1">
-                <span class="font-bold text-xs text-indigo-300">{{
+                <span class="font-bold text-sm text-indigo-300">{{
                   reply.authorName
                 }}</span>
               </div>
-              <p class="text-slate-400 text-xs leading-relaxed">
+              <p class="text-slate-400 text-sm leading-relaxed">
                 {{ reply.text }}
               </p>
             </div>
@@ -767,7 +804,10 @@ async function confirmBan() {
               {{ $t("comment_detail.restore") }}
             </button>
             <button
-              v-if="data.comment?.status !== 'dismissed' && data.comment?.status !== 'published'"
+              v-if="
+                data.comment?.status !== 'dismissed' &&
+                data.comment?.status !== 'published'
+              "
               class="px-5 py-3 rounded-2xl border border-white/10 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 text-sm font-bold transition-all duration-300 flex items-center gap-2 cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed"
               @click="dismissComment"
             >
@@ -786,11 +826,20 @@ async function confirmBan() {
               {{ $t("comment_detail.delete_youtube") }}
             </button>
             <button
+              v-if="!data.comment.isBanned"
               class="px-4 py-2 rounded-xl border border-red-500/10 bg-red-500/5 text-red-500/60 hover:text-red-500 hover:bg-red-500/10 text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 cursor-pointer"
               @click="showBanModal = true"
             >
               <UIcon name="i-heroicons-no-symbol" class="w-3.5 h-3.5" />
               {{ $t("comment_detail.ban_user") }}
+            </button>
+            <button
+              v-else
+              class="px-4 py-2 rounded-xl border border-emerald-500/10 bg-emerald-500/5 text-emerald-500/60 hover:text-emerald-500 hover:bg-emerald-500/10 text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 cursor-pointer"
+              @click="showUnbanModal = true"
+            >
+              <UIcon name="i-heroicons-check-circle" class="w-3.5 h-3.5" />
+              {{ $t("comment_detail.unban_user") }}
             </button>
           </div>
         </div>
@@ -1254,6 +1303,18 @@ async function confirmBan() {
       :loading="banning"
       type="danger"
       @confirm="confirmBan"
+    />
+
+    <!-- Unban Modal -->
+    <UiConfirmModal
+      v-model="showUnbanModal"
+      :title="$t('comment_detail.unban_modal_title')"
+      :description="$t('comment_detail.unban_modal_desc')"
+      :confirm-text="$t('comment_detail.unban_now')"
+      :cancel-text="$t('comment_detail.cancel')"
+      :loading="unbanning"
+      type="success"
+      @confirm="confirmUnban"
     />
   </div>
 </template>

@@ -17,6 +17,7 @@ export interface Comment {
   status: CommentStatus
   fetchedAt: string | null
   processedAt: string | null
+  isBanned?: boolean
 }
 
 export interface CommentListItem extends Comment {

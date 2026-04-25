@@ -14,14 +14,15 @@ Herramienta de gestión de comentarios de YouTube impulsada por IA. Sincroniza c
 
 - **Sincronización de comentarios** — extrae los comentarios principales de todos los vídeos del canal a través de la API de YouTube Data v3.
 - **Sugerencias de respuesta con IA** — generadas mediante Google Gemini u OpenAI, informadas por tu Base de Conocimientos.
-- **Detección de idioma** — detecta automáticamente el idioma del comentario (más de 20 idiomas vía `franc-min`) para responder en el mismo idioma.
+- **Detección de idioma y corrección** — detecta el idioma (20+ idiomas) y permite cambiarlo manualmente si es necesario.
 - **Resúmenes de vídeos** — resúmenes generados por IA para cada vídeo, utilizados como contexto al generar respuestas.
-- **Base de Conocimientos** — entrena a la IA con guías de estilo del canal, preguntas frecuentes (FAQs), personas, temas y reglas personalizadas.
+- **Base de Conocimientos** — entrena a la IA con guías de estilo, FAQs, personas, temas y reglas personalizadas.
 - **Publicación en un clic** — aprueba y publica respuestas directamente en YouTube sin salir de la aplicación.
-- **Descartar / Omitir** — limpia el ruido sin publicar.
+- **Baneo de usuarios** — bloquea usuarios problemáticos directamente desde la vista de comentarios.
+- **Moderación masiva** — aprueba, descarta u omite múltiples comentarios a la vez desde la lista.
+- **Cambio de proveedor IA** — alterna entre Google Gemini y OpenAI sobre la marcha desde los ajustes.
 - **Gestión de cuota** — monitoriza la cuota diaria de la API de YouTube, con un límite configurable.
-- **Límites de peticiones (Rate limiting)** — límites por IP para endpoints de inicio de sesión, sugerencias y publicación.
-- **Protección CSRF** — patrón de cookie de doble envío (double-submit) en todas las peticiones que modifican el estado.
+- **Seguridad avanzada** — rate limiting, protección CSRF y encriptación AES-256-GCM para tokens.
 - **Soporte PWA** — aplicación web instalable con capacidades offline e iconos personalizados.
 
 ---
@@ -87,6 +88,10 @@ En un escenario típico con **200 vídeos en tu base de datos** y una **Base de 
 - **Contexto Basado en DDBB (RAG)**: La aplicación utiliza su **base de datos SQLite** interna para proporcionar contexto en tiempo real. Si un usuario pregunta *"¿Dónde está el vídeo sobre X?"*, la IA utiliza **Function Calling** para buscar en la DDBB títulos y miniaturas de vídeos relevantes, ofreciendo una respuesta fundamentada con enlaces válidos.
 - **Protección contra Alucinaciones**: Cada enlace generado por la IA se comprueba con la base de datos. Cualquier ID de vídeo "alucinado" (inexistente) se elimina automáticamente antes de guardar la sugerencia.
 - **Auto-Sumarización**: En la primera petición sobre un vídeo, el sistema genera automáticamente un resumen conciso mediante IA sobre el contenido del vídeo, que se utilizará como contexto permanente para todos los comentarios futuros en dicho vídeo.
+- **Moderación de Usuarios**:
+    - **Baneo en un clic**: Utiliza la API de YouTube para rechazar el comentario y bloquear al autor en el canal.
+    - **Rastreo Local**: Los autores baneados se guardan en la base de datos. Todos sus comentarios (actuales y futuros) se marcan automáticamente como "Descartados".
+    - **Desbanear**: Restaura a los autores localmente con un clic. (Se requiere eliminación manual en YouTube Studio para una restauración completa en la plataforma).
 
 ---
 
@@ -131,6 +136,7 @@ cp .env.example .env
 | `AI_PROVIDER`                     | Proveedor por defecto: `gemini` u `openai`               |
 | `TOKEN_ENCRYPTION_KEY`            | 64 caracteres hex (32 bytes) para encriptar tokens con AES-256-GCM |
 | `SYNC_INTERVAL_MINUTES`           | Intervalo de auto-sincronización (por defecto: `60`)     |
+| `AUTO_SYNC_ON_START`             | Sincronizar al iniciar el servidor (por defecto: `true`) |
 | `MAX_QUOTA_PER_DAY`               | Límite máximo de cuota de la API de YouTube (por defecto: `8500`) |
 | `RATE_LIMIT_LOGIN_MAX`            | Intentos de inicio de sesión máximos por ventana (por defecto: `5`) |
 | `RATE_LIMIT_LOGIN_WINDOW_MINUTES` | Ventana de tiempo para límite de peticiones de login (por defecto: `15`) |
