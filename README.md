@@ -11,7 +11,7 @@ AI-powered YouTube comment management tool. Syncs comments from your channel, ge
 ## Features
 
 - **Comment sync** — pulls top-level comments from all channel videos via YouTube Data API v3
-- **AI reply suggestions** — Gemini generates contextual replies informed by your Knowledge Base
+- **AI reply suggestions** — generated via Google Gemini or OpenAI, informed by your Knowledge Base
 - **Language detection** — auto-detects comment language (20+ languages via `franc-min`), replies match
 - **Video summaries** — AI-generated per-video summaries used as context for reply generation
 - **Knowledge Base** — train the AI with channel style guides, FAQs, personas, topics, and custom rules
@@ -31,7 +31,7 @@ AI-powered YouTube comment management tool. Syncs comments from your channel, ge
 | Framework  | Nuxt 3                                  |
 | UI         | Vue 3 + @nuxt/ui + Tailwind CSS         |
 | Database   | SQLite (better-sqlite3) + Drizzle ORM   |
-| AI         | Google Gemini (`@google/generative-ai`) |
+| AI         | Google Gemini & OpenAI                  |
 | YouTube    | Google APIs OAuth2 (`googleapis`)       |
 | Auth       | Session cookie + bcrypt password hash   |
 | Encryption | AES-256-GCM (token storage)             |
@@ -45,7 +45,7 @@ AI-powered YouTube comment management tool. Syncs comments from your channel, ge
 - Google Cloud project with:
   - YouTube Data API v3 enabled
   - OAuth 2.0 credentials (Web application type)
-- Google AI Studio API key (Gemini)
+- Google AI Studio API key (Gemini) or OpenAI API key
 
 ---
 
@@ -76,6 +76,9 @@ cp .env.example .env
 | `YOUTUBE_REDIRECT_URI`            | Must match authorized redirect in Google Cloud Console   |
 | `GEMINI_API_KEY`                  | Google AI Studio API key                                 |
 | `GEMINI_MODEL`                    | Gemini model ID (e.g. `gemini-2.0-flash`)                |
+| `OPENAI_API_KEY`                  | OpenAI API key                                           |
+| `OPENAI_MODEL`                    | OpenAI model ID (e.g. `gpt-4o-mini`)                     |
+| `AI_PROVIDER`                     | Default provider: `gemini` or `openai`                   |
 | `TOKEN_ENCRYPTION_KEY`            | 64 hex chars (32 bytes) for AES-256-GCM token encryption |
 | `SYNC_INTERVAL_MINUTES`           | Auto-sync interval (default: `60`)                       |
 | `MAX_QUOTA_PER_DAY`               | YouTube API quota ceiling (default: `8500`)              |
@@ -154,7 +157,7 @@ The app requests:
 | `rule`          | Hard rules (things to always/never say)    |
 | `custom`        | Anything else                              |
 
-Active entries are injected as context into every Gemini prompt.
+Active entries are injected as context into every AI prompt.
 
 ---
 
