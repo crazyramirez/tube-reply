@@ -87,7 +87,7 @@ const typeConfig: Record<
     icon: string;
   }
 > = {
-  channel_style: {
+  style: {
     color: "purple",
     bg: "bg-purple-500/10",
     border: "border-purple-500/20",
@@ -101,19 +101,12 @@ const typeConfig: Record<
     text: "text-blue-400",
     icon: "i-heroicons-question-mark-circle",
   },
-  topic: {
+  info: {
     color: "green",
     bg: "bg-emerald-500/10",
     border: "border-emerald-500/20",
     text: "text-emerald-400",
-    icon: "i-heroicons-hashtag",
-  },
-  persona: {
-    color: "orange",
-    bg: "bg-orange-500/10",
-    border: "border-orange-500/20",
-    text: "text-orange-400",
-    icon: "i-heroicons-user-circle",
+    icon: "i-heroicons-information-circle",
   },
   rule: {
     color: "red",
@@ -122,22 +115,13 @@ const typeConfig: Record<
     text: "text-red-400",
     icon: "i-heroicons-shield-exclamation",
   },
-  custom: {
-    color: "gray",
-    bg: "bg-white/[0.06]",
-    border: "border-white/10",
-    text: "text-slate-400",
-    icon: "i-heroicons-cog-6-tooth",
-  },
 };
 
 const typeOptions = computed(() => [
-  { label: t("knowledge_base.types.channel_style"), value: "channel_style" },
   { label: t("knowledge_base.types.faq"), value: "faq" },
-  { label: t("knowledge_base.types.topic"), value: "topic" },
-  { label: t("knowledge_base.types.persona"), value: "persona" },
+  { label: t("knowledge_base.types.style"), value: "style" },
+  { label: t("knowledge_base.types.info"), value: "info" },
   { label: t("knowledge_base.types.rule"), value: "rule" },
-  { label: t("knowledge_base.types.custom"), value: "custom" },
 ]);
 
 const showConfirm = ref(false);
@@ -501,7 +485,7 @@ async function confirmDelete() {
             >
             <textarea
               v-model="form.content"
-              rows="12"
+              rows="4"
               :placeholder="$t('knowledge_base.content_placeholder')"
               class="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-sm text-slate-200 placeholder-slate-700 focus:outline-none focus:border-indigo-500/50 transition-colors resize-none font-medium leading-relaxed"
             />

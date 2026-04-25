@@ -98,7 +98,7 @@ export const publishedReplies = sqliteTable('published_replies', {
 export const knowledgeBase = sqliteTable('knowledge_base', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   type: text('type', {
-    enum: ['channel_style', 'faq', 'topic', 'persona', 'rule', 'custom'],
+    enum: ['faq', 'style', 'info', 'rule'],
   }).notNull(),
   title: text('title').notNull(),
   content: text('content').notNull(),

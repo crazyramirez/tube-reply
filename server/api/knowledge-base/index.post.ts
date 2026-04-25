@@ -1,7 +1,7 @@
 import { useDb } from '../../utils/db'
 import { knowledgeBase } from '../../db/schema'
 
-const VALID_TYPES = ['channel_style', 'faq', 'topic', 'persona', 'rule', 'custom'] as const
+const VALID_TYPES = ['faq', 'style', 'info', 'rule'] as const
 
 export default defineEventHandler(async (event) => {
   const db = useDb()

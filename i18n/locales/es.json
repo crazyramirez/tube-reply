@@ -179,12 +179,10 @@
     "active": "Activo",
     "inactive": "Inactivo",
     "types": {
-      "channel_style": "Estilo del Canal",
-      "faq": "FAQ",
-      "topic": "Tema",
-      "persona": "Persona",
-      "rule": "Regla",
-      "custom": "Personalizado"
+      "style": "Voz y Estilo",
+      "faq": "Preguntas Frecuentes",
+      "info": "Información y Contexto",
+      "rule": "Reglas Estrictas"
     },
     "delete_confirm_title": "¿Eliminar inteligencia?",
     "delete_confirm_description": "Esta entrada se eliminará permanentemente de la base de conocimiento y la IA dejará de usarla como contexto.",

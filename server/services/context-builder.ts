@@ -73,7 +73,7 @@ export async function buildContext(commentId: string, langOverride: string | nul
 
   const channelStyleEntry = await db.query.knowledgeBase.findFirst({
     where: and(
-      eq(knowledgeBase.type, 'channel_style'),
+      eq(knowledgeBase.type, 'style'),
       eq(knowledgeBase.isActive, true),
     ),
     orderBy: [desc(knowledgeBase.priority)],
@@ -86,7 +86,7 @@ export async function buildContext(commentId: string, langOverride: string | nul
   })
 
   const filteredKb = kbEntries
-    .filter(e => e.type !== 'channel_style')
+    .filter(e => e.type !== 'style')
     .slice(0, MAX_KB_ENTRIES)
 
   // Only most-recent videos as baseline — search_videos tool handles specific lookups

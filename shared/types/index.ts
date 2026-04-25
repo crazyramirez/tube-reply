@@ -69,7 +69,7 @@ export interface SuggestedReply {
 
 // ─── Knowledge Base ───────────────────────────────────────────────────────────
 
-export type KBType = 'channel_style' | 'faq' | 'topic' | 'persona' | 'rule' | 'custom'
+export type KBType = 'faq' | 'style' | 'info' | 'rule'
 
 export interface KnowledgeBaseEntry {
   id: number
