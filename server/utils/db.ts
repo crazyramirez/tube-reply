@@ -11,14 +11,17 @@ export function useDb() {
 
   const config = useRuntimeConfig()
   const dbUrl = config.dbUrl
-  const dbPath = resolve(dbUrl)
+  const dbPath = resolve(process.cwd(), dbUrl)
   const dbDir = dirname(dbPath)
 
   try {
-    console.log(`Initializing database at: ${dbPath}`)
     mkdirSync(dbDir, { recursive: true })
   } catch (err) {
-    console.error(`Failed to create database directory at ${dbDir}:`, err)
+    // Ignorar si ya existe
+  }
+
+  if (process.env.NODE_ENV !== 'test') {
+    console.log(`[db] Initializing SQLite at: ${dbPath}`)
   }
 
   const sqlite = new Database(dbPath)

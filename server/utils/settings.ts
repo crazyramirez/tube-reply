@@ -36,7 +36,15 @@ export async function setSetting(key: string, value: string): Promise<void> {
 
 export async function getAiProvider(): Promise<'gemini' | 'openai'> {
   const config = useRuntimeConfig()
-  const defaultProvider = (config.aiProvider as string) || 'gemini'
-  const provider = await getSetting('ai_provider', defaultProvider)
-  return provider as 'gemini' | 'openai'
+  const envProvider = (config.aiProvider as string) || 'gemini'
+  
+  const dbProvider = await getSetting('ai_provider', '')
+  
+  if (dbProvider && ['gemini', 'openai'].includes(dbProvider)) {
+    console.log(`[settings] Using AI provider from DB: ${dbProvider}`)
+    return dbProvider as 'gemini' | 'openai'
+  }
+
+  console.log(`[settings] Using AI provider from ENV (fallback): ${envProvider}`)
+  return envProvider as 'gemini' | 'openai'
 }
