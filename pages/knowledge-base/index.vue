@@ -139,6 +139,33 @@ const typeOptions = computed(() => [
   { label: t("knowledge_base.types.rule"), value: "rule" },
   { label: t("knowledge_base.types.custom"), value: "custom" },
 ]);
+
+const showConfirm = ref(false);
+const entryToDelete = ref<KnowledgeBaseEntry | null>(null);
+const deleting = ref(false);
+
+function openDelete(entry: KnowledgeBaseEntry) {
+  entryToDelete.value = entry;
+  showConfirm.value = true;
+}
+
+async function confirmDelete() {
+  if (!entryToDelete.value) return;
+  deleting.value = true;
+  try {
+    await $fetch(`/api/knowledge-base/${entryToDelete.value.id}`, {
+      method: "DELETE",
+      headers: useCsrfHeaders(),
+    });
+    toast.add({ title: t("knowledge_base.deleted"), color: "green" });
+    showConfirm.value = false;
+    await refresh();
+  } catch {
+    toast.add({ title: t("knowledge_base.delete_failed"), color: "red" });
+  } finally {
+    deleting.value = false;
+  }
+}
 </script>
 
 <style scoped>
@@ -293,6 +320,12 @@ const typeOptions = computed(() => [
               @click="openEdit(entry)"
             >
               <UIcon name="i-heroicons-pencil-square" class="w-4 h-4" />
+            </button>
+            <button
+              class="p-2 rounded-lg text-slate-500 hover:text-red-500 hover:bg-red-500/10 transition-all duration-300 cursor-pointer"
+              @click="openDelete(entry)"
+            >
+              <UIcon name="i-heroicons-trash" class="w-4 h-4" />
             </button>
             <button
               class="p-2 rounded-lg transition-all duration-300 cursor-pointer"
@@ -502,5 +535,16 @@ const typeOptions = computed(() => [
         </div>
       </div>
     </UModal>
+
+    <UiConfirmModal
+      v-model="showConfirm"
+      :title="$t('knowledge_base.delete_confirm_title')"
+      :description="$t('knowledge_base.delete_confirm_description')"
+      :confirm-text="$t('knowledge_base.delete_confirm_action')"
+      :cancel-text="$t('knowledge_base.cancel')"
+      :loading="deleting"
+      type="danger"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>

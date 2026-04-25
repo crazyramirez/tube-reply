@@ -12,10 +12,8 @@ export default defineEventHandler(async (event) => {
   })
   if (!existing) throw createError({ statusCode: 404, statusMessage: 'Entry not found' })
 
-  // Soft delete — keep data for audit
-  await db.update(knowledgeBase)
-    .set({ isActive: false, updatedAt: new Date().toISOString() })
-    .where(eq(knowledgeBase.id, id))
+  // Permanent delete
+  await db.delete(knowledgeBase).where(eq(knowledgeBase.id, id))
 
   return { ok: true }
 })

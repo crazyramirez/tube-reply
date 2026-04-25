@@ -13,7 +13,15 @@ export default defineEventHandler(async (event) => {
   })
   if (!existing) throw createError({ statusCode: 404, statusMessage: 'Entry not found' })
 
+  const VALID_TYPES = ['channel_style', 'faq', 'topic', 'persona', 'rule', 'custom'] as const
+
   const updates: Partial<typeof knowledgeBase.$inferInsert> = {}
+  if (body.type !== undefined) {
+    if (!VALID_TYPES.includes(body.type)) {
+      throw createError({ statusCode: 400, statusMessage: `Invalid type. Must be one of: ${VALID_TYPES.join(', ')}` })
+    }
+    updates.type = body.type
+  }
   if (body.title !== undefined) updates.title = body.title.trim()
   if (body.content !== undefined) updates.content = body.content.trim()
   if (body.tags !== undefined) updates.tags = JSON.stringify(body.tags)

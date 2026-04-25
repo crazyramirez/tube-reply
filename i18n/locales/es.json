@@ -185,7 +185,12 @@
       "persona": "Persona",
       "rule": "Regla",
       "custom": "Personalizado"
-    }
+    },
+    "delete_confirm_title": "¿Eliminar inteligencia?",
+    "delete_confirm_description": "Esta entrada se eliminará permanentemente de la base de conocimiento y la IA dejará de usarla como contexto.",
+    "delete_confirm_action": "Eliminar Ahora",
+    "deleted": "Entrada eliminada",
+    "delete_failed": "Error al eliminar"
   },
   "settings": {
     "title": "Ajustes",
