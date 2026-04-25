@@ -149,15 +149,6 @@ export default defineNuxtConfig({
     ],
   },
 
-  nitro: {
-    serverAssets: [
-      {
-        baseName: 'migrations',
-        dir: './server/db/migrations',
-      },
-    ],
-  },
-
   runtimeConfig: {
     dbUrl: process.env.DATABASE_URL ?? './data/youtube.db',
     adminPasswordHash: process.env.ADMIN_PASSWORD_HASH ?? '',
