@@ -80,6 +80,7 @@ export default defineNuxtConfig({
     rateLimitLoginMax: Number(process.env.RATE_LIMIT_LOGIN_MAX ?? 5),
     rateLimitLoginWindowMinutes: Number(process.env.RATE_LIMIT_LOGIN_WINDOW_MINUTES ?? 15),
     lockoutDurationMinutes: Number(process.env.LOCKOUT_DURATION_MINUTES ?? 30),
+    logRetentionDays: Number(process.env.LOG_RETENTION_DAYS ?? 30),
     public: {
       appName: 'Tube Reply',
     },

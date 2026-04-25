@@ -1,5 +1,6 @@
 import { autoSuggestPendingComments } from '../services/auto-suggest'
 import { syncComments } from '../services/comment-sync'
+import { runDbCleanup } from '../services/db-cleanup'
 import { getSetting } from '../utils/settings'
 
 async function maybeTriggerAutoSuggest(): Promise<void> {
@@ -18,6 +19,7 @@ export default defineNitroPlugin(() => {
     setTimeout(async () => {
       await syncComments('scheduled', 'recent').catch(() => {})
       await maybeTriggerAutoSuggest()
+      await runDbCleanup().catch(() => {})
     }, 30_000)
   }
 
@@ -33,5 +35,10 @@ export default defineNitroPlugin(() => {
     await maybeTriggerAutoSuggest()
   }, 12 * 60 * 60 * 1000)
 
-  console.log(`[scheduler] Recent sync every ${config.syncIntervalMinutes}min | Deep scan every 12h`)
+  // DB Maintenance — once per day (every 24h)
+  setInterval(async () => {
+    await runDbCleanup().catch(() => {})
+  }, 24 * 60 * 60 * 1000)
+
+  console.log(`[scheduler] Recent sync every ${config.syncIntervalMinutes}min | Deep scan every 12h | DB Cleanup every 24h`)
 })

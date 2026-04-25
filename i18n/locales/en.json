@@ -253,6 +253,7 @@
     "videos": "videos",
     "found": "found",
     "new": "new",
-    "quota": "quota"
+    "quota": "quota",
+    "next_sync": "Next sync"
   }
 }

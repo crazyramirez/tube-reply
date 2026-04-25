@@ -373,19 +373,41 @@ async function updateAiProvider(provider: string) {
                         ytStatus.lastSync.syncType
                       }}</span>
                     </div>
-                    <span class="text-slate-500 font-mono">
-                      {{
-                        ytStatus.lastSync.completedAt
-                          ? new Date(
-                              ytStatus.lastSync.completedAt,
-                            ).toLocaleString()
-                          : ytStatus.lastSync.startedAt
+                    <div class="flex flex-col items-end gap-1.5">
+                      <span class="text-slate-500 font-mono">
+                        {{
+                          ytStatus.lastSync.completedAt
                             ? new Date(
-                                ytStatus.lastSync.startedAt,
+                                ytStatus.lastSync.completedAt,
                               ).toLocaleString()
-                            : "-"
-                      }}
-                    </span>
+                            : ytStatus.lastSync.startedAt
+                              ? new Date(
+                                  ytStatus.lastSync.startedAt,
+                                ).toLocaleString()
+                              : "-"
+                        }}
+                      </span>
+                      <div
+                        v-if="
+                          ytStatus.lastSync.nextSyncAt &&
+                          ytStatus.lastSync.status !== 'running'
+                        "
+                        class="flex items-center gap-1.5 text-[10px] text-emerald-500/80 font-bold uppercase tracking-tight bg-emerald-500/5 px-2 py-0.5 rounded-md border border-emerald-500/10"
+                      >
+                        <UIcon name="i-heroicons-clock" class="w-3 h-3" />
+                        {{ $t("settings.next_sync") }}:
+                        <span class="font-mono text-emerald-400 ml-0.5">
+                          {{
+                            new Date(
+                              ytStatus.lastSync.nextSyncAt,
+                            ).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          }}
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
                   <!-- Stats grid -->
@@ -596,7 +618,7 @@ async function updateAiProvider(provider: string) {
                   aria-hidden="true"
                 >
                   <path
-                    d="M23.495 6.205a3.007 3.007 0 0 0-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 0 0 .527 6.205a31.247 31.247 0 0 0-.522 5.805 31.247 31.247 0 0 0 .522 5.783 3.007 3.007 0 0 0 2.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 0 0 2.088-2.088 31.247 31.247 0 0 0 .5-5.783 31.247 31.247 0 0 0-.5-5.783 31.247 31.247 0 0 0-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"
+                    d="M23.495 6.205a3.007 3.007 0 0 0-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 0 0 .527 6.205a31.247 31.247 0 0 0-.522 5.805 31.247 31.247 0 0 0 .522 5.783 3.007 3.007 0 0 0 2.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 0 0 2.088-2.088 31.247 31.247 0 0 0 .5-5.783 31.247 31.247 0 0 0-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"
                   />
                 </svg>
                 {{

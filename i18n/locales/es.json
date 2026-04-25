@@ -253,6 +253,7 @@
     "videos": "videos",
     "found": "encontrados",
     "new": "nuevos",
-    "quota": "cuota"
+    "quota": "cuota",
+    "next_sync": "Próxima sincronización"
   }
 }

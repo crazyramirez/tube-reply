@@ -175,6 +175,7 @@ export interface YouTubeStatus {
     newComments: number | null
     quotaUsed: number | null
     errorMessage: string | null | undefined
+    nextSyncAt?: string | null
   } | null
 }
 

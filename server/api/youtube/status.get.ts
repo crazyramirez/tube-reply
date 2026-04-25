@@ -1,7 +1,7 @@
 import { getConnectedChannel } from '../../utils/youtube'
 import { useDb } from '../../utils/db'
 import { syncLog } from '../../db/schema'
-import { desc } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 import { getDailyQuotaUsed } from '../../utils/quota'
 import { getAutoSuggestStatus } from '../../services/auto-suggest'
 
@@ -15,7 +15,18 @@ export default defineEventHandler(async (_event) => {
       orderBy: [desc(syncLog.startedAt)],
     })
 
+    const lastScheduledSync = await db.query.syncLog.findFirst({
+      where: eq(syncLog.syncType, 'scheduled'),
+      orderBy: [desc(syncLog.startedAt)],
+    })
+
     const dailyQuotaUsed = await getDailyQuotaUsed()
+    const config = useRuntimeConfig()
+    let nextSyncAt = null
+    if (lastScheduledSync?.startedAt) {
+      const intervalMs = config.syncIntervalMinutes * 60 * 1000
+      nextSyncAt = new Date(new Date(lastScheduledSync.startedAt).getTime() + intervalMs).toISOString()
+    }
 
     return {
       connected: !!channel,
@@ -41,6 +52,7 @@ export default defineEventHandler(async (_event) => {
             newComments: lastSync.newComments,
             quotaUsed: lastSync.quotaUsed,
             errorMessage: lastSync.errorMessage,
+            nextSyncAt,
           }
         : null,
     }
