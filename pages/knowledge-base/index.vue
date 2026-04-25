@@ -131,23 +131,36 @@ const entryToDelete = ref<KnowledgeBaseEntry | null>(null);
 const deleting = ref(false);
 
 function openDelete(entry: KnowledgeBaseEntry) {
+  console.log('Opening delete for entry:', entry);
   entryToDelete.value = entry;
   showConfirm.value = true;
 }
 
 async function confirmDelete() {
-  if (!entryToDelete.value) return;
+  if (!entryToDelete.value) {
+    console.warn('No entry to delete!');
+    return;
+  }
+  
+  console.log('Confirming delete for ID:', entryToDelete.value.id);
   deleting.value = true;
   try {
-    await $fetch(`/api/knowledge-base/${entryToDelete.value.id}`, {
+    const res = await $fetch(`/api/knowledge-base/${entryToDelete.value.id}`, {
       method: "DELETE",
       headers: useCsrfHeaders(),
     });
+    console.log('Delete response:', res);
     toast.add({ title: t("knowledge_base.deleted"), color: "green" });
     showConfirm.value = false;
+    entryToDelete.value = null;
     await refresh();
-  } catch {
-    toast.add({ title: t("knowledge_base.delete_failed"), color: "red" });
+  } catch (err: any) {
+    console.error('Delete failed:', err);
+    toast.add({ 
+      title: t("knowledge_base.delete_failed"), 
+      description: err.data?.statusMessage || err.message,
+      color: "red" 
+    });
   } finally {
     deleting.value = false;
   }
