@@ -241,6 +241,14 @@ function highResThumbnail(url: string | null | undefined): string | undefined {
   return url.replace("mqdefault.jpg", "maxresdefault.jpg");
 }
 
+const finalText = computed(
+  () =>
+    editedText.value ||
+    activeSuggestion.value?.editedText ||
+    activeSuggestion.value?.responseText ||
+    "",
+);
+
 const confidence = computed(() => activeSuggestion.value?.confidenceScore ?? 0);
 const confidenceLabel = computed(
   () => `${Math.round(confidence.value * 100)}%`,
