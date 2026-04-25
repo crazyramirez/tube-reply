@@ -107,9 +107,10 @@ export async function getAuthenticatedYouTube() {
 
       oauth2.setCredentials(credentials)
     }
-    catch (err) {
-      await logger.error('youtube-auth', 'Token refresh failed', err as Error)
-      throw new Error('YouTube token refresh failed. Please reconnect your channel.')
+    catch (err: any) {
+      const errorMsg = err?.message || 'Unknown error'
+      await logger.error('youtube-auth', `Token refresh failed: ${errorMsg}`, err as Error)
+      throw new Error(`YouTube token refresh failed: ${errorMsg}. Please reconnect your channel.`)
     }
   }
   else {
