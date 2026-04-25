@@ -7,6 +7,10 @@ const loading = ref(false);
 
 const { login } = useAuth();
 const { t } = useI18n();
+const { data: brand } = await useFetch<{
+  logoUrl: string;
+  name: string | null;
+}>("/api/public/brand");
 
 async function handleLogin() {
   if (!password.value.trim()) return;
@@ -19,7 +23,7 @@ async function handleLogin() {
       data?: { statusMessage?: string };
       statusMessage?: string;
     };
-    error.value = e.data?.statusMessage ?? e.statusMessage ?? t('login.error');
+    error.value = e.data?.statusMessage ?? e.statusMessage ?? t("login.error");
   } finally {
     loading.value = false;
   }
@@ -46,13 +50,15 @@ async function handleLogin() {
           class="w-24 h-24 mx-auto mb-5 rounded-2xl overflow-hidden ring-1 ring-white/10 bg-white/5 shadow-2xl"
         >
           <img
-            src="/images/logo_mona.jpg"
-            alt="Mona Monísima"
+            src="/images/icons/web-app-manifest-192x192.webp"
+            alt="App Logo"
             class="w-full h-full object-cover"
           />
         </div>
-        <h1 class="text-2xl font-bold text-white tracking-tight">{{ $t('nav.app_name') }}</h1>
-        <p class="text-slate-500 text-sm mt-1.5">{{ $t('login.subtitle') }}</p>
+        <h1 class="text-2xl font-bold text-white tracking-tight">
+          {{ $t("nav.app_name") }}
+        </h1>
+        <p class="text-slate-500 text-sm mt-1.5">{{ $t("login.subtitle") }}</p>
       </div>
 
       <div
@@ -61,7 +67,7 @@ async function handleLogin() {
         <form @submit.prevent="handleLogin" class="space-y-4">
           <div>
             <label class="block text-xs font-medium text-slate-400 mb-2">
-              {{ $t('login.password') }}
+              {{ $t("login.password") }}
             </label>
             <input
               v-model="password"
@@ -94,7 +100,7 @@ async function handleLogin() {
               name="i-heroicons-arrow-path"
               class="w-4 h-4 animate-spin"
             />
-            {{ loading ? $t('login.signing_in') : $t('login.submit') }}
+            {{ loading ? $t("login.signing_in") : $t("login.submit") }}
           </button>
         </form>
       </div>

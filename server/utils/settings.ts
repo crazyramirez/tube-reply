@@ -1,0 +1,28 @@
+import { eq } from 'drizzle-orm'
+import { useDb } from './db'
+import { appSettings } from '../db/schema'
+
+export async function getSetting(key: string, defaultValue: string): Promise<string> {
+  const db = useDb()
+  const result = await db.query.appSettings.findFirst({
+    where: eq(appSettings.key, key),
+  })
+  return result?.value ?? defaultValue
+}
+
+export async function setSetting(key: string, value: string): Promise<void> {
+  const db = useDb()
+  await db.insert(appSettings)
+    .values({ key, value, updatedAt: new Date().toISOString() })
+    .onConflictDoUpdate({
+      target: appSettings.key,
+      set: { value, updatedAt: new Date().toISOString() },
+    })
+}
+
+export async function getAiProvider(): Promise<'gemini' | 'openai'> {
+  const config = useRuntimeConfig()
+  const defaultProvider = (config.aiProvider as string) || 'gemini'
+  const provider = await getSetting('ai_provider', defaultProvider)
+  return provider as 'gemini' | 'openai'
+}

@@ -251,7 +251,7 @@ onActivated(() => {
         name="i-heroicons-check-circle"
         class="w-12 h-12 mx-auto mb-3 text-emerald-700"
       />
-      <p class="text-slate-500 text-sm">{{ $t('comments.no_comments', { status }) }}</p>
+      <p class="text-slate-500 text-sm">{{ $t(`comments.no_comments_${status}`) }}</p>
     </div>
 
     <!-- Grid View -->
@@ -355,6 +355,17 @@ onActivated(() => {
                 class="text-sm text-slate-300 leading-relaxed line-clamp-3 italic"
               >
                 "{{ c.text }}"
+              </p>
+            </div>
+
+            <!-- Response -->
+            <div v-if="c.replyText" class="mt-1 pl-4 border-l-2 border-emerald-500/30">
+              <div class="flex items-center gap-1.5 mb-1">
+                <UIcon name="i-heroicons-chat-bubble-left-right" class="w-3 h-3 text-emerald-400" />
+                <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">{{ $t('comments.your_response') }}</span>
+              </div>
+              <p class="text-xs text-slate-400 line-clamp-2 italic">
+                {{ c.replyText }}
               </p>
             </div>
 
@@ -488,6 +499,12 @@ onActivated(() => {
             <p class="text-sm text-slate-400 line-clamp-1 italic">
               "{{ c.text }}"
             </p>
+            <div v-if="c.replyText" class="mt-1 pl-3 border-l-2 border-emerald-500/30">
+              <p class="text-[11px] text-slate-500 line-clamp-1 italic">
+                <span class="font-bold text-emerald-500/70 mr-1">{{ $t('comments.your_response') }}:</span>
+                {{ c.replyText }}
+              </p>
+            </div>
             <div class="mt-1 flex items-center gap-1.5">
               <UIcon name="i-heroicons-film" class="w-3 h-3 text-slate-700" />
               <span class="text-[10px] text-slate-600 font-medium truncate">{{

@@ -1,12 +1,14 @@
 import { eq, or, like, desc } from 'drizzle-orm'
 import { useDb } from '../utils/db'
-import { generateWithTools } from '../utils/gemini'
+import * as gemini from '../utils/gemini'
+import * as openai from '../utils/openai'
+import { getAiProvider } from '../utils/settings'
 import { generateVideoSummary } from './video-summary'
 import { buildContext, buildPrompt } from './context-builder'
 import { logger } from '../utils/logger'
 import { comments, suggestedReplies, videos, publishedReplies } from '../db/schema'
 
-interface GeminiOutput {
+interface AIOutput {
   response_text: string
   response_es: string
   context_used: {
@@ -43,7 +45,7 @@ export async function generateSuggestion(commentId: string, langOverride: string
   const ctx = await buildContext(commentId, langOverride, additionalContext)
   const prompt = buildPrompt(ctx)
 
-  // Search function — called by Gemini via function calling when it needs to find a specific video
+  // Search function — called by Gemini/OpenAI via function calling when it needs to find a specific video
   async function searchVideos(query: string): Promise<Array<{ id: string; title: string; thumbnailUrl: string | null }>> {
     const words = query.toLowerCase().split(/\s+/).filter(w => w.length >= 3)
     if (!words.length) return []
@@ -56,16 +58,21 @@ export async function generateSuggestion(commentId: string, langOverride: string
       .limit(10)
   }
 
-  const { text: rawText, promptTokens, completionTokens } = await generateWithTools(prompt, searchVideos)
+  const provider = await getAiProvider()
+  console.log(`[suggestion-engine] Using provider: ${provider}`)
 
-  let parsed: GeminiOutput
+  const { text: rawText, promptTokens, completionTokens } = provider === 'openai'
+    ? await openai.openaiGenerateWithTools(prompt, searchVideos)
+    : await gemini.geminiGenerateWithTools(prompt, searchVideos)
+
+  let parsed: AIOutput
   try {
-    parsed = JSON.parse(rawText) as GeminiOutput
+    parsed = JSON.parse(rawText) as AIOutput
     console.log(`[suggestion-engine] Parsed links:`, JSON.stringify(parsed.video_links_used, null, 2))
   }
   catch {
-    console.error('[suggestion-engine] Raw Gemini output:', rawText.substring(0, 1000))
-    await logger.error('suggestion-engine', 'Failed to parse Gemini JSON', undefined, { rawText: rawText.substring(0, 1000) })
+    console.error(`[suggestion-engine] Raw ${provider} output:`, rawText.substring(0, 1000))
+    await logger.error('suggestion-engine', `Failed to parse ${provider} JSON`, undefined, { rawText: rawText.substring(0, 1000) })
     throw new Error('AI returned invalid JSON. Please try again.')
   }
 
@@ -81,7 +88,9 @@ export async function generateSuggestion(commentId: string, langOverride: string
   }))
 
   const config = useRuntimeConfig()
-  const modelName = (config.geminiModel as string) ?? 'gemini-2.0-flash'
+  const modelName = provider === 'openai'
+    ? (config.openaiModel as string ?? 'gpt-4o-mini')
+    : (config.geminiModel as string ?? 'gemini-2.0-flash')
 
   const [inserted] = await db.insert(suggestedReplies).values({
     commentId,
@@ -94,7 +103,7 @@ export async function generateSuggestion(commentId: string, langOverride: string
     confirmationReason: validated.confirmation_reason,
     videoLinksUsed: JSON.stringify(validated.video_links_used),
     detectedCommentLang: validated.detected_language,
-    modelUsed: modelName,
+    modelUsed: `${provider}:${modelName}`,
     promptTokens,
     completionTokens,
     status: 'pending_review',
@@ -106,8 +115,7 @@ export async function generateSuggestion(commentId: string, langOverride: string
 
   return { suggestionId: inserted.id }
 }
-
-function validateOutput(raw: GeminiOutput, allVideoIds: Set<string>): GeminiOutput {
+function validateOutput(raw: AIOutput, allVideoIds: Set<string>): AIOutput {
   const validatedLinks = (raw.video_links_used ?? []).filter((link) => {
     const isValid = allVideoIds.has(link.video_id)
     if (!isValid) {

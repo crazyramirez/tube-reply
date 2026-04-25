@@ -3,10 +3,23 @@ const { logout } = useAuth();
 const route = useRoute();
 const { t } = useI18n();
 
+const { data: brand } = await useFetch<{
+  logoUrl: string;
+  name: string | null;
+}>("/api/public/brand");
+
 const navItems = [
   { key: "dashboard", icon: "i-heroicons-squares-2x2", to: "/dashboard" },
-  { key: "comments", icon: "i-heroicons-chat-bubble-left-right", to: "/comments" },
-  { key: "knowledge_base", icon: "i-heroicons-book-open", to: "/knowledge-base" },
+  {
+    key: "comments",
+    icon: "i-heroicons-chat-bubble-left-right",
+    to: "/comments",
+  },
+  {
+    key: "knowledge_base",
+    icon: "i-heroicons-book-open",
+    to: "/knowledge-base",
+  },
   { key: "settings", icon: "i-heroicons-cog-6-tooth", to: "/settings" },
 ];
 </script>
@@ -30,18 +43,27 @@ const navItems = [
             class="w-10 h-10 rounded-xl overflow-hidden bg-white/5 flex-shrink-0 ring-1 ring-white/10"
           >
             <img
-              src="/images/logo_mona.jpg"
-              alt="Mona Monísima"
+              v-if="brand?.logoUrl"
+              :src="brand.logoUrl"
+              alt="Channel Logo"
+              class="w-full h-full object-cover"
+              loading="eager"
+              referrerpolicy="no-referrer"
+            />
+            <img
+              v-else
+              src="/images/icons/web-app-manifest-192x192.webp"
+              alt="App Logo"
               class="w-full h-full object-cover"
               loading="eager"
             />
           </div>
           <div class="min-w-0">
             <p class="font-semibold text-white text-sm tracking-tight truncate">
-              {{ $t('nav.app_name') }}
+              {{ $t("nav.app_name") }}
             </p>
             <p class="text-[11px] text-slate-500 truncate">
-              {{ $t('nav.subtitle') }}
+              {{ $t("nav.subtitle") }}
             </p>
           </div>
         </div>
@@ -68,7 +90,7 @@ const navItems = [
                 : 'text-slate-600 group-hover:text-slate-400'
             "
           />
-          <span class="font-medium">{{ $t('nav.' + item.key) }}</span>
+          <span class="font-medium">{{ $t("nav." + item.key) }}</span>
         </NuxtLink>
       </nav>
 
@@ -81,7 +103,7 @@ const navItems = [
             name="i-heroicons-arrow-right-on-rectangle"
             class="w-4 h-4 shrink-0"
           />
-          <span class="font-medium">{{ $t('nav.sign_out') }}</span>
+          <span class="font-medium">{{ $t("nav.sign_out") }}</span>
         </button>
       </div>
     </aside>

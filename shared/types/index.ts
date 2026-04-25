@@ -22,6 +22,7 @@ export interface Comment {
 export interface CommentListItem extends Comment {
   videoTitle: string | null
   videoThumbnail: string | null
+  replyText?: string | null
 }
 
 // ─── Suggestion ──────────────────────────────────────────────────────────────
@@ -106,6 +107,7 @@ export interface DashboardComment {
   status: CommentStatus
   videoTitle: string | null
   videoThumbnail: string | null
+  replyText?: string | null
 }
 
 export interface DashboardStats {

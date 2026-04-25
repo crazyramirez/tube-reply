@@ -1,6 +1,6 @@
 import { eq, and, desc, count, isNull } from 'drizzle-orm'
 import { useDb } from '../../utils/db'
-import { comments, videos } from '../../db/schema'
+import { comments, videos, publishedReplies } from '../../db/schema'
 
 export default defineEventHandler(async (event) => {
   const db = useDb()
@@ -32,9 +32,11 @@ export default defineEventHandler(async (event) => {
       fetchedAt: comments.fetchedAt,
       videoTitle: videos.title,
       videoThumbnail: videos.thumbnailUrl,
+      replyText: publishedReplies.finalText,
     })
     .from(comments)
     .leftJoin(videos, eq(comments.videoId, videos.id))
+    .leftJoin(publishedReplies, eq(comments.id, publishedReplies.commentId))
     .where(and(...whereConditions))
     .orderBy(desc(comments.publishedAt))
     .limit(limit)

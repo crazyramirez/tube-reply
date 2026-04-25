@@ -88,9 +88,8 @@ function extractJSON(text: string): string {
   return text.trim()
 }
 
-export type VideoSearchFn = (query: string) => Promise<Array<{ id: string; title: string; thumbnailUrl: string | null }>>
 
-export async function generateWithTools(
+export async function geminiGenerateWithTools(
   prompt: string,
   searchFn: VideoSearchFn,
   retries = 2,

@@ -192,6 +192,14 @@ export const syncLog = sqliteTable('sync_log', {
   completedAt: text('completed_at'),
 })
 
+// ─── App Settings ─────────────────────────────────────────────────────────────
+
+export const appSettings = sqliteTable('app_settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  updatedAt: text('updated_at').default(sql`(datetime('now'))`),
+})
+
 // ─── Error Logs ───────────────────────────────────────────────────────────────
 
 export const errorLogs = sqliteTable('error_logs', {
