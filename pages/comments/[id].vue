@@ -105,21 +105,25 @@ watch(
 watch(
   () => [data.value?.suggestions, data.value?.publishedReply],
   ([suggestions, published]) => {
-    if (suggestions?.length && !activeSuggestion.value) {
-      // If already published, try to find the linked suggestion
-      if (published?.suggestionId) {
-        const linked = (suggestions as SuggestedReply[]).find(s => s.id === published.suggestionId);
-        if (linked) {
-          activeSuggestion.value = linked;
-          editedText.value = linked.editedText ?? linked.responseText;
-          return;
-        }
+    if (!suggestions?.length) {
+      activeSuggestion.value = null;
+      return;
+    }
+
+    // Try to find linked suggestion if published
+    if (published?.suggestionId) {
+      const linked = (suggestions as SuggestedReply[]).find(s => s.id === published.suggestionId);
+      if (linked) {
+        activeSuggestion.value = linked;
+        editedText.value = linked.editedText ?? linked.responseText;
+        return;
       }
-      
-      // Default to the first one
+    }
+
+    // Default to first suggestion if not already set or if linked not found
+    if (!activeSuggestion.value) {
       activeSuggestion.value = suggestions[0] as SuggestedReply;
-      editedText.value =
-        suggestions[0].editedText ?? suggestions[0].responseText;
+      editedText.value = suggestions[0].editedText ?? suggestions[0].responseText;
     }
   },
   { immediate: true },
@@ -1003,21 +1007,26 @@ async function confirmUnban() {
         >
           <div v-if="data.comment?.status === 'published'" class="space-y-6">
             <div class="relative w-20 h-20 mx-auto">
-              <div
-                class="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full"
-              ></div>
-              <UIcon
-                name="i-heroicons-check-badge"
-                class="relative w-20 h-20 text-emerald-500/40"
-              />
+              <div class="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full"></div>
+              <UIcon name="i-heroicons-check-badge" class="relative w-20 h-20 text-emerald-500/40" />
             </div>
-            <div>
+            <div class="px-8">
               <h3 class="text-lg font-bold text-white mb-2">
                 {{ $t("comment_detail.intel_deployed") }}
               </h3>
-              <p class="text-slate-500 text-sm max-w-xs mx-auto">
-                {{ $t("comments.your_response") }}: El hilo ya ha sido
-                respondido.
+              <p class="text-slate-500 text-sm max-w-xs mx-auto mb-6">
+                {{ $t("comments.your_response") }}
+              </p>
+              
+              <!-- Show the actual reply text even if no AI suggestion object is found -->
+              <div v-if="data.replies?.find(r => r.isOwner)" class="bg-white/5 border border-white/10 rounded-2xl p-6 text-left relative overflow-hidden max-w-md mx-auto">
+                <UIcon name="i-heroicons-chat-bubble-left-right" class="absolute -bottom-2 -right-2 w-16 h-16 text-white/[0.03]" />
+                <p class="text-sm text-slate-300 italic leading-relaxed relative z-10">
+                  "{{ data.replies.find(r => r.isOwner).text }}"
+                </p>
+              </div>
+              <p v-else class="text-slate-500 text-xs italic">
+                El hilo ya ha sido respondido manualmente o fuera de la plataforma.
               </p>
             </div>
           </div>
