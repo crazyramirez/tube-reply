@@ -59,13 +59,13 @@ export const searchVideosTool: Tool = {
   functionDeclarations: [
     {
       name: 'search_videos',
-      description: 'Search for videos in the channel database by title keywords. Call this when the commenter is looking for a specific video, tutorial, or topic that might have a dedicated video on the channel.',
+      description: 'Search for videos in the channel database by keywords in title, description or tags. Call this when the commenter is looking for a specific video, tutorial, or topic.',
       parameters: {
         type: SchemaType.OBJECT,
         properties: {
           query: {
             type: SchemaType.STRING,
-            description: 'Keywords to search video titles (e.g. "docker tutorial", "nginx ubuntu setup")',
+            description: 'Keywords to search videos (e.g. "blusa septiembre", "crochet tutorial")',
           },
         },
         required: ['query'],

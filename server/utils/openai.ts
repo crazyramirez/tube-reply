@@ -38,13 +38,13 @@ export async function openaiGenerateWithTools(
       type: 'function',
       function: {
         name: 'search_videos',
-        description: 'Search for videos in the channel database by title keywords.',
+        description: 'Search for videos in the channel database by keywords in title, description or tags.',
         parameters: {
           type: 'object',
           properties: {
             query: {
               type: 'string',
-              description: 'Keywords to search video titles (e.g. "docker tutorial")',
+              description: 'Keywords to search videos (e.g. "blusa septiembre")',
             },
           },
           required: ['query'],

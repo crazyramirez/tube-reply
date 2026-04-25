@@ -26,7 +26,7 @@ Be concise. Max 400 words. Include:
 - Any specific links, tools, or resources mentioned
 
 Video title: ${video.title}
-Video description: ${(video.description ?? '').substring(0, 1000)}
+Video description: ${(video.description ?? '').substring(0, 4000)}
 Video tags: ${video.tags ? (JSON.parse(video.tags) as string[]).join(', ') : 'none'}
 
 Return ONLY a JSON object with this schema:

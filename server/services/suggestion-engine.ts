@@ -1,4 +1,4 @@
-import { eq, or, like, desc } from 'drizzle-orm'
+import { eq, or, and, like, desc } from 'drizzle-orm'
 import { useDb } from '../utils/db'
 import * as gemini from '../utils/gemini'
 import * as openai from '../utils/openai'
@@ -49,11 +49,18 @@ export async function generateSuggestion(commentId: string, langOverride: string
   async function searchVideos(query: string): Promise<Array<{ id: string; title: string; thumbnailUrl: string | null }>> {
     const words = query.toLowerCase().split(/\s+/).filter(w => w.length >= 3)
     if (!words.length) return []
-    const conditions = words.map(w => like(videos.title, `%${w}%`))
+    
+    // Search in title, description and tags
+    const conditions = words.map(w => or(
+      like(videos.title, `%${w}%`),
+      like(videos.description, `%${w}%`),
+      like(videos.tags, `%${w}%`)
+    ))
+
     return db
       .select({ id: videos.id, title: videos.title, thumbnailUrl: videos.thumbnailUrl })
       .from(videos)
-      .where(or(...conditions))
+      .where(and(...conditions)) // Using AND to find videos that match all words (but in any of the fields)
       .orderBy(desc(videos.publishedAt))
       .limit(10)
   }

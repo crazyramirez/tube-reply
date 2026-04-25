@@ -26,9 +26,9 @@ export interface CommentContext {
   additionalContext: string | null
 }
 
-const MAX_DESCRIPTION_CHARS = 300
+const MAX_DESCRIPTION_CHARS = 2000
 const MAX_KB_ENTRIES = 5
-const MAX_KB_CONTENT_CHARS = 300
+const MAX_KB_CONTENT_CHARS = 1000
 const MAX_REPLIES = 5
 const MAX_REPLY_CHARS = 200
 const MAX_RECENT_VIDEOS = 10
