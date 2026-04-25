@@ -25,7 +25,7 @@ const SAFETY_SETTINGS = [
 
 export function getModel(modelName?: string) {
   const config = useRuntimeConfig()
-  const model = modelName ?? (config.geminiModel as string) ?? 'gemini-2.0-flash'
+  const model = modelName ?? (config.geminiModel as string) ?? 'gemini-3-flash-preview'
   const client = getGeminiClient()
   return client.getGenerativeModel({
     model,
@@ -42,7 +42,7 @@ export function getModel(modelName?: string) {
 // Tool-capable model — responseMimeType is incompatible with function calling
 function getToolModel(modelName?: string) {
   const config = useRuntimeConfig()
-  const model = modelName ?? (config.geminiModel as string) ?? 'gemini-2.0-flash'
+  const model = modelName ?? (config.geminiModel as string) ?? 'gemini-3-flash-preview'
   const client = getGeminiClient()
   return client.getGenerativeModel({
     model,

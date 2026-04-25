@@ -90,7 +90,7 @@ export async function generateSuggestion(commentId: string, langOverride: string
   const config = useRuntimeConfig()
   const modelName = provider === 'openai'
     ? (config.openaiModel as string ?? 'gpt-4o-mini')
-    : (config.geminiModel as string ?? 'gemini-2.0-flash')
+    : (config.geminiModel as string ?? 'gemini-3-flash-preview')
 
   const [inserted] = await db.insert(suggestedReplies).values({
     commentId,

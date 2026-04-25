@@ -59,7 +59,7 @@ global.useRuntimeConfig = () => ({
   dbUrl: process.env.DATABASE_URL ?? './data/youtube.db',
   geminiApiKey: process.env.GEMINI_API_KEY,
   openaiApiKey: process.env.OPENAI_API_KEY,
-  geminiModel: modelArg || process.env.GEMINI_MODEL || 'gemini-2.0-flash',
+  geminiModel: modelArg || process.env.GEMINI_MODEL || 'gemini-3-flash-preview',
   openaiModel: modelArg || process.env.OPENAI_MODEL || 'gpt-4o-mini',
   aiProvider: providerArg || process.env.AI_PROVIDER || 'gemini',
 })

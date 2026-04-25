@@ -156,7 +156,7 @@ export default defineNuxtConfig({
     youtubeClientSecret: process.env.YOUTUBE_CLIENT_SECRET ?? '',
     youtubeRedirectUri: process.env.YOUTUBE_REDIRECT_URI ?? '',
     geminiApiKey: process.env.GEMINI_API_KEY ?? '',
-    geminiModel: process.env.GEMINI_MODEL ?? 'gemini-2.0-flash',
+    geminiModel: process.env.GEMINI_MODEL ?? 'gemini-3-flash-preview',
     openaiApiKey: process.env.OPENAI_API_KEY ?? '',
     openaiModel: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
     aiProvider: process.env.AI_PROVIDER ?? 'gemini',

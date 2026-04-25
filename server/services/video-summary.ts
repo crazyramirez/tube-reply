@@ -45,7 +45,7 @@ Return ONLY a JSON object with this schema:
       summary: parsed.summary,
       keyTopics: JSON.stringify(parsed.key_topics ?? []),
       faqs: JSON.stringify(parsed.faqs ?? []),
-      generatedBy: 'gemini-2.0-flash',
+      generatedBy: 'gemini-3-flash-preview',
       tokenCount: (promptTokens ?? 0) + (completionTokens ?? 0),
     })
   }

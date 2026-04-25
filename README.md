@@ -49,6 +49,20 @@ Tube Reply uses **SQLite** for its simplicity and portability. One of the core f
 
 ---
 
+## AI Intelligence & Models
+
+Tube Reply is highly optimized for performance and cost-efficiency. It currently supports two primary state-of-the-art models:
+
+- **Gemini 3 Flash Preview**: High speed and large context window, perfect for processing long video transcripts and extensive Knowledge Base context.
+- **GPT-4o mini**: Extremely cost-efficient and high-quality reasoning, ideal for precise and human-like comment responses.
+
+### Intelligence Features:
+- **Optimized Cost/Quality**: Both models are "mini/flash" versions, meaning you get premium quality at a fraction of the cost of larger models, making it sustainable for high-volume channels.
+- **DDBB-Backed Context (RAG)**: The app uses its internal **SQLite database** to provide real-time context to the AI. If a user asks a question like *"How do I do X?"* or *"Where is the video about Y?"*, the AI automatically searches the database for relevant video titles and references to provide a grounded, accurate answer with links.
+- **Hallucination Protection**: Generated suggestions are cross-referenced against the actual database. If a model tries to link to a non-existent video, the system automatically removes the "hallucinated" link before you see the suggestion.
+
+---
+
 ## Requirements
 
 - Node.js 20+
@@ -84,7 +98,7 @@ cp .env.example .env
 | `YOUTUBE_CLIENT_SECRET`           | OAuth2 client secret                                     |
 | `YOUTUBE_REDIRECT_URI`            | Must match authorized redirect in Google Cloud Console   |
 | `GEMINI_API_KEY`                  | Google AI Studio API key                                 |
-| `GEMINI_MODEL`                    | Gemini model ID (e.g. `gemini-2.0-flash`)                |
+| `GEMINI_MODEL`                    | Gemini model ID (e.g. `gemini-3-flash-preview`)          |
 | `OPENAI_API_KEY`                  | OpenAI API key                                           |
 | `OPENAI_MODEL`                    | OpenAI model ID (e.g. `gpt-4o-mini`)                     |
 | `AI_PROVIDER`                     | Default provider: `gemini` or `openai`                   |
@@ -175,9 +189,24 @@ Active entries are injected as context into every AI prompt.
 
 ## Production Deployment
 
+### Standard Node.js
+
 ```bash
 npm run build
 node .output/server/index.mjs
 ```
+
+### Plesk Deployment
+
+If you are using **Plesk**, deployment is straightforward using the built-in Node.js extension:
+
+1. **Application Root**: Your project directory.
+2. **Document Root**: `/public`.
+3. **Application Startup File**: `.output/server/index.mjs`.
+4. **Environment Variables**: Add all your `.env` variables in the Plesk Node.js configuration panel.
+5. **Workflow**:
+   - Run **NPM Install**.
+   - Run **NPM Run Build** (via SSH or the "Run script" button in Plesk).
+   - Click **Restart App** to apply changes.
 
 Update `YOUTUBE_REDIRECT_URI` and all secrets in your production environment. Never commit `.env` to version control.
