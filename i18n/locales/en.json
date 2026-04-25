@@ -119,7 +119,22 @@
     "reply_published": "Reply published to YouTube!",
     "publish_failed": "Publish failed",
     "comment_dismissed": "Comment dismissed",
-    "comment_restored": "Comment restored to pending"
+    "comment_restored": "Comment restored to pending",
+    "delete_youtube": "Delete from YouTube",
+    "ban_user": "Ban User",
+    "comment_deleted": "Comment deleted",
+    "user_banned": "User banned from channel",
+    "delete_modal_title": "Delete comment?",
+    "delete_modal_desc": "This will permanently remove the comment from YouTube and this app. This action cannot be undone.",
+    "ban_modal_title": "Ban user?",
+    "ban_modal_desc": "This user will be blocked from commenting on your channel. The current comment will be rejected.",
+    "delete_now": "Delete Now",
+    "ban_now": "Ban Now",
+    "not_found": "Comment not found",
+    "not_found_desc": "This comment no longer exists in our database or has been deleted.",
+    "load_error": "Failed to load",
+    "load_error_desc": "There was a problem retrieving the comment details.",
+    "go_back": "Go back to list"
   },
   "knowledge_base": {
     "center_label": "Intelligence Center",

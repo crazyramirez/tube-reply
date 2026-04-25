@@ -119,7 +119,22 @@
     "reply_published": "¡Respuesta publicada en YouTube!",
     "publish_failed": "Error al publicar",
     "comment_dismissed": "Comentario descartado",
-    "comment_restored": "Comentario restaurado a pendiente"
+    "comment_restored": "Comentario restaurado a pendiente",
+    "delete_youtube": "Eliminar de YouTube",
+    "ban_user": "Banear Usuario",
+    "comment_deleted": "Comentario eliminado",
+    "user_banned": "Usuario baneado del canal",
+    "delete_modal_title": "¿Eliminar comentario?",
+    "delete_modal_desc": "Esta acción eliminará permanentemente el comentario de YouTube y de esta aplicación. No se puede deshacer.",
+    "ban_modal_title": "¿Banear usuario?",
+    "ban_modal_desc": "El usuario será bloqueado y no podrá volver a comentar en tu canal. El comentario actual será rechazado.",
+    "delete_now": "Eliminar Ahora",
+    "ban_now": "Banear Ahora",
+    "not_found": "Comentario no encontrado",
+    "not_found_desc": "Este comentario ya no existe en la base de datos local o ha sido eliminado.",
+    "load_error": "Error al cargar",
+    "load_error_desc": "Hubo un problema al recuperar los detalles del comentario.",
+    "go_back": "Volver a la lista"
   },
   "knowledge_base": {
     "center_label": "Centro de Inteligencia",

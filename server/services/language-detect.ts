@@ -29,14 +29,27 @@ const ISO_TO_BCP47: Record<string, string> = {
   fin: 'fi',
 }
 
+function cleanTextForDetection(text: string): string {
+  return text
+    .replace(/\p{Emoji_Presentation}/gu, '')
+    .replace(/\p{Extended_Pictographic}/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 export function detectLanguage(text: string): LangResult {
-  if (!text || text.trim().length < 10) {
+  const cleaned = cleanTextForDetection(text)
+
+  if (!cleaned || cleaned.length < 5) {
     return { lang: 'und', confidence: 0 }
   }
 
-  const result = franc(text, { minLength: 5 })
+  const result = franc(cleaned, { 
+    minLength: 5,
+    only: Object.keys(ISO_TO_BCP47)
+  })
 
-  if (result === 'und') {
+  if (result === 'und' || result === 'nnn') {
     return { lang: 'und', confidence: 0 }
   }
 

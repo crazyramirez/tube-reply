@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
-import { useDb } from '../../utils/db'
-import { comments } from '../../db/schema'
+import { useDb } from '../../../utils/db'
+import { comments } from '../../../db/schema'
 
 export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id')!

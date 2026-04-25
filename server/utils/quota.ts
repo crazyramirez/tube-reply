@@ -1,5 +1,6 @@
-import { sql } from 'drizzle-orm'
+import { sql, count } from 'drizzle-orm'
 import { useDb } from './db'
+import { syncLog, publishedReplies } from '../db/schema'
 
 // YouTube API quota costs
 export const QUOTA_COSTS = {
@@ -14,16 +15,22 @@ export async function getDailyQuotaUsed(): Promise<number> {
   const db = useDb()
 
   // Sum quota from all sync runs today
-  const syncResult = await db.run(
-    sql`SELECT COALESCE(SUM(quota_used), 0) as total FROM sync_log WHERE date(started_at) = date('now')`
-  )
-  const syncQuota = Number((syncResult.rows?.[0] as { total: number } | undefined)?.total ?? 0)
+  const syncResult = await db.select({
+    total: sql<number>`COALESCE(SUM(${syncLog.quotaUsed}), 0)`
+  })
+    .from(syncLog)
+    .where(sql`date(${syncLog.startedAt}) = date('now')`)
+  
+  const syncQuota = Number(syncResult[0]?.total ?? 0)
 
   // Count publishes today × 50 units each
-  const publishResult = await db.run(
-    sql`SELECT COUNT(*) as total FROM published_replies WHERE date(published_at) = date('now')`
-  )
-  const publishQuota = Number((publishResult.rows?.[0] as { total: number } | undefined)?.total ?? 0) * QUOTA_COSTS['comments.insert']
+  const publishResult = await db.select({
+    total: count()
+  })
+    .from(publishedReplies)
+    .where(sql`date(${publishedReplies.publishedAt}) = date('now')`)
+  
+  const publishQuota = Number(publishResult[0]?.total ?? 0) * QUOTA_COSTS['comments.insert']
 
   return syncQuota + publishQuota
 }

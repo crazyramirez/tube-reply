@@ -8,7 +8,7 @@ const router = useRouter();
 const id = route.params.id as string;
 const { t } = useI18n();
 
-const { data, refresh } = await useFetch<CommentDetailResponse>(
+const { data, refresh, error } = await useFetch<CommentDetailResponse>(
   `/api/comments/${id}`,
 );
 
@@ -246,6 +246,51 @@ const confidenceTextClass = computed(() =>
 const finalText = computed(
   () => editedText.value || activeSuggestion.value?.responseText || "",
 );
+
+const showDeleteModal = ref(false);
+const showBanModal = ref(false);
+const deleting = ref(false);
+const banning = ref(false);
+
+async function confirmDelete() {
+  deleting.value = true;
+  try {
+    await $fetch(`/api/comments/${id}`, {
+      method: "DELETE",
+      headers: useCsrfHeaders(),
+    });
+    toast.add({ title: t("comment_detail.comment_deleted"), color: "green" });
+    showDeleteModal.value = false;
+    await navigateTo("/comments");
+  } catch (err: any) {
+    toast.add({
+      title: err.data?.statusMessage ?? "Failed to delete",
+      color: "red",
+    });
+  } finally {
+    deleting.value = false;
+  }
+}
+
+async function confirmBan() {
+  banning.value = true;
+  try {
+    await $fetch(`/api/comments/${id}/ban`, {
+      method: "POST",
+      headers: useCsrfHeaders(),
+    });
+    toast.add({ title: t("comment_detail.user_banned"), color: "green" });
+    showBanModal.value = false;
+    await navigateTo("/comments");
+  } catch (err: any) {
+    toast.add({
+      title: err.data?.statusMessage ?? "Failed to ban user",
+      color: "red",
+    });
+  } finally {
+    banning.value = false;
+  }
+}
 </script>
 
 <style scoped>
@@ -369,7 +414,28 @@ const finalText = computed(
       </div>
     </div>
 
-    <div v-if="!data" class="flex items-center justify-center py-20">
+    <div v-if="error" class="flex flex-col items-center justify-center py-20 text-center animate-fade-in">
+      <div class="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/20">
+        <UIcon name="i-heroicons-exclamation-circle" class="w-10 h-10 text-red-500" />
+      </div>
+      <h2 class="text-xl font-black text-white mb-2 tracking-tight">
+        {{ error.statusCode === 404 ? $t("comment_detail.not_found") : $t("comment_detail.load_error") }}
+      </h2>
+      <p class="text-slate-500 text-sm max-w-xs mx-auto mb-8">
+        {{ error.statusCode === 404 ? $t("comment_detail.not_found_desc") : $t("comment_detail.load_error_desc") }}
+      </p>
+      <UButton
+        color="white"
+        variant="solid"
+        size="md"
+        class="rounded-xl font-bold px-8"
+        @click="navigateTo('/comments')"
+      >
+        {{ $t("comment_detail.go_back") }}
+      </UButton>
+    </div>
+
+    <div v-else-if="!data" class="flex items-center justify-center py-20">
       <div class="text-center">
         <div
           class="w-8 h-8 border-2 border-indigo-500/40 border-t-indigo-500 rounded-full animate-spin mx-auto mb-3"
@@ -701,13 +767,30 @@ const finalText = computed(
               {{ $t("comment_detail.restore") }}
             </button>
             <button
-              v-if="data.comment?.status !== 'dismissed'"
+              v-if="data.comment?.status !== 'dismissed' && data.comment?.status !== 'published'"
               class="px-5 py-3 rounded-2xl border border-white/10 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 text-sm font-bold transition-all duration-300 flex items-center gap-2 cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed"
-              :disabled="data.comment?.status === 'published'"
               @click="dismissComment"
             >
-              <UIcon name="i-heroicons-trash" class="w-4 h-4" />
+              <UIcon name="i-heroicons-archive-box" class="w-4 h-4" />
               {{ $t("comment_detail.dismiss") }}
+            </button>
+          </div>
+
+          <!-- Danger actions -->
+          <div class="flex gap-2 pt-2">
+            <button
+              class="px-4 py-2 rounded-xl border border-red-500/10 bg-red-500/5 text-red-500/60 hover:text-red-500 hover:bg-red-500/10 text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 cursor-pointer"
+              @click="showDeleteModal = true"
+            >
+              <UIcon name="i-heroicons-trash" class="w-3.5 h-3.5" />
+              {{ $t("comment_detail.delete_youtube") }}
+            </button>
+            <button
+              class="px-4 py-2 rounded-xl border border-red-500/10 bg-red-500/5 text-red-500/60 hover:text-red-500 hover:bg-red-500/10 text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 cursor-pointer"
+              @click="showBanModal = true"
+            >
+              <UIcon name="i-heroicons-no-symbol" class="w-3.5 h-3.5" />
+              {{ $t("comment_detail.ban_user") }}
             </button>
           </div>
         </div>
@@ -1148,5 +1231,29 @@ const finalText = computed(
         </div>
       </div>
     </UModal>
+
+    <!-- Delete Modal -->
+    <UiConfirmModal
+      v-model="showDeleteModal"
+      :title="$t('comment_detail.delete_modal_title')"
+      :description="$t('comment_detail.delete_modal_desc')"
+      :confirm-text="$t('comment_detail.delete_now')"
+      :cancel-text="$t('comment_detail.cancel')"
+      :loading="deleting"
+      type="danger"
+      @confirm="confirmDelete"
+    />
+
+    <!-- Ban Modal -->
+    <UiConfirmModal
+      v-model="showBanModal"
+      :title="$t('comment_detail.ban_modal_title')"
+      :description="$t('comment_detail.ban_modal_desc')"
+      :confirm-text="$t('comment_detail.ban_now')"
+      :cancel-text="$t('comment_detail.cancel')"
+      :loading="banning"
+      type="danger"
+      @confirm="confirmBan"
+    />
   </div>
 </template>
