@@ -92,6 +92,10 @@ En un escenario típico con **200 vídeos en tu base de datos** y una **Base de 
     - **Baneo en un clic**: Utiliza la API de YouTube para rechazar el comentario y bloquear al autor en el canal.
     - **Rastreo Local**: Los autores baneados se guardan en la base de datos. Todos sus comentarios (actuales y futuros) se marcan automáticamente como "Descartados".
     - **Desbanear**: Restaura a los autores localmente con un clic. (Se requiere eliminación manual en YouTube Studio para una restauración completa en la plataforma).
+- **Sugerencias Automáticas con IA**: Cuando se activa en los Ajustes, el sistema dispara automáticamente el motor de sugerencias justo después de terminar un proceso de sincronización (ya sea manual o programado).
+  - **Procesamiento Secuencial**: Para respetar los límites de velocidad (RPM) de los proveedores de IA, los comentarios se procesan uno a uno con un retraso integrado.
+  - **Selección Inteligente**: Solo procesa comentarios de nivel superior en estado "Pendiente" que aún no tengan una sugerencia generada, evitando llamadas redundantes e innecesarias.
+  - **Ejecución en Segundo Plano**: El proceso se ejecuta en segundo plano, permitiéndote seguir usando el panel de control mientras se generan las sugerencias.
 
 ---
 
@@ -196,14 +200,12 @@ La aplicación solicita los siguientes permisos:
 
 ## Tipos de Base de Conocimientos (Knowledge Base)
 
-| Tipo            | Propósito                                  |
-| --------------- | ------------------------------------------ |
-| `channel_style` | Directrices de tono, voz y estilo de escritura |
-| `faq`           | Preguntas comunes y sus respuestas aprobadas |
-| `topic`         | Contexto temático sobre tu contenido       |
-| `persona`       | El personaje/identidad que la IA debe adoptar |
-| `rule`          | Reglas estrictas (cosas que decir o nunca decir) |
-| `custom`        | Cualquier otra indicación personalizada    |
+| Tipo    | Propósito                                  |
+| ------- | ------------------------------------------ |
+| `faq`   | Preguntas comunes y respuestas aprobadas   |
+| `style` | Guía de tono, voz y personalidad de la IA  |
+| `info`  | Información de contexto y temas generales  |
+| `rule`  | Reglas estrictas (qué decir o nunca decir) |
 
 Las entradas activas se inyectan como contexto en cada petición a la IA.
 

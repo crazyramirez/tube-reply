@@ -95,6 +95,10 @@ In a typical scenario with **200 videos in your database** and an active **Knowl
   - **One-Click Ban**: Uses YouTube API to reject the comment and ban the author from the channel.
   - **Local Tracking**: Banned authors are saved in the database. All their existing and future comments are automatically marked as "Dismissed".
   - **Unban**: Restore authors locally with one click. (Manual removal from YouTube Studio is still required for full restoration).
+- **Automatic AI Suggestions**: When enabled in Settings, the system automatically triggers the AI suggestion engine after every successful synchronization.
+  - **Sequential Processing**: To respect AI provider rate limits (RPM), comments are processed one-by-one with a built-in delay.
+  - **Smart Selection**: It only targets top-level "Pending" comments that don't already have an AI suggestion, preventing redundant API calls.
+  - **Background Execution**: The process runs in the background, allowing you to continue using the dashboard while suggestions are being generated.
 
 ---
 

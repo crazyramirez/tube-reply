@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
 
   const conditions = [
     ...(activeOnly ? [eq(knowledgeBase.isActive, true)] : []),
-    ...(type ? [eq(knowledgeBase.type, type as 'channel_style' | 'faq' | 'topic' | 'persona' | 'rule' | 'custom')] : []),
+    ...(type ? [eq(knowledgeBase.type, type as 'faq' | 'style' | 'info' | 'rule')] : []),
   ]
 
   const entries = await db.query.knowledgeBase.findMany({

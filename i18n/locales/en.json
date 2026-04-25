@@ -179,13 +179,15 @@
     "active": "Active",
     "inactive": "Inactive",
     "types": {
-      "channel_style": "Channel Style",
-      "faq": "FAQ",
-      "topic": "Topic",
-      "persona": "Persona",
-      "rule": "Rule",
-      "custom": "Custom"
-    }
+      "style": "Tone & Style",
+      "faq": "Frequently Asked Questions",
+      "info": "Information & Context",
+      "rule": "Strict Rules"
+    },
+    "delete_confirm_title": "Delete intelligence?",
+    "delete_confirm_description": "This entry will be permanently removed from the knowledge base and the AI will stop using it as context.",
+    "delete_confirm_action": "Delete Now",
+    "deleted": "Entry deleted"
   },
   "settings": {
     "title": "Settings",

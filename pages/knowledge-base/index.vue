@@ -9,6 +9,8 @@ const { data, refresh } = await useFetch<{ items: KnowledgeBaseEntry[] }>(
   "/api/knowledge-base",
   {
     query: { active: "false" },
+    default: () => ({ items: [] }),
+    lazy: true,
   },
 );
 
@@ -291,12 +293,15 @@ async function confirmDelete() {
           <div
             class="w-10 h-10 rounded-xl flex items-center justify-center border transition-colors duration-300"
             :class="[
-              typeConfig[entry.type].bg,
-              typeConfig[entry.type].border,
-              typeConfig[entry.type].text,
+              typeConfig[entry.type]?.bg || 'bg-white/5',
+              typeConfig[entry.type]?.border || 'border-white/10',
+              typeConfig[entry.type]?.text || 'text-slate-400',
             ]"
           >
-            <UIcon :name="typeConfig[entry.type].icon" class="w-5 h-5" />
+            <UIcon
+              :name="typeConfig[entry.type]?.icon || 'i-heroicons-question-mark-circle'"
+              class="w-5 h-5"
+            />
           </div>
           <div class="flex items-center gap-1">
             <button
@@ -352,7 +357,7 @@ async function confirmDelete() {
         >
           <span
             class="text-[10px] font-bold text-slate-600 uppercase tracking-widest"
-            >{{ $t("knowledge_base.types." + entry.type) }}</span
+            >{{ $t("knowledge_base.types." + (entry.type || "unknown")) }}</span
           >
           <div v-if="entry.isActive" class="flex items-center gap-1.5">
             <div
