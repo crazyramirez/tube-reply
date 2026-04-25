@@ -56,7 +56,7 @@
     "no_comments": "No {status} comments",
     "restore": "Restore Comment",
     "review": "REVIEW",
-    "selected_items": "Selected Items",
+    "selected_items": "Selected",
     "bulk_success": "Bulk update successful",
     "bulk_moved": "Moved {n} comments to {status}",
     "bulk_failed": "Bulk update failed",

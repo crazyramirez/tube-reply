@@ -56,7 +56,7 @@
     "no_comments": "Sin comentarios {status}",
     "restore": "Restaurar Comentario",
     "review": "REVISAR",
-    "selected_items": "Elementos Seleccionados",
+    "selected_items": "Seleccionados",
     "bulk_success": "Actualización masiva exitosa",
     "bulk_moved": "Se movieron {n} comentarios a {status}",
     "bulk_failed": "Error en actualización masiva",

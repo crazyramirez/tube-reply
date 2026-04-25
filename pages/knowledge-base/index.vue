@@ -50,19 +50,19 @@ async function saveEntry() {
         body: form.value,
         headers: useCsrfHeaders(),
       });
-      toast.add({ title: t('knowledge_base.updated'), color: "green" });
+      toast.add({ title: t("knowledge_base.updated"), color: "green" });
     } else {
       await $fetch("/api/knowledge-base", {
         method: "POST",
         body: form.value,
         headers: useCsrfHeaders(),
       });
-      toast.add({ title: t('knowledge_base.created'), color: "green" });
+      toast.add({ title: t("knowledge_base.created"), color: "green" });
     }
     showForm.value = false;
     await refresh();
   } catch {
-    toast.add({ title: t('knowledge_base.save_failed'), color: "red" });
+    toast.add({ title: t("knowledge_base.save_failed"), color: "red" });
   } finally {
     saving.value = false;
   }
@@ -132,12 +132,12 @@ const typeConfig: Record<
 };
 
 const typeOptions = computed(() => [
-  { label: t('knowledge_base.types.channel_style'), value: "channel_style" },
-  { label: t('knowledge_base.types.faq'), value: "faq" },
-  { label: t('knowledge_base.types.topic'), value: "topic" },
-  { label: t('knowledge_base.types.persona'), value: "persona" },
-  { label: t('knowledge_base.types.rule'), value: "rule" },
-  { label: t('knowledge_base.types.custom'), value: "custom" },
+  { label: t("knowledge_base.types.channel_style"), value: "channel_style" },
+  { label: t("knowledge_base.types.faq"), value: "faq" },
+  { label: t("knowledge_base.types.topic"), value: "topic" },
+  { label: t("knowledge_base.types.persona"), value: "persona" },
+  { label: t("knowledge_base.types.rule"), value: "rule" },
+  { label: t("knowledge_base.types.custom"), value: "custom" },
 ]);
 </script>
 
@@ -224,13 +224,13 @@ const typeOptions = computed(() => [
           class="flex items-center gap-2 text-[10px] font-bold text-indigo-400 uppercase tracking-[0.3em]"
         >
           <UIcon name="i-heroicons-cpu-chip" class="w-3 h-3" />
-          {{ $t('knowledge_base.center_label') }}
+          {{ $t("knowledge_base.center_label") }}
         </div>
         <h1 class="text-3xl font-black text-white tracking-tighter">
-          {{ $t('knowledge_base.title') }}
+          {{ $t("knowledge_base.title") }}
         </h1>
         <p class="text-slate-500 text-sm mt-1">
-          {{ $t('knowledge_base.subtitle') }}
+          {{ $t("knowledge_base.subtitle") }}
         </p>
       </div>
       <button
@@ -241,7 +241,7 @@ const typeOptions = computed(() => [
           name="i-heroicons-plus"
           class="w-5 h-5 group-hover:rotate-90 transition-transform duration-300"
         />
-        <span>{{ $t('knowledge_base.add') }}</span>
+        <span>{{ $t("knowledge_base.add") }}</span>
       </button>
     </div>
 
@@ -258,9 +258,11 @@ const typeOptions = computed(() => [
           class="relative w-20 h-20 text-indigo-500/40"
         />
       </div>
-      <h3 class="text-lg font-bold text-white mb-2">{{ $t('knowledge_base.no_entries_title') }}</h3>
+      <h3 class="text-lg font-bold text-white mb-2">
+        {{ $t("knowledge_base.no_entries_title") }}
+      </h3>
       <p class="text-slate-500 text-sm max-w-xs mx-auto">
-        {{ $t('knowledge_base.no_entries_hint') }}
+        {{ $t("knowledge_base.no_entries_hint") }}
       </p>
     </div>
 
@@ -317,8 +319,8 @@ const typeOptions = computed(() => [
               {{ entry.title }}
             </h3>
             <span
-              class="text-[10px] font-black text-slate-700 bg-white/5 px-1.5 py-0.5 rounded uppercase tracking-tighter"
-              >P:{{ entry.priority }}</span
+              class="text-sm font-black text-slate-500 bg-white/5 p-2 rounded-full uppercase tracking-tighter"
+              >{{ entry.priority }}</span
             >
           </div>
           <p
@@ -333,7 +335,7 @@ const typeOptions = computed(() => [
         >
           <span
             class="text-[10px] font-bold text-slate-600 uppercase tracking-widest"
-            >{{ $t('knowledge_base.types.' + entry.type) }}</span
+            >{{ $t("knowledge_base.types." + entry.type) }}</span
           >
           <div v-if="entry.isActive" class="flex items-center gap-1.5">
             <div
@@ -341,13 +343,13 @@ const typeOptions = computed(() => [
             ></div>
             <span
               class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest"
-              >{{ $t('knowledge_base.active') }}</span
+              >{{ $t("knowledge_base.active") }}</span
             >
           </div>
           <span
             v-else
             class="text-[10px] font-bold text-slate-600 uppercase tracking-widest"
-            >{{ $t('knowledge_base.inactive') }}</span
+            >{{ $t("knowledge_base.inactive") }}</span
           >
         </div>
       </div>
@@ -383,10 +385,18 @@ const typeOptions = computed(() => [
           <div class="flex flex-col">
             <span
               class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest"
-              >{{ editingEntry ? $t('knowledge_base.modification') : $t('knowledge_base.creation') }}</span
+              >{{
+                editingEntry
+                  ? $t("knowledge_base.modification")
+                  : $t("knowledge_base.creation")
+              }}</span
             >
             <h2 class="font-black text-xl text-white tracking-tight">
-              {{ editingEntry ? $t('knowledge_base.edit_title') : $t('knowledge_base.new_title') }}
+              {{
+                editingEntry
+                  ? $t("knowledge_base.edit_title")
+                  : $t("knowledge_base.new_title")
+              }}
             </h2>
           </div>
         </div>
@@ -396,7 +406,7 @@ const typeOptions = computed(() => [
             <div class="space-y-2">
               <label
                 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1"
-                >{{ $t('knowledge_base.category') }}</label
+                >{{ $t("knowledge_base.category") }}</label
               >
               <USelect
                 v-model="form.type"
@@ -415,7 +425,7 @@ const typeOptions = computed(() => [
             <div class="space-y-2">
               <label
                 class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1"
-                >{{ $t('knowledge_base.priority') }}</label
+                >{{ $t("knowledge_base.priority") }}</label
               >
               <UInput
                 v-model.number="form.priority"
@@ -436,7 +446,7 @@ const typeOptions = computed(() => [
           <div class="space-y-2">
             <label
               class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1"
-              >{{ $t('knowledge_base.title_field') }}</label
+              >{{ $t("knowledge_base.title_field") }}</label
             >
             <UInput
               v-model="form.title"
@@ -454,7 +464,7 @@ const typeOptions = computed(() => [
           <div class="space-y-2">
             <label
               class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1"
-              >{{ $t('knowledge_base.content_label') }}</label
+              >{{ $t("knowledge_base.content_label") }}</label
             >
             <textarea
               v-model="form.content"
@@ -472,7 +482,7 @@ const typeOptions = computed(() => [
             class="px-6 py-3 rounded-xl text-sm font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all duration-300 cursor-pointer"
             @click="showForm = false"
           >
-            {{ $t('knowledge_base.cancel') }}
+            {{ $t("knowledge_base.cancel") }}
           </button>
           <button
             class="premium-btn-primary flex items-center gap-2 py-3 px-8"
@@ -485,7 +495,9 @@ const typeOptions = computed(() => [
               class="w-4 h-4 animate-spin"
             />
             <UIcon v-else name="i-heroicons-check-circle" class="w-4 h-4" />
-            {{ saving ? $t('knowledge_base.saving') : $t('knowledge_base.save') }}
+            {{
+              saving ? $t("knowledge_base.saving") : $t("knowledge_base.save")
+            }}
           </button>
         </div>
       </div>
