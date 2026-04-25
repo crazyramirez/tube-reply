@@ -1,4 +1,10 @@
 {
+  "sync_pill": {
+    "syncing": "Syncing",
+    "done": "Sync complete",
+    "videos": "videos",
+    "new": "new"
+  },
   "nav": {
     "app_name": "Tube Reply",
     "subtitle": "YouTube AI Assistant",

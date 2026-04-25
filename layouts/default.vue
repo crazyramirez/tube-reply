@@ -3,6 +3,8 @@ const { logout } = useAuth();
 const route = useRoute();
 const { t } = useI18n();
 
+const { isRunning, justCompleted, lastSync } = useSyncStatus();
+
 const { data: brand } = await useFetch<{
   logoUrl: string;
   name: string | null;
@@ -113,5 +115,54 @@ const navItems = [
         <slot />
       </div>
     </main>
+
+    <!-- Sync status pill -->
+    <Transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="translate-y-4 opacity-0"
+      enter-to-class="translate-y-0 opacity-100"
+      leave-active-class="transition duration-200 ease-in"
+      leave-from-class="translate-y-0 opacity-100"
+      leave-to-class="translate-y-4 opacity-0"
+    >
+      <div
+        v-if="isRunning || justCompleted"
+        class="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-2.5 rounded-2xl border text-xs font-bold shadow-2xl backdrop-blur-xl transition-colors duration-500"
+        :class="
+          isRunning
+            ? 'bg-slate-900/90 border-blue-500/30 text-blue-300'
+            : 'bg-slate-900/90 border-emerald-500/30 text-emerald-300'
+        "
+      >
+        <div class="relative flex items-center justify-center w-4 h-4 shrink-0">
+          <UIcon
+            v-if="isRunning"
+            name="i-heroicons-arrow-path"
+            class="w-4 h-4 animate-spin"
+          />
+          <UIcon
+            v-else
+            name="i-heroicons-check-circle"
+            class="w-4 h-4"
+          />
+        </div>
+        <div class="flex items-center gap-2">
+          <span v-if="isRunning">{{ t('sync_pill.syncing') }}</span>
+          <span v-else>{{ t('sync_pill.done') }}</span>
+          <template v-if="lastSync">
+            <span class="text-slate-600">·</span>
+            <span :class="isRunning ? 'text-slate-400' : 'text-slate-400'">
+              {{ lastSync.videosProcessed ?? 0 }} {{ t('sync_pill.videos') }}
+            </span>
+            <template v-if="(lastSync.newComments ?? 0) > 0">
+              <span class="text-slate-600">·</span>
+              <span :class="isRunning ? 'text-blue-400' : 'text-emerald-400'">
+                +{{ lastSync.newComments }} {{ t('sync_pill.new') }}
+              </span>
+            </template>
+          </template>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>

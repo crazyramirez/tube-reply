@@ -1,4 +1,10 @@
 {
+  "sync_pill": {
+    "syncing": "Sincronizando",
+    "done": "Sincronización completa",
+    "videos": "videos",
+    "new": "nuevos"
+  },
   "nav": {
     "app_name": "Tube Reply",
     "subtitle": "Asistente IA de YouTube",

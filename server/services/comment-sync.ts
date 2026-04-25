@@ -66,16 +66,13 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
     const allVideos = await db.query.videos.findMany()
     const ownerChannelId = token.channelId
 
-    // manual: last 100 videos by publish date
+    // manual: all videos (user-triggered, no limit)
     // scheduled recent: last 180 days
     // scheduled all (deep daily): everything
     const cutoff = new Date(Date.now() - RECENT_VIDEO_DAYS * 24 * 60 * 60 * 1000).toISOString()
-    const sorted = [...allVideos].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
-    const videosToSync = syncType === 'manual'
-      ? sorted.slice(0, 100)
-      : scope === 'all'
-        ? allVideos
-        : allVideos.filter(v => v.publishedAt >= cutoff)
+    const videosToSync = syncType === 'manual' || scope === 'all'
+      ? allVideos
+      : allVideos.filter(v => v.publishedAt >= cutoff)
 
     await logger.info('comment-sync', `Syncing ${videosToSync.length}/${allVideos.length} videos (scope: ${scope})`)
 
@@ -91,6 +88,13 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
       totalNew += newCount
       totalQuota += quotaUsed
       videosProcessed++
+
+      // Write incremental progress every 10 videos so UI can poll it
+      if (logId && videosProcessed % 10 === 0) {
+        await db.update(syncLog)
+          .set({ videosProcessed, commentsFound: totalFound, newComments: totalNew, quotaUsed: totalQuota })
+          .where(eq(syncLog.id, logId))
+      }
 
       // Small delay between videos to be polite
       await new Promise(r => setTimeout(r, 200))
