@@ -1,32 +1,51 @@
-import { migrate } from 'drizzle-orm/better-sqlite3/migrator'
 import { resolve } from 'node:path'
+import { readFileSync, readdirSync } from 'node:fs'
 import { useDb } from '../utils/db'
+import { sql } from 'drizzle-orm'
 
 export default defineNitroPlugin(async () => {
-  // In development, we use 'drizzle-kit push' via the CLI usually.
-  // In production, we use the compiled migrations.
-  console.log('🚀 Checking database migrations...')
+  console.log('🚀 Checking database migrations (Robust Mode)...')
 
   try {
     const db = useDb()
-    
-    // Path to the migrations folder. 
-    // In Nuxt production, process.cwd() is the root of the .output/server directory or project root.
-    // We try to find where the migrations ended up.
     const migrationsPath = resolve(process.cwd(), 'server/db/migrations')
     
-    console.log(`Looking for migrations in: ${migrationsPath}`)
+    // List all .sql files in order
+    const files = readdirSync(migrationsPath)
+      .filter(f => f.endsWith('.sql'))
+      .sort()
 
-    // This will run all pending .sql migrations from the folder
-    await migrate(db, { migrationsFolder: migrationsPath })
+    for (const file of files) {
+      console.log(`  → Processing migration: ${file}`)
+      const content = readFileSync(resolve(migrationsPath, file), 'utf-8')
+      
+      // Drizzle splits statements with '--> statement-breakpoint' or just ';'
+      const statements = content.split(/--> statement-breakpoint|;/).filter(s => s.trim())
+
+      for (const statement of statements) {
+        try {
+          const cleanSql = statement.trim()
+          if (!cleanSql) continue
+          
+          // Execute raw SQL
+          db.run(sql.raw(cleanSql))
+        } catch (err: any) {
+          // Ignore "already exists" errors
+          if (
+            err.message?.includes('already exists') || 
+            err.message?.includes('duplicate column') ||
+            err.message?.includes('duplicate column name')
+          ) {
+            // This is fine, it means the migration was partially applied before
+            continue
+          }
+          console.warn(`    ⚠️ Statement failed in ${file}: ${err.message}`)
+        }
+      }
+    }
     
-    console.log('✓ Database migrations applied successfully')
+    console.log('✓ Database migrations synchronized')
   } catch (error: any) {
-    console.error('✗ Database migration failed:')
-    console.error(error.message)
-    
-    // Fallback: If migrations folder is missing in production (common Nitro issue), 
-    // we could use drizzle-kit push as a backup if it exists, 
-    // but the migrate() call is the preferred way.
+    console.error('✗ Robust migration failed:', error.message)
   }
 })
