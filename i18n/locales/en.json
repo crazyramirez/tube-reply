@@ -140,6 +140,7 @@
     "load_error": "Failed to load",
     "load_error_desc": "There was a problem retrieving the comment details.",
     "detected_links": "Detected Links",
+    "click_to_open": "Click a link to open or text to edit",
     "go_back": "Go back to list"
   },
   "knowledge_base": {

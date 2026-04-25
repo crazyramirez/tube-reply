@@ -1,6 +1,6 @@
 import { eq, and, isNotNull } from 'drizzle-orm'
 import { useDb } from '../../../utils/db'
-import { comments, videos, suggestedReplies, publishedReplies, bannedAuthors } from '../../../db/schema'
+import { comments, videos, suggestedReplies, publishedReplies, bannedAuthors, oauthTokens } from '../../../db/schema'
 
 export default defineEventHandler(async (event) => {
   const db = useDb()

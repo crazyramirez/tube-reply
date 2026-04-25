@@ -103,9 +103,20 @@ watch(
 );
 
 watch(
-  () => data.value?.suggestions,
-  (suggestions) => {
+  () => [data.value?.suggestions, data.value?.publishedReply],
+  ([suggestions, published]) => {
     if (suggestions?.length && !activeSuggestion.value) {
+      // If already published, try to find the linked suggestion
+      if (published?.suggestionId) {
+        const linked = (suggestions as SuggestedReply[]).find(s => s.id === published.suggestionId);
+        if (linked) {
+          activeSuggestion.value = linked;
+          editedText.value = linked.editedText ?? linked.responseText;
+          return;
+        }
+      }
+      
+      // Default to the first one
       activeSuggestion.value = suggestions[0] as SuggestedReply;
       editedText.value =
         suggestions[0].editedText ?? suggestions[0].responseText;
@@ -253,6 +264,17 @@ const confidenceTextClass = computed(() =>
 );
 
 const isEditing = ref(false);
+
+function timeAgo(iso: string): string {
+  if (!iso) return "";
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return t("time.just_now");
+  if (mins < 60) return t("time.minutes_ago", { m: mins });
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return t("time.hours_ago", { h: hrs });
+  return t("time.days_ago", { d: Math.floor(hrs / 24) });
+}
 
 const effectiveVideoLinks = computed(() => {
   if (!activeSuggestion.value) return [];
@@ -789,7 +811,7 @@ async function confirmUnban() {
                     >PROPIETARIO</UBadge
                   >
                   <span class="text-[10px] text-slate-600 font-medium">{{
-                    formatTime(reply.publishedAt)
+                    timeAgo(reply.publishedAt)
                   }}</span>
                 </div>
                 <p class="text-sm text-slate-300 leading-relaxed">
