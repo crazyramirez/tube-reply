@@ -7,37 +7,45 @@ export default defineNitroPlugin(async () => {
 
   try {
     // Localizamos el ejecutable de drizzle-kit
-    const drizzleKitPath = resolve(process.cwd(), 'node_modules/.bin/drizzle-kit')
+    // Localizamos el ejecutable de drizzle-kit
+    const cwd = process.cwd()
+    const drizzleKitPath = resolve(cwd, 'node_modules/.bin/drizzle-kit')
+    const configPath = resolve(cwd, 'drizzle.config.ts')
     
     // Aseguramos que la carpeta de la base de datos existe
     const { dirname } = await import('node:path')
-    const { mkdirSync } = await import('node:fs')
+    const { mkdirSync, existsSync } = await import('node:fs')
     const dbUrl = process.env.DATABASE_URL || './data/youtube.db'
-    const dbDir = dirname(resolve(process.cwd(), dbUrl))
-    mkdirSync(dbDir, { recursive: true })
+    const dbPath = resolve(cwd, dbUrl)
+    const dbDir = dirname(dbPath)
     
-    console.log(`Ensuring directory exists at: ${dbDir}`)
+    if (!existsSync(dbDir)) {
+      console.log(`Creating database directory at: ${dbDir}`)
+      mkdirSync(dbDir, { recursive: true })
+    }
 
-    // Ejecutamos el "push". 
-    // Este comando compara el esquema en código con la DB real y aplica los cambios.
-    // Usamos --force para aceptar cambios que no borren datos automáticamente.
-    const output = execSync(`${drizzleKitPath} push`, {
+    if (!existsSync(drizzleKitPath)) {
+      console.warn('⚠️ drizzle-kit not found in node_modules. Skipping auto-migration.')
+      console.warn('Please run "npx drizzle-kit push" manually if you have database errors.')
+      return
+    }
+
+    console.log('Running drizzle-kit push...')
+    const output = execSync(`"${drizzleKitPath}" push`, {
       env: {
         ...process.env,
-        // Forzamos el uso de la config
-        DRIZZLE_CONFIG_PATH: resolve(process.cwd(), 'drizzle.config.ts')
+        DRIZZLE_CONFIG_PATH: configPath
       },
-      encoding: 'utf-8'
+      encoding: 'utf-8',
+      stdio: 'pipe'
     })
 
     console.log('✓ Database Schema synchronized successfully')
-    console.log(output)
+    // console.log(output)
   } catch (error: any) {
     console.error('✗ Intelligent Sync failed:')
-    // Mostramos el error detallado de drizzle-kit
-    if (error.stdout) console.error(error.stdout)
-    if (error.stderr) console.error(error.stderr)
-    
-    // No bloqueamos el arranque de la app, pero avisamos
+    if (error.stdout) console.error('STDOUT:', error.stdout)
+    if (error.stderr) console.error('STDERR:', error.stderr)
+    console.error('ERROR:', error.message)
   }
 })
