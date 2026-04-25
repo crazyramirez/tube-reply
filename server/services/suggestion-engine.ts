@@ -54,6 +54,7 @@ export async function generateSuggestion(commentId: string, langOverride: string
     'para','por','con','sin','del','los','las','una','uno','unos','unas','sus','nuestro',
     'me','te','le','nos','les','se','mi','tu','su','al','el','la','de','en','un',
     'ver','veo','busco','buscar','encontrar','saber','decir','hacer',
+    'lo','lo','les','del','al',
     'hola','gracias','favor','porfavor',
     // ── English ──
     'the','and','for','that','this','with','from','have','are','was','were',
