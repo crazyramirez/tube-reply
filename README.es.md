@@ -58,7 +58,7 @@ Tube Reply está altamente optimizada en rendimiento y rentabilidad. Utiliza mod
 
 ### Comparativa de Modelos y Precios (por 1M tokens)
 
-| Característica | GPT-4o mini | Gemini 3 Flash Preview |
+| Característica | GPT-4o mini | Gemini 3.0 Flash Preview |
 | :--- | :--- | :--- |
 | **Precio de Entrada** | $0.15 | $0.50 |
 | **Entrada en Caché** | $0.075 | $0.05 |
@@ -80,7 +80,7 @@ En un escenario típico con **200 vídeos en tu base de datos** y una **Base de 
 - **100 respuestas**: ~$0.05 USD
 - **1,000 respuestas**: ~$0.50 USD
 
-**Coste Estimado (Gemini 3 Flash Preview):**
+**Coste Estimado (Gemini 3.0 Flash Preview):**
 - **100 respuestas**: ~$0.19 USD
 - **1,000 respuestas**: ~$1.85 USD
 
@@ -134,17 +134,18 @@ cp .env.example .env
 | `YOUTUBE_CLIENT_SECRET`           | Client secret de OAuth2                                  |
 | `YOUTUBE_REDIRECT_URI`            | Debe coincidir con el redirect URI autorizado en GCP     |
 | `GEMINI_API_KEY`                  | Clave API de Google AI Studio                            |
-| `GEMINI_MODEL`                    | ID del modelo Gemini (ej. `gemini-3-flash-preview`)      |
+| `GEMINI_MODEL`                    | ID del modelo Gemini (ej. `gemini-3.0-flash-preview`)      |
 | `OPENAI_API_KEY`                  | Clave API de OpenAI                                      |
 | `OPENAI_MODEL`                    | ID del modelo OpenAI (ej. `gpt-4o-mini`)                 |
 | `AI_PROVIDER`                     | Proveedor por defecto: `gemini` u `openai`               |
 | `TOKEN_ENCRYPTION_KEY`            | 64 caracteres hex (32 bytes) para encriptar tokens con AES-256-GCM |
-| `SYNC_INTERVAL_MINUTES`           | Intervalo de auto-sincronización (por defecto: `60`)     |
+| `SYNC_INTERVAL_MINUTES`           | Intervalo de auto-sincronización (por defecto: `30`)     |
 | `AUTO_SYNC_ON_START`             | Sincronizar al iniciar el servidor (por defecto: `true`) |
 | `MAX_QUOTA_PER_DAY`               | Límite máximo de cuota de la API de YouTube (por defecto: `8500`) |
 | `RATE_LIMIT_LOGIN_MAX`            | Intentos de inicio de sesión máximos por ventana (por defecto: `5`) |
 | `RATE_LIMIT_LOGIN_WINDOW_MINUTES` | Ventana de tiempo para límite de peticiones de login (por defecto: `15`) |
 | `LOCKOUT_DURATION_MINUTES`        | Duración del bloqueo tras fallos de login (por defecto: `30`) |
+| `LOG_RETENTION_DAYS`              | Días para mantener logs de errores/actividad (por defecto: `30`) |
 
 **Generar secretos:**
 

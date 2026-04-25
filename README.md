@@ -58,7 +58,7 @@ Tube Reply is highly optimized for performance and cost-efficiency. It uses **Mi
 
 ### Model Comparison & Pricing (per 1M tokens)
 
-| Feature            | GPT-4o mini       | Gemini 3 Flash Preview             |
+| Feature            | GPT-4o mini       | Gemini 3.0 Flash Preview             |
 | :----------------- | :---------------- | :--------------------------------- |
 | **Input Price**    | $0.15             | $0.50                              |
 | **Cached Input**   | $0.075            | $0.05                              |
@@ -81,7 +81,7 @@ In a typical scenario with **200 videos in your database** and an active **Knowl
 - **100 replies**: ~$0.05 USD
 - **1,000 replies**: ~$0.50 USD
 
-**Estimated Cost (Gemini 3 Flash Preview):**
+**Estimated Cost (Gemini 3.0 Flash Preview):**
 
 - **100 replies**: ~$0.19 USD
 - **1,000 replies**: ~$1.85 USD
@@ -137,17 +137,18 @@ cp .env.example .env
 | `YOUTUBE_CLIENT_SECRET`           | OAuth2 client secret                                     |
 | `YOUTUBE_REDIRECT_URI`            | Must match authorized redirect in Google Cloud Console   |
 | `GEMINI_API_KEY`                  | Google AI Studio API key                                 |
-| `GEMINI_MODEL`                    | Gemini model ID (e.g. `gemini-3-flash-preview`)          |
+| `GEMINI_MODEL`                    | Gemini model ID (e.g. `gemini-3.0-flash-preview`)        |
 | `OPENAI_API_KEY`                  | OpenAI API key                                           |
 | `OPENAI_MODEL`                    | OpenAI model ID (e.g. `gpt-4o-mini`)                     |
 | `AI_PROVIDER`                     | Default provider: `gemini` or `openai`                   |
 | `TOKEN_ENCRYPTION_KEY`            | 64 hex chars (32 bytes) for AES-256-GCM token encryption |
-| `SYNC_INTERVAL_MINUTES`           | Auto-sync interval (default: `60`)                       |
+| `SYNC_INTERVAL_MINUTES`           | Auto-sync interval (default: `30`)                       |
 | `AUTO_SYNC_ON_START`              | Sync comments when server starts (default: `true`)       |
 | `MAX_QUOTA_PER_DAY`               | YouTube API quota ceiling (default: `8500`)              |
 | `RATE_LIMIT_LOGIN_MAX`            | Max login attempts per window (default: `5`)             |
 | `RATE_LIMIT_LOGIN_WINDOW_MINUTES` | Login rate-limit window (default: `15`)                  |
 | `LOCKOUT_DURATION_MINUTES`        | Lockout duration after failed logins (default: `30`)     |
+| `LOG_RETENTION_DAYS`              | Days to keep error/activity logs (default: `30`)         |
 
 **Generate secrets:**
 
