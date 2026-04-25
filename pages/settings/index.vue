@@ -39,6 +39,41 @@ const syncWarning = ref<{ minutesAgo: number; minutesLeft: number } | null>(
   null,
 );
 
+let syncInterval: any = null;
+
+function startPolling() {
+  if (syncInterval) return;
+  syncing.value = true;
+  syncInterval = setInterval(async () => {
+    await refresh();
+    if (ytStatus.value?.lastSync?.status !== "running") {
+      stopPolling();
+      toast.add({
+        title: t("settings.sync_completed") || "Sincronización finalizada",
+        color: "emerald",
+      });
+    }
+  }, 3000);
+}
+
+function stopPolling() {
+  if (syncInterval) {
+    clearInterval(syncInterval);
+    syncInterval = null;
+  }
+  syncing.value = false;
+}
+
+onMounted(() => {
+  if (ytStatus.value?.lastSync?.status === "running") {
+    startPolling();
+  }
+});
+
+onUnmounted(() => {
+  stopPolling();
+});
+
 const languageOptions = computed(() => [
   { label: "🇬🇧 " + t("settings.language_english"), value: "en" },
   { label: "🇪🇸 " + t("settings.language_spanish"), value: "es" },
@@ -99,9 +134,9 @@ async function syncNow(force = false) {
       headers: useCsrfHeaders(),
     });
     toast.add({ title: t("settings.sync_started"), color: "green" });
+    startPolling();
   } catch {
     toast.add({ title: t("settings.sync_failed"), color: "red" });
-  } finally {
     syncing.value = false;
   }
 }

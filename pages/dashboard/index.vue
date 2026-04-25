@@ -25,6 +25,43 @@ const syncWarning = ref<{ minutesAgo: number; minutesLeft: number } | null>(
   null,
 );
 
+let syncInterval: any = null;
+
+async function startPolling() {
+  if (syncInterval) return;
+  syncLoading.value = true;
+  syncInterval = setInterval(async () => {
+    const status = await $fetch<{ lastSync: { status: string } | null }>(
+      "/api/youtube/status",
+    );
+    if (status.lastSync?.status !== "running") {
+      stopPolling();
+      await refresh();
+    }
+  }, 3000);
+}
+
+function stopPolling() {
+  if (syncInterval) {
+    clearInterval(syncInterval);
+    syncInterval = null;
+  }
+  syncLoading.value = false;
+}
+
+onMounted(async () => {
+  const status = await $fetch<{ lastSync: { status: string } | null }>(
+    "/api/youtube/status",
+  );
+  if (status.lastSync?.status === "running") {
+    startPolling();
+  }
+});
+
+onUnmounted(() => {
+  stopPolling();
+});
+
 async function triggerSync(force = false) {
   if (!force) {
     const status = await $fetch<{
@@ -53,9 +90,9 @@ async function triggerSync(force = false) {
       method: "POST",
       headers: useCsrfHeaders(),
     });
-    setTimeout(() => refresh(), 3000);
+
+    startPolling();
   } catch {
-  } finally {
     syncLoading.value = false;
   }
 }
