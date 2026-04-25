@@ -30,16 +30,20 @@ export default defineNitroPlugin(async () => {
           // Execute raw SQL
           db.run(sql.raw(cleanSql))
         } catch (err: any) {
-          // Ignore "already exists" errors
-          if (
-            err.message?.includes('already exists') || 
-            err.message?.includes('duplicate column') ||
-            err.message?.includes('duplicate column name')
-          ) {
-            // This is fine, it means the migration was partially applied before
+          const errMsg = err.message || ''
+          const causeMsg = err.cause?.message || ''
+          const fullMsg = `${errMsg} ${causeMsg}`.toLowerCase()
+
+          const isAlreadyExists = 
+            fullMsg.includes('already exists') || 
+            fullMsg.includes('duplicate column') ||
+            fullMsg.includes('duplicate column name') ||
+            fullMsg.includes('already has')
+
+          if (isAlreadyExists) {
             continue
           }
-          console.warn(`    ⚠️ Statement failed in ${file}: ${err.message}`)
+          console.warn(`    ⚠️ Statement failed in ${file}: ${errMsg}`)
         }
       }
     }
