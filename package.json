@@ -23,7 +23,8 @@
     "googleapis": "^148.0.0",
     "nuxt": "^3.16.0",
     "vue": "^3.5.13",
-    "vue-router": "^4.5.0"
+    "vue-router": "^4.5.0",
+    "drizzle-kit": "^0.31.10"
   },
   "devDependencies": {
     "@nuxt/devtools": "latest",
@@ -31,7 +32,6 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "^7.6.12",
     "@vite-pwa/nuxt": "^1.1.1",
-    "drizzle-kit": "^0.31.10",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3"
   }
