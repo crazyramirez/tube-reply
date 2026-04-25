@@ -29,6 +29,7 @@ export default defineNuxtConfig({
   },
 
   pwa: {
+    registerType: 'autoUpdate',
     manifest: {
       name: 'TubeReply',
       short_name: 'TubeReply',
@@ -42,19 +43,35 @@ export default defineNuxtConfig({
           src: '/images/icons/web-app-manifest-192x192.png',
           sizes: '192x192',
           type: 'image/png',
-          purpose: 'any maskable',
+          purpose: 'any',
+        },
+        {
+          src: '/images/icons/web-app-manifest-192x192.png',
+          sizes: '192x192',
+          type: 'image/png',
+          purpose: 'maskable',
         },
         {
           src: '/images/icons/web-app-manifest-512x512.png',
           sizes: '512x512',
           type: 'image/png',
-          purpose: 'any maskable',
+          purpose: 'any',
+        },
+        {
+          src: '/images/icons/web-app-manifest-512x512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'maskable',
         },
       ],
     },
     workbox: {
       navigateFallback: '/',
-      globPatterns: [],
+      globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+    },
+    client: {
+      installPrompt: true,
+      periodicSyncForUpdates: 3600,
     },
     devOptions: {
       enabled: false,
