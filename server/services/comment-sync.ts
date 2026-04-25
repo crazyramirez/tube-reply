@@ -57,24 +57,23 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
     await refreshChannelMetadata().catch(() => {})
 
     // Sync video list (always on manual, or if no videos exist)
-    const existingVideos = await db.query.videos.findMany()
+    // Optimization: check existing videos only once
+    const existingVideos = await db.query.videos.findMany({ columns: { id: true } })
     if (syncType === 'manual' || existingVideos.length === 0) {
       await syncVideoList(yt, db, config)
       totalQuota += 2
     }
 
+    // Re-fetch all videos after potential syncVideoList
     const allVideos = await db.query.videos.findMany()
     const ownerChannelId = token.channelId
 
-    // manual: all videos (user-triggered, no limit)
-    // scheduled recent: last 180 days
-    // scheduled all (deep daily): everything
     const cutoff = new Date(Date.now() - RECENT_VIDEO_DAYS * 24 * 60 * 60 * 1000).toISOString()
     const videosToSync = syncType === 'manual' || scope === 'all'
       ? allVideos
       : allVideos.filter(v => v.publishedAt >= cutoff)
 
-    await logger.info('comment-sync', `Syncing ${videosToSync.length}/${allVideos.length} videos (scope: ${scope})`)
+    await logger.info('comment-sync', `Syncing ${videosToSync.length} videos (type: ${syncType}, scope: ${scope})`)
 
     for (const video of videosToSync) {
       // Abort if this run consumed most of its share (real daily guard is at start)

@@ -39,12 +39,15 @@ export async function autoSuggestPendingComments(): Promise<void> {
       return
     }
 
-    await logger.info('auto-suggest', `Processing ${rows.length} pending comments`)
+    // Process in smaller batches to avoid long-running background tasks
+    const BATCH_SIZE = 50
+    const toProcess = rows.slice(0, BATCH_SIZE)
+    await logger.info('auto-suggest', `Processing ${toProcess.length} of ${rows.length} pending comments`)
 
     let succeeded = 0
     let failed = 0
 
-    for (const row of rows) {
+    for (const row of toProcess) {
       try {
         await generateSuggestion(row.id)
         succeeded++
