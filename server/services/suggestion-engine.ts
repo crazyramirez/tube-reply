@@ -1,4 +1,4 @@
-import { eq, or, and, like, desc } from 'drizzle-orm'
+import { eq, or, and, sql, desc } from 'drizzle-orm'
 import { useDb } from '../utils/db'
 import * as gemini from '../utils/gemini'
 import * as openai from '../utils/openai'
@@ -45,16 +45,25 @@ export async function generateSuggestion(commentId: string, langOverride: string
   const ctx = await buildContext(commentId, langOverride, additionalContext)
   const prompt = buildPrompt(ctx)
 
+  function normalizeQuery(text: string): string {
+    return text
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/\p{Extended_Pictographic}/gu, '')
+      .toLowerCase()
+      .trim()
+  }
+
   // Search function — called by Gemini/OpenAI via function calling when it needs to find a specific video
   async function searchVideos(query: string): Promise<Array<{ id: string; title: string; thumbnailUrl: string | null; isShort: boolean }>> {
-    const words = query.toLowerCase().split(/\s+/).filter(w => w.length >= 3)
+    const words = normalizeQuery(query).split(/\s+/).filter(w => w.length >= 3)
     if (!words.length) return []
-    
-    // Search in title, description and tags
+
+    // Search in title, description and tags — normalize DB values for accent-insensitive matching
     const conditions = words.map(w => or(
-      like(videos.title, `%${w}%`),
-      like(videos.description, `%${w}%`),
-      like(videos.tags, `%${w}%`)
+      sql`normalize_text(${videos.title}) LIKE ${'%' + w + '%'}`,
+      sql`normalize_text(${videos.description}) LIKE ${'%' + w + '%'}`,
+      sql`normalize_text(${videos.tags}) LIKE ${'%' + w + '%'}`
     ))
 
     const results = await db

@@ -28,6 +28,16 @@ export function useDb() {
   sqlite.pragma('journal_mode = WAL')
   sqlite.pragma('foreign_keys = ON')
 
+  // Custom function: strip diacritics + emojis for accent-insensitive search
+  sqlite.function('normalize_text', (text: string | null) => {
+    if (!text) return ''
+    return text
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/\p{Extended_Pictographic}/gu, '')
+      .toLowerCase()
+  })
+
   _db = drizzle(sqlite, { schema })
   return _db
 }
