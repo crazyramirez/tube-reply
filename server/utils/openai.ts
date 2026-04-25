@@ -13,6 +13,37 @@ export function getOpenAIClient() {
 }
 
 
+export async function openaiGenerate(
+  prompt: string,
+  retries = 2,
+): Promise<{ text: string; promptTokens: number; completionTokens: number }> {
+  const config = useRuntimeConfig()
+  const model = (config.openaiModel as string) ?? 'gpt-4o-mini'
+  const client = getOpenAIClient()
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await client.chat.completions.create({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+      })
+      return {
+        text: response.choices[0].message.content ?? '',
+        promptTokens: response.usage?.prompt_tokens ?? 0,
+        completionTokens: response.usage?.completion_tokens ?? 0,
+      }
+    } catch (err) {
+      console.error(`[openai] openaiGenerate attempt ${attempt + 1} failed:`, err)
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)))
+      } else {
+        throw err
+      }
+    }
+  }
+  throw new Error('Failed to generate with OpenAI after retries')
+}
+
 export async function openaiGenerateWithTools(
   prompt: string,
   searchFn: VideoSearchFn,

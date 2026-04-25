@@ -155,6 +155,13 @@ const autoSuggestEnabled = computed(
   () => settings.value?.autoSuggestEnabled ?? false,
 );
 
+const { data: pendingCount, refresh: refreshPendingCount } = await useFetch<{
+  count: number;
+}>("/api/comments/suggest-pending");
+
+const showForceSuggestModal = ref(false);
+const forcingSuggest = ref(false);
+
 async function updateAutoSuggest(enabled: boolean) {
   try {
     await $fetch("/api/settings", {
@@ -162,10 +169,47 @@ async function updateAutoSuggest(enabled: boolean) {
       body: { autoSuggestEnabled: enabled },
       headers: useCsrfHeaders(),
     });
-    toast.add({ title: t("settings.auto_suggest_saved"), color: "green" });
     await refreshSettings();
+    if (enabled && (pendingCount.value?.count ?? 0) > 0) {
+      $fetch("/api/comments/suggest-pending", {
+        method: "POST",
+        headers: useCsrfHeaders(),
+      }).catch(() => {});
+      toast.add({
+        title: t("settings.auto_suggest_saved"),
+        description: t("settings.auto_suggest_processing", {
+          n: pendingCount.value?.count,
+        }),
+        color: "green",
+      });
+    } else {
+      toast.add({ title: t("settings.auto_suggest_saved"), color: "green" });
+    }
   } catch {
     toast.add({ title: t("settings.auto_suggest_failed"), color: "red" });
+  }
+}
+
+async function forceSuggestNow() {
+  forcingSuggest.value = true;
+  try {
+    await $fetch("/api/comments/suggest-pending", {
+      method: "POST",
+      headers: useCsrfHeaders(),
+    });
+    toast.add({
+      title: t("settings.force_suggest_started"),
+      description: t("settings.force_suggest_description", {
+        n: pendingCount.value?.count,
+      }),
+      color: "emerald",
+    });
+    await refreshPendingCount();
+  } catch {
+    toast.add({ title: t("settings.force_suggest_failed"), color: "red" });
+  } finally {
+    forcingSuggest.value = false;
+    showForceSuggestModal.value = false;
   }
 }
 
@@ -721,6 +765,39 @@ async function updateAiProvider(provider: string) {
                 </button>
               </div>
             </div>
+
+            <!-- Force AI Suggest Button -->
+            <div class="px-2 pb-1">
+              <button
+                class="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] hover:bg-emerald-500/[0.1] text-emerald-400 text-sm font-bold transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed group"
+                :disabled="!pendingCount?.count || forcingSuggest"
+                @click="showForceSuggestModal = true"
+              >
+                <div class="flex items-center gap-2">
+                  <UIcon
+                    name="i-heroicons-sparkles"
+                    class="w-4 h-4 group-hover:scale-110 transition-transform"
+                  />
+                  {{ $t("settings.force_suggest_button") }}
+                </div>
+                <span
+                  class="text-[10px] font-black px-2 py-0.5 rounded-lg"
+                  :class="
+                    pendingCount?.count
+                      ? 'bg-emerald-500/20 text-emerald-300'
+                      : 'bg-white/5 text-slate-600'
+                  "
+                >
+                  {{
+                    pendingCount?.count
+                      ? $t("settings.force_suggest_count", {
+                          n: pendingCount.count,
+                        })
+                      : $t("settings.force_suggest_none")
+                  }}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -799,6 +876,22 @@ async function updateAiProvider(provider: string) {
         </div>
       </div>
     </div>
+
+    <!-- Confirm Force AI Suggest Modal -->
+    <UiConfirmModal
+      v-model="showForceSuggestModal"
+      :title="$t('settings.force_suggest_modal_title')"
+      :description="
+        $t('settings.force_suggest_modal_description', {
+          n: pendingCount?.count ?? 0,
+        })
+      "
+      :confirm-text="$t('settings.force_suggest_modal_confirm')"
+      :cancel-text="$t('settings.cancel')"
+      :loading="forcingSuggest"
+      type="info"
+      @confirm="forceSuggestNow"
+    />
 
     <!-- Confirm Disconnect Modal -->
     <UiConfirmModal
