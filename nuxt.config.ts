@@ -28,55 +28,91 @@ export default defineNuxtConfig({
     },
   },
 
-  pwa: {
-    registerType: 'autoUpdate',
-    manifest: {
-      name: 'TubeReply',
-      short_name: 'TubeReply',
-      description: 'AI-powered YouTube comment management',
-      theme_color: '#000000',
-      background_color: '#000000',
-      display: 'standalone',
-      orientation: 'portrait',
-      icons: [
-        {
-          src: '/images/icons/web-app-manifest-192x192.png',
-          sizes: '192x192',
-          type: 'image/png',
-          purpose: 'any',
-        },
-        {
-          src: '/images/icons/web-app-manifest-192x192.png',
-          sizes: '192x192',
-          type: 'image/png',
-          purpose: 'maskable',
-        },
-        {
-          src: '/images/icons/web-app-manifest-512x512.png',
-          sizes: '512x512',
-          type: 'image/png',
-          purpose: 'any',
-        },
-        {
-          src: '/images/icons/web-app-manifest-512x512.png',
-          sizes: '512x512',
-          type: 'image/png',
-          purpose: 'maskable',
-        },
-      ],
+    pwa: {
+      registerType: 'autoUpdate',
+      manifest: {
+        name: 'TubeReply',
+        short_name: 'TubeReply',
+        description: 'AI-powered YouTube comment management',
+        theme_color: '#000000',
+        background_color: '#000000',
+        display: 'standalone',
+        orientation: 'portrait',
+        start_url: '/',
+        scope: '/',
+        icons: [
+          {
+            src: '/images/icons/web-app-manifest-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/images/icons/web-app-manifest-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+          {
+            src: '/images/icons/web-app-manifest-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: '/images/icons/web-app-manifest-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
+      },
+      workbox: {
+        navigateFallback: '/',
+        globPatterns: ['**/*.{js,css,html,png,svg,ico,json,webp}'],
+        cleanupOutdatedCaches: true,
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // <== 365 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'gstatic-fonts-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // <== 365 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+        ],
+      },
+      client: {
+        installPrompt: true,
+        periodicSyncForUpdates: 3600,
+      },
+      devOptions: {
+        enabled: true,
+        type: 'classic',
+        suppressWarnings: true,
+        navigateFallbackAllowlist: [/^\/$/],
+      },
     },
-    workbox: {
-      navigateFallback: '/',
-      globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
-    },
-    client: {
-      installPrompt: true,
-      periodicSyncForUpdates: 3600,
-    },
-    devOptions: {
-      enabled: false,
-    },
-  },
 
   css: ['~/assets/css/main.css'],
 
@@ -92,6 +128,8 @@ export default defineNuxtConfig({
         'Referrer-Policy': 'strict-origin-when-cross-origin',
       },
     },
+    '/sw.js': { headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' } },
+    '/manifest.webmanifest': { headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' } },
     '/**': {
       headers: {
         'X-Robots-Tag': 'noindex, nofollow, noarchive, nosnippet',

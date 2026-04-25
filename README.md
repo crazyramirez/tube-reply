@@ -26,16 +26,26 @@ AI-powered YouTube comment management tool. Syncs comments from your channel, ge
 
 ## Tech Stack
 
-| Layer      | Tech                                    |
-| ---------- | --------------------------------------- |
-| Framework  | Nuxt 3                                  |
-| UI         | Vue 3 + @nuxt/ui + Tailwind CSS         |
-| Database   | SQLite (better-sqlite3) + Drizzle ORM   |
-| AI         | Google Gemini & OpenAI                  |
-| YouTube    | Google APIs OAuth2 (`googleapis`)       |
-| Auth       | Session cookie + bcrypt password hash   |
-| Encryption | AES-256-GCM (token storage)             |
-| PWA        | @vite-pwa/nuxt                          |
+| Layer      | Tech                                  |
+| ---------- | ------------------------------------- |
+| Framework  | Nuxt 3                                |
+| UI         | Vue 3 + @nuxt/ui + Tailwind CSS       |
+| Database   | **SQLite** (better-sqlite3) + Drizzle |
+| AI         | Google Gemini & OpenAI                |
+| YouTube    | Google APIs OAuth2 (`googleapis`)     |
+| Auth       | Session cookie + bcrypt password hash |
+| Encryption | AES-256-GCM (token storage)           |
+| PWA        | @vite-pwa/nuxt                        |
+
+---
+
+## Database Management
+
+Tube Reply uses **SQLite** for its simplicity and portability. One of the core features is its **Auto-Migration System**:
+
+- **No Manual Setup Required**: The app automatically detects if the database file exists.
+- **Auto-Provisioning**: On the first run, it creates the database file and all necessary tables.
+- **Zero-Config Migrations**: Every time the app starts, it checks for pending schema updates and applies them automatically. You don't need to run `npm run db:migrate` manually (although it's available for advanced use).
 
 ---
 
@@ -67,7 +77,6 @@ cp .env.example .env
 
 | Variable                          | Description                                              |
 | --------------------------------- | -------------------------------------------------------- |
-| `NUXT_SECRET`                     | 32-byte hex string for session signing                   |
 | `ADMIN_PASSWORD_HASH`             | bcrypt hash — generate with `npm run hash-password`      |
 | `SESSION_DURATION_HOURS`          | Session TTL (default: `24`)                              |
 | `DATABASE_URL`                    | SQLite file path (default: `./data/youtube.db`)          |
@@ -89,25 +98,18 @@ cp .env.example .env
 **Generate secrets:**
 
 ```bash
-# NUXT_SECRET and TOKEN_ENCRYPTION_KEY
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 # ADMIN_PASSWORD_HASH
 npm run hash-password
 ```
 
-### 3. Run database migrations
-
-```bash
-npm run db:migrate
-```
-
-### 4. Start development server
+### 3. Start development server
 
 ```bash
 npm run dev
 ```
 
+The database will be initialized and migrated automatically on start.
 App runs at `http://localhost:3000`.
 
 ---
