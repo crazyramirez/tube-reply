@@ -86,6 +86,12 @@ export default defineNuxtConfig({
     externals: {
       external: ['better-sqlite3'],
     },
+    serverAssets: [
+      {
+        baseName: 'migrations',
+        dir: './server/db/migrations',
+      },
+    ],
   },
 
   runtimeConfig: {

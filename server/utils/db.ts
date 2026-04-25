@@ -12,7 +12,14 @@ export function useDb() {
   const config = useRuntimeConfig()
   const dbUrl = config.dbUrl
   const dbPath = resolve(dbUrl)
-  mkdirSync(dirname(dbPath), { recursive: true })
+  const dbDir = dirname(dbPath)
+
+  try {
+    console.log(`Initializing database at: ${dbPath}`)
+    mkdirSync(dbDir, { recursive: true })
+  } catch (err) {
+    console.error(`Failed to create database directory at ${dbDir}:`, err)
+  }
 
   const sqlite = new Database(dbPath)
   sqlite.pragma('journal_mode = WAL')
