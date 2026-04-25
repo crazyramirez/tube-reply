@@ -4,6 +4,7 @@ import type { KnowledgeBaseEntry, KBType } from "~/shared/types";
 definePageMeta({ middleware: "auth" });
 
 const { t } = useI18n();
+const { data: settings } = await useFetch<any>("/api/settings");
 
 const { data, refresh } = await useFetch<{ items: KnowledgeBaseEntry[] }>(
   "/api/knowledge-base",
@@ -131,39 +132,107 @@ const entryToDelete = ref<KnowledgeBaseEntry | null>(null);
 const deleting = ref(false);
 
 function openDelete(entry: KnowledgeBaseEntry) {
-  console.log('Opening delete for entry:', entry);
   entryToDelete.value = entry;
   showConfirm.value = true;
 }
 
 async function confirmDelete() {
-  if (!entryToDelete.value) {
-    console.warn('No entry to delete!');
-    return;
-  }
-  
-  console.log('Confirming delete for ID:', entryToDelete.value.id);
+  if (!entryToDelete.value) return;
   deleting.value = true;
   try {
-    const res = await $fetch(`/api/knowledge-base/${entryToDelete.value.id}`, {
+    await $fetch(`/api/knowledge-base/${entryToDelete.value.id}`, {
       method: "DELETE",
       headers: useCsrfHeaders(),
     });
-    console.log('Delete response:', res);
     toast.add({ title: t("knowledge_base.deleted"), color: "green" });
     showConfirm.value = false;
     entryToDelete.value = null;
     await refresh();
   } catch (err: any) {
-    console.error('Delete failed:', err);
-    toast.add({ 
-      title: t("knowledge_base.delete_failed"), 
+    toast.add({
+      title: t("knowledge_base.delete_failed"),
       description: err.data?.statusMessage || err.message,
-      color: "red" 
+      color: "red",
     });
   } finally {
     deleting.value = false;
   }
+}
+
+// ─── AI Generate ──────────────────────────────────────────────────────────────
+const showGenerate = ref(false);
+const generating = ref(false);
+const savingBulk = ref(false);
+const generateCount = ref(10);
+const generatedEntries = ref<
+  Array<{ type: string; title: string; content: string; selected: boolean }>
+>([]);
+const generateProvider = ref("");
+
+async function generateWithAI() {
+  generating.value = true;
+  generatedEntries.value = [];
+  try {
+    const res = await $fetch<{ entries: any[]; provider: string }>(
+      "/api/knowledge-base/generate",
+      {
+        method: "POST",
+        body: { count: generateCount.value },
+        headers: useCsrfHeaders(),
+      },
+    );
+    generatedEntries.value = (res.entries ?? []).map((e) => ({
+      ...e,
+      selected: true,
+    }));
+    generateProvider.value = res.provider;
+    if (!generatedEntries.value.length) {
+      toast.add({
+        title: "La IA no generó entradas nuevas. Puede que todas ya existan.",
+        color: "yellow",
+      });
+    }
+  } catch (err: any) {
+    toast.add({
+      title: "Error al generar",
+      description: err.data?.statusMessage || err.message,
+      color: "red",
+    });
+  } finally {
+    generating.value = false;
+  }
+}
+
+async function saveBulkEntries() {
+  const toSave = generatedEntries.value.filter((e) => e.selected);
+  if (!toSave.length) return;
+  savingBulk.value = true;
+  let saved = 0;
+  for (const entry of toSave) {
+    try {
+      await $fetch("/api/knowledge-base", {
+        method: "POST",
+        body: {
+          type: entry.type,
+          title: entry.title,
+          content: entry.content,
+          priority: 0,
+        },
+        headers: useCsrfHeaders(),
+      });
+      saved++;
+    } catch {
+      /* skip duplicates */
+    }
+  }
+  toast.add({
+    title: `${saved} entradas guardadas en el Knowledge Base`,
+    color: "green",
+  });
+  showGenerate.value = false;
+  generatedEntries.value = [];
+  await refresh();
+  savingBulk.value = false;
 }
 </script>
 
@@ -240,6 +309,27 @@ async function confirmDelete() {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 10px;
 }
+
+.ai-generate-btn {
+  @apply relative overflow-hidden px-5 py-3 rounded-2xl font-bold text-sm transition-all duration-300 cursor-pointer text-amber-300;
+  background: linear-gradient(
+    135deg,
+    rgba(245, 158, 11, 0.15) 0%,
+    rgba(217, 119, 6, 0.15) 100%
+  );
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  box-shadow: 0 4px 16px -4px rgba(245, 158, 11, 0.2);
+}
+.ai-generate-btn:hover {
+  @apply -translate-y-0.5 text-amber-200;
+  background: linear-gradient(
+    135deg,
+    rgba(245, 158, 11, 0.25) 0%,
+    rgba(217, 119, 6, 0.25) 100%
+  );
+  border-color: rgba(245, 158, 11, 0.4);
+  box-shadow: 0 8px 24px -4px rgba(245, 158, 11, 0.3);
+}
 </style>
 
 <template>
@@ -259,16 +349,30 @@ async function confirmDelete() {
           {{ $t("knowledge_base.subtitle") }}
         </p>
       </div>
-      <button
-        class="premium-btn-primary group flex items-center gap-2"
-        @click="openNew"
-      >
-        <UIcon
-          name="i-heroicons-plus"
-          class="w-5 h-5 group-hover:rotate-90 transition-transform duration-300"
-        />
-        <span>{{ $t("knowledge_base.add") }}</span>
-      </button>
+      <div class="flex items-center gap-3">
+        <!-- AI Generate button -->
+        <button
+          v-if="settings?.geminiKeyConfigured"
+          class="ai-generate-btn group flex items-center gap-2"
+          @click="showGenerate = true"
+        >
+          <UIcon
+            name="i-heroicons-sparkles"
+            class="w-5 h-5 group-hover:animate-spin"
+          />
+          <span>{{ $t("knowledge_base.generate_ai") }}</span>
+        </button>
+        <button
+          class="premium-btn-primary group flex items-center gap-2"
+          @click="openNew"
+        >
+          <UIcon
+            name="i-heroicons-plus"
+            class="w-5 h-5 group-hover:rotate-90 transition-transform duration-300"
+          />
+          <span>{{ $t("knowledge_base.add") }}</span>
+        </button>
+      </div>
     </div>
 
     <div
@@ -312,7 +416,10 @@ async function confirmDelete() {
             ]"
           >
             <UIcon
-              :name="typeConfig[entry.type]?.icon || 'i-heroicons-question-mark-circle'"
+              :name="
+                typeConfig[entry.type]?.icon ||
+                'i-heroicons-question-mark-circle'
+              "
               class="w-5 h-5"
             />
           </div>
@@ -534,6 +641,210 @@ async function confirmDelete() {
               saving ? $t("knowledge_base.saving") : $t("knowledge_base.save")
             }}
           </button>
+        </div>
+      </div>
+    </UModal>
+
+    <!-- AI Generate Modal -->
+    <UModal
+      v-model="showGenerate"
+      :ui="{
+        width: 'sm:max-w-2xl',
+        background: 'bg-transparent',
+        shadow: 'none',
+      }"
+    >
+      <div
+        class="glass-card overflow-hidden border-amber-500/20 shadow-[0_0_50px_rgba(245,158,11,0.12)]"
+      >
+        <!-- Header -->
+        <div
+          class="px-8 py-6 border-b border-white/[0.06] flex items-center gap-3 bg-white/[0.01]"
+        >
+          <div
+            class="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center border border-amber-500/20"
+          >
+            <UIcon name="i-heroicons-sparkles" class="w-5 h-5 text-amber-400" />
+          </div>
+          <div>
+            <p
+              class="text-[10px] font-bold text-amber-400 uppercase tracking-widest"
+            >
+              Inteligencia Artificial
+            </p>
+            <h2 class="font-black text-xl text-white tracking-tight">
+              Generar Knowledge Base
+            </h2>
+          </div>
+        </div>
+
+        <!-- Config -->
+        <div v-if="!generatedEntries.length" class="p-8 space-y-6">
+          <p class="text-slate-400 text-sm leading-relaxed">
+            La IA analizará tus <strong class="text-white">vídeos</strong>,
+            <strong class="text-white">comentarios reales</strong> y las
+            entradas ya existentes para generar entradas nuevas y relevantes.
+          </p>
+          <div class="space-y-2">
+            <label
+              class="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1"
+              >Número de entradas a generar</label
+            >
+            <div class="flex items-center gap-4">
+              <input
+                v-model.number="generateCount"
+                type="range"
+                min="5"
+                max="30"
+                step="5"
+                class="flex-1 accent-amber-400"
+              />
+              <span
+                class="text-2xl font-black text-amber-400 w-8 text-center"
+                >{{ generateCount }}</span
+              >
+            </div>
+          </div>
+          <div class="flex justify-end gap-3 pt-2">
+            <button
+              class="px-6 py-3 rounded-xl text-sm font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
+              @click="showGenerate = false"
+            >
+              Cancelar
+            </button>
+            <button
+              class="ai-generate-btn flex items-center gap-2 px-8"
+              :disabled="generating"
+              @click="generateWithAI"
+            >
+              <UIcon
+                :name="
+                  generating ? 'i-heroicons-arrow-path' : 'i-heroicons-sparkles'
+                "
+                class="w-4 h-4"
+                :class="generating ? 'animate-spin' : ''"
+              />
+              {{ generating ? "Generando…" : "Generar con IA" }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Results preview -->
+        <div v-else class="flex flex-col" style="max-height: 70vh">
+          <div
+            class="px-8 py-4 border-b border-white/[0.06] flex items-center justify-between"
+          >
+            <span class="text-sm text-slate-400">
+              <strong class="text-white">{{
+                generatedEntries.filter((e) => e.selected).length
+              }}</strong>
+              seleccionadas de
+              <strong class="text-amber-400">{{
+                generatedEntries.length
+              }}</strong>
+              generadas
+              <span class="text-slate-600 ml-2">({{ generateProvider }})</span>
+            </span>
+            <div class="flex gap-2">
+              <button
+                class="text-xs text-slate-500 hover:text-white transition-colors cursor-pointer"
+                @click="generatedEntries.forEach((e) => (e.selected = true))"
+              >
+                Seleccionar todas
+              </button>
+              <span class="text-slate-700">·</span>
+              <button
+                class="text-xs text-slate-500 hover:text-white transition-colors cursor-pointer"
+                @click="generatedEntries.forEach((e) => (e.selected = false))"
+              >
+                Ninguna
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-y-auto custom-scrollbar flex-1 p-6 space-y-3">
+            <label
+              v-for="(entry, i) in generatedEntries"
+              :key="i"
+              class="flex gap-3 p-4 rounded-2xl border cursor-pointer transition-all duration-200"
+              :class="
+                entry.selected
+                  ? 'bg-white/[0.05] border-white/[0.12]'
+                  : 'bg-transparent border-white/[0.04] opacity-50'
+              "
+            >
+              <input
+                type="checkbox"
+                v-model="entry.selected"
+                class="mt-1 accent-amber-400 shrink-0"
+              />
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <span
+                    class="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full"
+                    :class="
+                      typeConfig[entry.type as KBType]?.bg +
+                        ' ' +
+                        typeConfig[entry.type as KBType]?.text ||
+                      'bg-white/5 text-slate-400'
+                    "
+                    >{{ entry.type }}</span
+                  >
+                  <span class="text-sm font-bold text-white truncate">{{
+                    entry.title
+                  }}</span>
+                </div>
+                <p class="text-slate-400 text-xs leading-relaxed line-clamp-3">
+                  {{ entry.content }}
+                </p>
+              </div>
+            </label>
+          </div>
+
+          <div
+            class="px-8 py-5 border-t border-white/[0.06] bg-white/[0.01] flex justify-between items-center gap-3"
+          >
+            <button
+              class="text-sm text-slate-500 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+              @click="generatedEntries = []"
+            >
+              <UIcon name="i-heroicons-arrow-left" class="w-4 h-4" />
+              Volver a generar
+            </button>
+            <div class="flex gap-3">
+              <button
+                class="px-6 py-3 rounded-xl text-sm font-bold text-slate-400 hover:text-white hover:bg-white/5 transition-all cursor-pointer"
+                @click="
+                  showGenerate = false;
+                  generatedEntries = [];
+                "
+              >
+                Cancelar
+              </button>
+              <button
+                class="premium-btn-primary flex items-center gap-2 py-3 px-8"
+                :disabled="
+                  savingBulk || !generatedEntries.some((e) => e.selected)
+                "
+                @click="saveBulkEntries"
+              >
+                <UIcon
+                  :name="
+                    savingBulk
+                      ? 'i-heroicons-arrow-path'
+                      : 'i-heroicons-check-circle'
+                  "
+                  class="w-4 h-4"
+                  :class="savingBulk ? 'animate-spin' : ''"
+                />
+                {{
+                  savingBulk
+                    ? "Guardando…"
+                    : `Guardar ${generatedEntries.filter((e) => e.selected).length} entradas`
+                }}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </UModal>

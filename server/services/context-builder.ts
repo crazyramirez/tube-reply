@@ -71,23 +71,53 @@ export async function buildContext(commentId: string, langOverride: string | nul
     columns: { authorName: true, text: true },
   })
 
-  const channelStyleEntry = await db.query.knowledgeBase.findFirst({
+  // Collect ALL style entries and merge them into the channel style
+  const styleEntries = await db.query.knowledgeBase.findMany({
     where: and(
       eq(knowledgeBase.type, 'style'),
       eq(knowledgeBase.isActive, true),
     ),
     orderBy: [desc(knowledgeBase.priority)],
   })
+  const mergedStyle = styleEntries.length
+    ? styleEntries.map(e => `[${e.title}]\n${e.content}`).join('\n\n')
+    : null
 
-  const kbEntries = await db.query.knowledgeBase.findMany({
-    where: eq(knowledgeBase.isActive, true),
+  // Collect rule entries — always included, they are hard constraints
+  const ruleEntries = await db.query.knowledgeBase.findMany({
+    where: and(
+      eq(knowledgeBase.type, 'rule'),
+      eq(knowledgeBase.isActive, true),
+    ),
     orderBy: [desc(knowledgeBase.priority)],
-    limit: MAX_KB_ENTRIES + 1,
   })
 
-  const filteredKb = kbEntries
-    .filter(e => e.type !== 'style')
+  // Collect faq + info entries and score by relevance to the comment
+  const allFaqInfo = await db.query.knowledgeBase.findMany({
+    where: and(
+      eq(knowledgeBase.isActive, true),
+    ),
+    orderBy: [desc(knowledgeBase.priority)],
+  })
+
+  const commentLower = (comment.text ?? '').toLowerCase()
+  const scoredKb = allFaqInfo
+    .filter(e => e.type === 'faq' || e.type === 'info')
+    .map(e => {
+      const haystack = `${e.title} ${e.content}`.toLowerCase()
+      // Simple keyword overlap score
+      const words = commentLower.split(/\s+/).filter(w => w.length > 3)
+      const score = words.filter(w => haystack.includes(w)).length
+      return { e, score }
+    })
+    .sort((a, b) => b.score - a.score || 0)
     .slice(0, MAX_KB_ENTRIES)
+    .map(({ e }) => e)
+
+  const filteredKb = [
+    ...ruleEntries,
+    ...scoredKb,
+  ].slice(0, MAX_KB_ENTRIES + ruleEntries.length)
 
   // Only most-recent videos as baseline — search_videos tool handles specific lookups
   const recentVideos = await db.query.videos.findMany({
@@ -122,7 +152,7 @@ export async function buildContext(commentId: string, langOverride: string | nul
       title: e.title,
       content: e.content.substring(0, MAX_KB_CONTENT_CHARS),
     })),
-    channelStyle: channelStyleEntry?.content ?? null,
+    channelStyle: mergedStyle,
     recentVideos: recentVideos.map(v => ({
       id: v.id,
       title: v.title,

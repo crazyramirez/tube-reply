@@ -145,6 +145,8 @@ const { data: settings, refresh: refreshSettings } = await useFetch<{
   aiProvider: string;
   geminiModel: string;
   openaiModel: string;
+  geminiKeyConfigured: boolean;
+  openaiKeyConfigured: boolean;
   syncIntervalMinutes: number;
   maxQuotaPerDay: number;
   lockoutDurationMinutes: number;
@@ -213,19 +215,74 @@ async function forceSuggestNow() {
   }
 }
 
-async function updateAiProvider(provider: string) {
+async function updateAiProvider(provider: string, silent = false) {
+  if (provider === "gemini" && !settings.value?.geminiKeyConfigured) {
+    if (!silent) {
+      toast.add({
+        title: t("settings.key_missing_title"),
+        description: t("settings.gemini_key_missing_desc"),
+        color: "red",
+      });
+    }
+    return;
+  }
+  if (provider === "openai" && !settings.value?.openaiKeyConfigured) {
+    if (!silent) {
+      toast.add({
+        title: t("settings.key_missing_title"),
+        description: t("settings.openai_key_missing_desc"),
+        color: "red",
+      });
+    }
+    return;
+  }
+
   try {
     await $fetch("/api/settings", {
       method: "PATCH",
       body: { aiProvider: provider },
       headers: useCsrfHeaders(),
     });
-    toast.add({ title: t("settings.ai_provider_saved"), color: "green" });
+    if (!silent) {
+      toast.add({ title: t("settings.ai_provider_saved"), color: "green" });
+    }
     await refreshSettings();
   } catch {
-    toast.add({ title: t("settings.ai_provider_failed"), color: "red" });
+    if (!silent) {
+      toast.add({ title: t("settings.ai_provider_failed"), color: "red" });
+    }
   }
 }
+
+// Auto-fix AI provider if current one is not configured
+onMounted(async () => {
+  if (settings.value) {
+    const current = settings.value.aiProvider;
+    if (
+      current === "gemini" &&
+      !settings.value.geminiKeyConfigured &&
+      settings.value.openaiKeyConfigured
+    ) {
+      await updateAiProvider("openai", true);
+      toast.add({
+        title: t("settings.ai_provider_switched"),
+        description: t("settings.ai_provider_switched_desc", { name: "OpenAI" }),
+        color: "amber",
+      });
+    } else if (
+      current === "openai" &&
+      !settings.value.openaiKeyConfigured &&
+      settings.value.geminiKeyConfigured
+    ) {
+      await updateAiProvider("gemini", true);
+      toast.add({
+        title: t("settings.ai_provider_switched"),
+        description: t("settings.ai_provider_switched_desc", { name: "Gemini" }),
+        color: "amber",
+      });
+    }
+  }
+});
 </script>
 
 <template>

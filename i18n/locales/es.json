@@ -157,7 +157,8 @@
     "center_label": "Centro de Inteligencia",
     "title": "Base de Conocimiento",
     "subtitle": "Configura el contexto principal para que la IA genere respuestas de alta calidad.",
-    "add": "Expandir Inteligencia",
+    "add": "Añadir",
+    "generate_ai": "Generar con IA",
     "no_entries_title": "No se encontró información",
     "no_entries_hint": "Comienza agregando FAQs, directrices del canal o temas específicos para que la IA entienda tu marca.",
     "modification": "Modificación",
@@ -257,6 +258,11 @@
     "found": "encontrados",
     "new": "nuevos",
     "quota": "cuota",
-    "next_sync": "Próxima sincronización"
+    "next_sync": "Próxima sincronización",
+    "key_missing_title": "API Key faltante",
+    "gemini_key_missing_desc": "GEMINI_API_KEY no está configurada en el archivo .env",
+    "openai_key_missing_desc": "OPENAI_API_KEY no está configurada en el archivo .env",
+    "ai_provider_switched": "Proveedor ajustado automáticamente",
+    "ai_provider_switched_desc": "Se ha cambiado a {name} porque el proveedor anterior no tiene una API Key configurada."
   }
 }

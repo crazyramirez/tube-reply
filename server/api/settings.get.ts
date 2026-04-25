@@ -10,6 +10,8 @@ export default defineEventHandler(async (event) => {
     aiProvider: provider,
     geminiModel: config.geminiModel,
     openaiModel: config.openaiModel,
+    geminiKeyConfigured: !!(process.env.GEMINI_API_KEY || config.geminiApiKey),
+    openaiKeyConfigured: !!(process.env.OPENAI_API_KEY || config.openaiApiKey),
     syncIntervalMinutes: config.syncIntervalMinutes,
     maxQuotaPerDay: config.maxQuotaPerDay,
     lockoutDurationMinutes: config.lockoutDurationMinutes,

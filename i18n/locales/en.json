@@ -157,7 +157,8 @@
     "center_label": "Intelligence Center",
     "title": "Knowledge Base",
     "subtitle": "Configure the core context used by the AI to craft high-quality replies.",
-    "add": "Expand Intelligence",
+    "add": "Add",
+    "generate_ai": "Generate with AI",
     "no_entries_title": "No intelligence found",
     "no_entries_hint": "Start by adding FAQs, channel guidelines, or specific topics to help the AI understand your brand.",
     "modification": "Modification",
@@ -256,6 +257,11 @@
     "found": "found",
     "new": "new",
     "quota": "quota",
-    "next_sync": "Next sync"
+    "next_sync": "Next sync",
+    "key_missing_title": "API Key Missing",
+    "gemini_key_missing_desc": "GEMINI_API_KEY is not configured in the .env file",
+    "openai_key_missing_desc": "OPENAI_API_KEY is not configured in the .env file",
+    "ai_provider_switched": "AI Provider auto-adjusted",
+    "ai_provider_switched_desc": "Switched to {name} because the previous provider was missing a valid API Key."
   }
 }
