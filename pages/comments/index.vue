@@ -269,7 +269,7 @@ onActivated(() => {
           <div class="relative aspect-video bg-slate-900 overflow-hidden">
             <img
               v-if="c.videoThumbnail"
-              :src="c.videoThumbnail"
+              :src="c.videoThumbnail ?? undefined"
               :alt="c.videoTitle ?? ''"
               class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               loading="lazy"
@@ -420,7 +420,7 @@ onActivated(() => {
           >
             <img
               v-if="c.videoThumbnail"
-              :src="c.videoThumbnail"
+              :src="c.videoThumbnail ?? undefined"
               :alt="c.videoTitle ?? ''"
               class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
               loading="lazy"

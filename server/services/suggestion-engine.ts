@@ -84,7 +84,7 @@ export async function generateSuggestion(commentId: string, langOverride: string
   // Enrich with thumbnails from DB to ensure accuracy
   validated.video_links_used = validated.video_links_used.map(link => ({
     ...link,
-    thumbnail_url: videoMap.get(link.video_id) ?? link.thumbnail_url ?? null,
+    thumbnail_url: (videoMap.get(link.video_id) ?? link.thumbnail_url ?? null)?.replace('mqdefault.jpg', 'hqdefault.jpg') || null,
   }))
 
   const config = useRuntimeConfig()

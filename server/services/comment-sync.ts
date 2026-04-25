@@ -175,7 +175,7 @@ async function syncVideoList(
         title: v.snippet.title ?? '',
         description: v.snippet.description ?? '',
         publishedAt: v.snippet.publishedAt ?? new Date().toISOString(),
-        thumbnailUrl: v.snippet.thumbnails?.medium?.url ?? null,
+        thumbnailUrl: (v.snippet.thumbnails?.maxres?.url || v.snippet.thumbnails?.high?.url || v.snippet.thumbnails?.medium?.url || v.snippet.thumbnails?.default?.url || null)?.replace('mqdefault.jpg', 'hqdefault.jpg') || null,
         duration: v.contentDetails?.duration ?? null,
         tags: v.snippet.tags ? JSON.stringify(v.snippet.tags) : null,
         categoryId: v.snippet.categoryId ?? null,

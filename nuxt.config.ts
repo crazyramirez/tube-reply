@@ -123,7 +123,6 @@ export default defineNuxtConfig({
     openaiModel: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
     aiProvider: process.env.AI_PROVIDER ?? 'gemini',
     tokenEncryptionKey: process.env.TOKEN_ENCRYPTION_KEY ?? '',
-    sessionSecret: process.env.NUXT_SECRET ?? '',
     sessionDurationHours: Number(process.env.SESSION_DURATION_HOURS ?? 24),
     syncIntervalMinutes: Number(process.env.SYNC_INTERVAL_MINUTES ?? 30),
     maxQuotaPerDay: Number(process.env.MAX_QUOTA_PER_DAY ?? 8500),

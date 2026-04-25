@@ -58,7 +58,7 @@ export async function exchangeCode(code: string): Promise<{ channelId: string }>
     expiresAt,
     scope: tokens.scope ?? YOUTUBE_SCOPES.join(' '),
     channelTitle: channel.snippet?.title ?? null,
-    channelThumbnailUrl: channel.snippet?.thumbnails?.high?.url || channel.snippet?.thumbnails?.medium?.url || channel.snippet?.thumbnails?.default?.url || null,
+    channelThumbnailUrl: (channel.snippet?.thumbnails?.high?.url || channel.snippet?.thumbnails?.medium?.url || channel.snippet?.thumbnails?.default?.url || null)?.replace('mqdefault.jpg', 'hqdefault.jpg') || null,
     channelSubscriberCount: channel.statistics?.subscriberCount ?? null,
     channelVideoCount: channel.statistics?.videoCount ?? null,
   }).onConflictDoUpdate({
@@ -69,7 +69,7 @@ export async function exchangeCode(code: string): Promise<{ channelId: string }>
       expiresAt,
       scope: tokens.scope ?? YOUTUBE_SCOPES.join(' '),
       channelTitle: channel.snippet?.title ?? null,
-      channelThumbnailUrl: channel.snippet?.thumbnails?.high?.url || channel.snippet?.thumbnails?.medium?.url || channel.snippet?.thumbnails?.default?.url || null,
+      channelThumbnailUrl: (channel.snippet?.thumbnails?.high?.url || channel.snippet?.thumbnails?.medium?.url || channel.snippet?.thumbnails?.default?.url || null)?.replace('mqdefault.jpg', 'hqdefault.jpg') || null,
       channelSubscriberCount: channel.statistics?.subscriberCount ?? null,
       channelVideoCount: channel.statistics?.videoCount ?? null,
       updatedAt: new Date().toISOString(),
@@ -148,7 +148,7 @@ export async function refreshChannelMetadata(): Promise<void> {
   await db.update(oauthTokens)
     .set({
       channelTitle: channel.snippet?.title ?? null,
-      channelThumbnailUrl: channel.snippet?.thumbnails?.high?.url || channel.snippet?.thumbnails?.medium?.url || channel.snippet?.thumbnails?.default?.url || null,
+      channelThumbnailUrl: (channel.snippet?.thumbnails?.high?.url || channel.snippet?.thumbnails?.medium?.url || channel.snippet?.thumbnails?.default?.url || null)?.replace('mqdefault.jpg', 'hqdefault.jpg') || null,
       channelSubscriberCount: channel.statistics?.subscriberCount ?? null,
       channelVideoCount: channel.statistics?.videoCount ?? null,
       updatedAt: new Date().toISOString(),

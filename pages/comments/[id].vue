@@ -202,15 +202,19 @@ async function publishReply() {
     } else {
       await navigateTo("/comments");
     }
-  } catch (err: unknown) {
-    const e = err as { data?: { statusMessage?: string } };
+  } catch (err: any) {
     toast.add({
-      title: e.data?.statusMessage ?? t("comment_detail.publish_failed"),
+      title: err.data?.statusMessage ?? "Failed to publish",
       color: "red",
     });
   } finally {
     publishing.value = false;
   }
+}
+
+function highResThumbnail(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  return url.replace("mqdefault.jpg", "maxresdefault.jpg");
 }
 
 const confidence = computed(() => activeSuggestion.value?.confidenceScore ?? 0);
@@ -427,7 +431,7 @@ const finalText = computed(
 
             <div class="relative">
               <UIcon
-                name="i-heroicons-quote-right"
+                name="i-heroicons-chat-bubble-bottom-center-text"
                 class="absolute -top-1 -left-1 w-8 h-8 text-white/[0.03] pointer-events-none"
               />
               <p class="text-slate-200 text-base leading-relaxed pl-2">
@@ -457,42 +461,78 @@ const finalText = computed(
                   />
                 </a>
               </div>
-              <div class="flex gap-4 group/video">
-                <a
-                  :href="`https://www.youtube.com/watch?v=${data.video.id}`"
-                  target="_blank"
-                  class="relative flex-shrink-0 cursor-pointer overflow-hidden rounded-xl border border-white/10 shadow-2xl"
-                >
+
+              <a
+                :href="`https://www.youtube.com/watch?v=${data.video.id}`"
+                target="_blank"
+                class="block group/video relative overflow-hidden border border-white/10 shadow-2xl bg-black"
+              >
+                <div class="aspect-video relative overflow-hidden">
                   <img
-                    :src="data.video.thumbnailUrl"
+                    :src="highResThumbnail(data.video.thumbnailUrl)"
                     :alt="data.video.title"
-                    class="w-32 aspect-video object-cover group-hover/video:scale-110 transition-transform duration-700"
+                    class="w-full h-full object-cover group-hover/video:scale-105 transition-transform duration-1000 opacity-80 group-hover/video:opacity-100"
                   />
+
+                  <!-- Premium Overlay -->
                   <div
-                    class="absolute inset-0 bg-indigo-900/40 opacity-0 group-hover/video:opacity-100 transition-opacity flex items-center justify-center"
-                  >
-                    <UIcon
-                      name="i-heroicons-play-circle"
-                      class="w-8 h-8 text-white drop-shadow-lg"
-                    />
-                  </div>
-                </a>
-                <div class="flex flex-col justify-center min-w-0">
-                  <h3
-                    class="text-xs font-bold text-white line-clamp-2 leading-snug group-hover/video:text-indigo-300 transition-colors"
-                  >
-                    {{ data.video.title }}
-                  </h3>
+                    class="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-90"
+                  />
+
+                  <!-- Play Button -->
                   <div
-                    class="mt-2 flex items-center gap-2 text-[10px] text-slate-500 font-bold uppercase tracking-wider"
+                    class="absolute inset-0 flex items-center justify-center opacity-0 group-hover/video:opacity-100 transition-all duration-500 scale-110 group-hover/video:scale-100"
                   >
-                    <UIcon name="i-heroicons-calendar" class="w-3 h-3" />
-                    <span>{{
-                      new Date(data.video.publishedAt).toLocaleDateString()
-                    }}</span>
+                    <div
+                      class="w-16 h-16 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-2xl"
+                    >
+                      <UIcon
+                        name="i-heroicons-play-20-solid"
+                        class="w-8 h-8 text-white"
+                      />
+                    </div>
                   </div>
+
+                  <!-- Content Overlay -->
+                  <div
+                    class="absolute bottom-0 left-0 right-0 p-6 transform group-hover/video:translate-y-[-4px] transition-transform duration-500"
+                  >
+                    <h3
+                      class="text-lg font-black text-white leading-tight mb-2 group-hover/video:text-indigo-300 transition-colors tracking-tighter"
+                    >
+                      {{ data.video.title }}
+                    </h3>
+                    <div
+                      class="flex items-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]"
+                    >
+                      <span class="flex items-center gap-1.5">
+                        <UIcon
+                          name="i-heroicons-calendar"
+                          class="w-3.5 h-3.5 text-indigo-500"
+                        />
+                        {{
+                          new Date(data.video.publishedAt).toLocaleDateString()
+                        }}
+                      </span>
+                      <span
+                        v-if="data.video.viewCount"
+                        class="flex items-center gap-1.5"
+                      >
+                        <UIcon
+                          name="i-heroicons-eye"
+                          class="w-3.5 h-3.5 text-indigo-500"
+                        />
+                        {{ data.video.viewCount.toLocaleString() }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Edge Glow -->
+                  <div
+                    class="absolute inset-0 border border-white/5 group-hover/video:border-indigo-500/30 transition-colors duration-500"
+                  />
                 </div>
-              </div>
+              </a>
             </div>
           </div>
         </div>
@@ -813,9 +853,10 @@ const finalText = computed(
             <div class="p-6">
               <textarea
                 v-model="editedText"
-                rows="7"
+                rows="3"
                 :placeholder="$t('comment_detail.refine_placeholder')"
-                class="w-full bg-transparent text-base text-slate-200 placeholder-slate-700 resize-none focus:outline-none leading-relaxed font-medium"
+                :disabled="data.comment?.status === 'published'"
+                class="w-full bg-transparent text-base text-slate-200 placeholder-slate-700 resize-none focus:outline-none leading-relaxed font-medium disabled:opacity-70 disabled:cursor-not-allowed"
               />
             </div>
             <div
@@ -827,6 +868,7 @@ const finalText = computed(
                 {{ $t("comment_detail.characters", { n: editedText.length }) }}
               </p>
               <button
+                v-if="data.comment?.status !== 'published'"
                 class="text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors cursor-pointer flex items-center gap-1.5"
                 @click="saveEdit"
               >
@@ -846,12 +888,12 @@ const finalText = computed(
                 class="px-5 py-3 border-b border-white/[0.06] bg-white/[0.01]"
               >
                 <span
-                  class="font-bold text-[10px] text-slate-500 uppercase tracking-widest"
+                  class="font-bold text-xs text-slate-500 uppercase tracking-widest"
                   >{{ $t("comment_detail.verification_translation") }}</span
                 >
               </div>
               <div class="p-5">
-                <p class="text-slate-500 text-xs italic leading-relaxed">
+                <p class="text-slate-400 text-sm italic leading-relaxed">
                   {{ activeSuggestion.responseEs }}
                 </p>
               </div>
@@ -866,12 +908,12 @@ const finalText = computed(
                 class="px-5 py-3 border-b border-white/[0.06] bg-white/[0.01]"
               >
                 <span
-                  class="font-bold text-[10px] text-slate-500 uppercase tracking-widest"
+                  class="font-bold text-xs text-slate-500 uppercase tracking-widest"
                   >{{ $t("comment_detail.context_engine") }}</span
                 >
               </div>
               <div
-                class="p-5 text-[10px] text-slate-500 space-y-2 font-bold uppercase tracking-wider"
+                class="p-5 text-xs text-slate-400 space-y-2 font-bold uppercase tracking-wider"
               >
                 <p
                   v-if="activeSuggestion.contextUsed.kb_entries?.length"
@@ -937,7 +979,7 @@ const finalText = computed(
                 >
                   <img
                     v-if="link.thumbnail_url"
-                    :src="link.thumbnail_url"
+                    :src="highResThumbnail(link.thumbnail_url)"
                     :alt="link.video_title"
                     class="w-24 aspect-video object-cover group-hover/link:scale-110 transition-transform duration-500"
                   />
@@ -1047,7 +1089,7 @@ const finalText = computed(
             class="bg-white/5 border border-white/10 rounded-2xl p-6 relative"
           >
             <UIcon
-              name="i-heroicons-quote-right"
+              name="i-heroicons-chat-bubble-bottom-center-text"
               class="absolute top-4 right-4 w-12 h-12 text-white/[0.03] pointer-events-none"
             />
             <p

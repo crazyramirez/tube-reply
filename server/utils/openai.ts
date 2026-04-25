@@ -26,7 +26,10 @@ export async function openaiGenerateWithTools(
   let totalCompletionTokens = 0
 
   const messages: any[] = [
-    { role: 'system', content: 'You are a helpful assistant that returns JSON. Always include the required fields in your response.' },
+    { 
+      role: 'system', 
+      content: 'You are a YouTube community manager. Return ONLY a JSON object. IMPORTANT: Do NOT use Markdown links or bold/italic markers in the text, as YouTube comments do not support them. Use plain URLs.' 
+    },
     { role: 'user', content: prompt }
   ]
 

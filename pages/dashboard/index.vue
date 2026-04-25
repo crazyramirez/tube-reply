@@ -270,7 +270,7 @@ const statCards = computed(() => [
         <div class="relative aspect-video bg-slate-900 overflow-hidden">
           <img
             v-if="comment.videoThumbnail"
-            :src="comment.videoThumbnail"
+            :src="comment.videoThumbnail ?? undefined"
             :alt="comment.videoTitle ?? ''"
             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
             loading="lazy"
