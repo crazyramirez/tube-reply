@@ -150,11 +150,20 @@ async function generateSuggestion() {
 
 async function saveEdit() {
   if (!activeSuggestion.value) return;
-  await $fetch(`/api/suggestions/${activeSuggestion.value.id}`, {
+  const res = await $fetch<{
+    ok: boolean;
+    suggestion?: { responseEs: string; videoLinksUsed: any[] };
+  }>(`/api/suggestions/${activeSuggestion.value.id}`, {
     method: "PATCH",
     body: { editedText: editedText.value },
     headers: useCsrfHeaders(),
   });
+
+  if (res.ok && res.suggestion) {
+    activeSuggestion.value.responseEs = res.suggestion.responseEs;
+    activeSuggestion.value.videoLinksUsed = res.suggestion.videoLinksUsed;
+  }
+
   toast.add({ title: t("comment_detail.reply_saved"), color: "green" });
 }
 
@@ -245,38 +254,65 @@ const confidenceTextClass = computed(() =>
 
 const isEditing = ref(false);
 
+const effectiveVideoLinks = computed(() => {
+  if (!activeSuggestion.value) return [];
+
+  const text = editedText.value || "";
+  const urlRegex =
+    /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/g;
+  const matches = [...text.matchAll(urlRegex)];
+  const detectedIds = [...new Set(matches.map((m) => m[1]))];
+
+  // Use metadata from current suggestion if available
+  const metaMap = new Map(
+    (activeSuggestion.value.videoLinksUsed || []).map((v) => [v.video_id, v]),
+  );
+
+  return detectedIds.map((id) => {
+    if (metaMap.has(id)) return metaMap.get(id);
+    return {
+      video_id: id,
+      video_title: `ID: ${id}`,
+      url: `https://youtu.be/${id}`,
+      thumbnail_url: `https://img.youtube.com/vi/${id}/mqdefault.jpg`,
+    };
+  });
+});
+
 const highlightedTextParts = computed(() => {
   const text = editedText.value || "";
   const urlRegex = /(https?:\/\/[^\s,]+|www\.[^\s,]+)/g;
   const parts = [];
   let lastIdx = 0;
   let match;
-  
+
   while ((match = urlRegex.exec(text)) !== null) {
     if (match.index > lastIdx) {
       parts.push({ text: text.substring(lastIdx, match.index), isUrl: false });
     }
     const url = match[0];
-    parts.push({ 
-      text: url, 
-      isUrl: true, 
-      href: url.startsWith('www.') ? 'https://' + url : url 
+    parts.push({
+      text: url,
+      isUrl: true,
+      href: url.startsWith("www.") ? "https://" + url : url,
     });
     lastIdx = match.index + match[0].length;
   }
-  
+
   if (lastIdx < text.length) {
     parts.push({ text: text.substring(lastIdx), isUrl: false });
   }
-  
+
   return parts;
 });
 
 function startEditing() {
-  if (data.value?.comment?.status === 'published') return;
+  if (data.value?.comment?.status === "published") return;
   isEditing.value = true;
   nextTick(() => {
-    const textarea = document.querySelector('.premium-textarea') as HTMLTextAreaElement;
+    const textarea = document.querySelector(
+      ".premium-textarea",
+    ) as HTMLTextAreaElement;
     if (textarea) {
       textarea.focus();
       textarea.setSelectionRange(textarea.value.length, textarea.value.length);
@@ -453,7 +489,8 @@ async function confirmUnban() {
   @apply ring-2 ring-indigo-500/20 border-indigo-500/40 bg-white/[0.05];
 }
 
-.reply-viewer, .premium-textarea {
+.reply-viewer,
+.premium-textarea {
   @apply w-full p-6 text-base leading-relaxed font-medium whitespace-pre-wrap break-words;
 }
 
@@ -713,20 +750,52 @@ async function confirmUnban() {
               }}</span
             >
           </div>
-          <div class="p-6 space-y-4 max-h-56 overflow-y-auto custom-scrollbar">
+          <div class="p-6 space-y-6 max-h-56 overflow-y-auto custom-scrollbar">
             <div
               v-for="reply in data.replies"
               :key="reply.id"
-              class="relative pl-6 before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-indigo-500/30"
+              class="relative pl-8 group/reply"
             >
-              <div class="flex items-center gap-2 mb-1">
-                <span class="font-bold text-sm text-indigo-300">{{
-                  reply.authorName
-                }}</span>
+              <!-- Line -->
+              <div
+                class="absolute left-0 top-0 bottom-0 w-[2px] bg-white/[0.05] group-last/reply:h-4"
+              ></div>
+              <!-- Dot -->
+              <div
+                class="absolute left-[-4px] top-4 w-2.5 h-2.5 rounded-full border-2 transition-colors"
+                :class="
+                  reply.isOwner
+                    ? 'bg-emerald-500 border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                    : 'bg-slate-800 border-white/10'
+                "
+              ></div>
+
+              <div class="flex flex-col gap-1">
+                <div class="flex items-center gap-2">
+                  <span
+                    class="text-xs font-bold transition-colors"
+                    :class="
+                      reply.isOwner ? 'text-emerald-400' : 'text-slate-400'
+                    "
+                  >
+                    {{ reply.authorName }}
+                  </span>
+                  <UBadge
+                    v-if="reply.isOwner"
+                    color="emerald"
+                    variant="soft"
+                    size="xs"
+                    class="font-black text-[8px] uppercase tracking-tighter"
+                    >PROPIETARIO</UBadge
+                  >
+                  <span class="text-[10px] text-slate-600 font-medium">{{
+                    formatTime(reply.publishedAt)
+                  }}</span>
+                </div>
+                <p class="text-sm text-slate-300 leading-relaxed">
+                  {{ reply.text }}
+                </p>
               </div>
-              <p class="text-slate-400 text-sm leading-relaxed">
-                {{ reply.text }}
-              </p>
             </div>
           </div>
         </div>
@@ -905,26 +974,62 @@ async function confirmUnban() {
 
       <!-- Right: AI Suggestion (7/12) -->
       <div class="lg:col-span-7 space-y-6">
-        <!-- Empty state -->
+        <!-- Empty state / Already Published -->
         <div
           v-if="!activeSuggestion && !generating"
           class="glass-card py-24 text-center border-dashed border-white/10 bg-white/[0.01] animate-fade-in"
         >
-          <div class="relative w-20 h-20 mx-auto mb-6">
-            <div
-              class="absolute inset-0 bg-indigo-500/20 blur-3xl rounded-full"
-            ></div>
-            <UIcon
-              name="i-heroicons-sparkles"
-              class="relative w-20 h-20 text-indigo-500/40"
-            />
+          <div v-if="data.comment?.status === 'published'" class="space-y-6">
+            <div class="relative w-20 h-20 mx-auto">
+              <div
+                class="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full"
+              ></div>
+              <UIcon
+                name="i-heroicons-check-badge"
+                class="relative w-20 h-20 text-emerald-500/40"
+              />
+            </div>
+            <div>
+              <h3 class="text-lg font-bold text-white mb-2">
+                {{ $t("comment_detail.intel_deployed") }}
+              </h3>
+              <p class="text-slate-500 text-sm max-w-xs mx-auto">
+                {{ $t("comments.your_response") }}: El hilo ya ha sido
+                respondido.
+              </p>
+            </div>
           </div>
-          <h3 class="text-lg font-bold text-white mb-2">
-            {{ $t("comment_detail.ready_title") }}
-          </h3>
-          <p class="text-slate-500 text-sm max-w-xs mx-auto">
-            {{ $t("comment_detail.ready_hint") }}
-          </p>
+
+          <div
+            v-else-if="data.comment?.status === 'dismissed'"
+            class="space-y-6"
+          >
+            <UIcon
+              name="i-heroicons-archive-box"
+              class="w-20 h-20 mx-auto text-slate-700"
+            />
+            <h3 class="text-lg font-bold text-slate-500">
+              {{ $t("comment_detail.comment_dismissed") }}
+            </h3>
+          </div>
+
+          <div v-else class="space-y-6">
+            <div class="relative w-20 h-20 mx-auto mb-6">
+              <div
+                class="absolute inset-0 bg-indigo-500/20 blur-3xl rounded-full"
+              ></div>
+              <UIcon
+                name="i-heroicons-sparkles"
+                class="relative w-20 h-20 text-indigo-500/40"
+              />
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">
+              {{ $t("comment_detail.ready_title") }}
+            </h3>
+            <p class="text-slate-500 text-sm max-w-xs mx-auto">
+              {{ $t("comment_detail.ready_hint") }}
+            </p>
+          </div>
         </div>
 
         <!-- Generating -->
@@ -1041,38 +1146,50 @@ async function confirmUnban() {
               </div>
             </div>
             <div class="p-6">
-              <div 
+              <div
                 class="premium-textarea-container"
                 :class="{ 'is-editing': isEditing }"
               >
                 <!-- Viewer Mode -->
-                <div 
-                  v-if="!isEditing" 
+                <div
+                  v-if="!isEditing"
                   class="reply-viewer animate-fade-in"
                   @click="startEditing"
                 >
                   <template v-for="(part, i) in highlightedTextParts" :key="i">
                     <span v-if="!part.isUrl">{{ part.text }}</span>
-                    <a 
-                      v-else 
-                      :href="part.href" 
-                      target="_blank" 
+                    <a
+                      v-else
+                      :href="part.href"
+                      target="_blank"
                       class="inline-url-badge group/badge"
                       @click.stop
                     >
                       <UIcon name="i-heroicons-link" class="w-3.5 h-3.5" />
-                      {{ part.text.replace(/^https?:\/\//, '').replace(/^www\./, '') }}
-                      <UIcon name="i-heroicons-arrow-top-right-on-square" class="w-3 h-3 opacity-0 group-hover/badge:opacity-100 transition-opacity" />
+                      {{
+                        part.text
+                          .replace(/^https?:\/\//, "")
+                          .replace(/^www\./, "")
+                      }}
+                      <UIcon
+                        name="i-heroicons-arrow-top-right-on-square"
+                        class="w-3 h-3 opacity-0 group-hover/badge:opacity-100 transition-opacity"
+                      />
                     </a>
                   </template>
-                  <div v-if="!editedText && !activeSuggestion?.responseText" class="text-slate-600 italic">
-                    {{ $t('comment_detail.refine_placeholder') }}
+                  <div
+                    v-if="!editedText && !activeSuggestion?.responseText"
+                    class="text-slate-600 italic"
+                  >
+                    {{ $t("comment_detail.refine_placeholder") }}
                   </div>
-                  
+
                   <!-- Floating Edit Label -->
-                  <div class="absolute top-3 right-4 flex items-center gap-1.5 text-[9px] font-black text-slate-600 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div
+                    class="absolute top-3 right-4 flex items-center gap-1.5 text-[9px] font-black text-slate-600 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
                     <UIcon name="i-heroicons-pencil-square" class="w-3 h-3" />
-                    <span>{{ $t('comment_detail.manual_override') }}</span>
+                    <span>{{ $t("comment_detail.manual_override") }}</span>
                   </div>
                 </div>
 
@@ -1088,9 +1205,18 @@ async function confirmUnban() {
               </div>
 
               <!-- Premium Help Hint -->
-              <div v-if="!isEditing && highlightedTextParts.some(p => p.isUrl)" class="mt-4 flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest animate-fade-in">
-                <UIcon name="i-heroicons-cursor-arrow-rays" class="w-3 h-3 text-indigo-500" />
-                <span>{{ $t("comment_detail.click_to_open") || 'Click en un enlace para abrir o en el texto para editar' }}</span>
+              <div
+                v-if="!isEditing && highlightedTextParts.some((p) => p.isUrl)"
+                class="mt-4 flex items-center gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest animate-fade-in"
+              >
+                <UIcon
+                  name="i-heroicons-cursor-arrow-rays"
+                  class="w-3 h-3 text-indigo-500"
+                />
+                <span>{{
+                  $t("comment_detail.click_to_open") ||
+                  "Click en un enlace para abrir o en el texto para editar"
+                }}</span>
               </div>
             </div>
             <div
@@ -1189,7 +1315,7 @@ async function confirmUnban() {
 
           <!-- Video links -->
           <div
-            v-if="activeSuggestion.videoLinksUsed?.length"
+            v-if="effectiveVideoLinks.length"
             class="space-y-4 animate-fade-in stagger-3"
           >
             <div class="flex items-center gap-2 ml-1">
@@ -1202,7 +1328,7 @@ async function confirmUnban() {
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div
-                v-for="link in activeSuggestion.videoLinksUsed"
+                v-for="link in effectiveVideoLinks"
                 :key="link.video_id"
                 class="glass-card group/link p-3 flex items-center gap-4 hover:border-indigo-500/40"
               >

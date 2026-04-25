@@ -16,10 +16,20 @@ export default defineEventHandler(async (event) => {
   })
 
   // Thread replies
+  const token = await db.query.oauthTokens.findFirst({ columns: { channelId: true } })
+  const ownerChannelId = token?.channelId
+
   const replies = await db.query.comments.findMany({
     where: and(eq(comments.videoId, comment.videoId), isNotNull(comments.parentId), eq(comments.parentId, id)),
     columns: { id: true, authorName: true, text: true, publishedAt: true, authorChannelId: true },
   })
+
+  const enrichedReplies = replies.map(r => ({
+    ...r,
+    isOwner: ownerChannelId && r.authorChannelId === ownerChannelId
+  }))
+
+  const hasOwnerReplied = enrichedReplies.some(r => r.isOwner)
 
   // Suggestions for this comment
   const suggestions = await db.query.suggestedReplies.findMany({
@@ -45,9 +55,10 @@ export default defineEventHandler(async (event) => {
     comment: {
       ...comment,
       isBanned,
+      status: (hasOwnerReplied && comment.status !== 'published') ? 'published' : comment.status
     },
     video,
-    replies,
+    replies: enrichedReplies,
     suggestions: suggestions.map(s => ({
       ...s,
       contextUsed: s.contextUsed ? JSON.parse(s.contextUsed) : null,
