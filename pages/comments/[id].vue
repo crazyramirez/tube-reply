@@ -8,10 +8,7 @@ const router = useRouter();
 const id = route.params.id as string;
 const { t } = useI18n();
 
-const { data, refresh, error } = await useFetch<CommentDetailResponse>(
-  `/api/comments/${id}`,
-);
-
+const toast = useToast();
 const generating = ref(false);
 const publishing = ref(false);
 const showPublishModal = ref(false);
@@ -19,9 +16,28 @@ const editedText = ref("");
 const additionalContext = ref("");
 const activeSuggestion = ref<SuggestedReply | null>(null);
 const publishConfirmed = ref(false);
-const toast = useToast();
-
 const selectedLang = ref<string>("");
+const selectedStatus = ref<string>("");
+const showDeleteModal = ref(false);
+const showBanModal = ref(false);
+const showUnbanModal = ref(false);
+const deleting = ref(false);
+const banning = ref(false);
+const unbanning = ref(false);
+const isEditing = ref(false);
+
+const { data, refresh, error } = await useFetch<CommentDetailResponse>(
+  `/api/comments/${id}`,
+);
+
+watch(
+  () => data.value?.comment?.status,
+  (status) => {
+    if (status) selectedStatus.value = status;
+  },
+  { immediate: true },
+);
+
 watch(
   () => data.value?.comment?.detectedLang,
   (lang) => {
@@ -60,15 +76,6 @@ const STATUS_OPTIONS = computed(() => [
   { label: "✅ " + t("status.published"), value: "published" },
   { label: "⏭️ " + t("status.skipped"), value: "skipped" },
 ]);
-
-const selectedStatus = ref<string>("");
-watch(
-  () => data.value?.comment?.status,
-  (status) => {
-    if (status) selectedStatus.value = status;
-  },
-  { immediate: true },
-);
 
 watch(
   selectedLang,
@@ -112,7 +119,9 @@ watch(
 
     // Try to find linked suggestion if published
     if (published?.suggestionId) {
-      const linked = (suggestions as SuggestedReply[]).find(s => s.id === published.suggestionId);
+      const linked = (suggestions as SuggestedReply[]).find(
+        (s) => s.id === published.suggestionId,
+      );
       if (linked) {
         activeSuggestion.value = linked;
         editedText.value = linked.editedText ?? linked.responseText;
@@ -123,7 +132,8 @@ watch(
     // Default to first suggestion if not already set or if linked not found
     if (!activeSuggestion.value) {
       activeSuggestion.value = suggestions[0] as SuggestedReply;
-      editedText.value = suggestions[0].editedText ?? suggestions[0].responseText;
+      editedText.value =
+        suggestions[0].editedText ?? suggestions[0].responseText;
     }
   },
   { immediate: true },
@@ -275,8 +285,6 @@ const confidenceTextClass = computed(() =>
       : "text-red-400",
 );
 
-const isEditing = ref(false);
-
 function timeAgo(iso: string): string {
   if (!iso) return "";
   const diff = Date.now() - new Date(iso).getTime();
@@ -353,13 +361,6 @@ function startEditing() {
     }
   });
 }
-
-const showDeleteModal = ref(false);
-const showBanModal = ref(false);
-const showUnbanModal = ref(false);
-const deleting = ref(false);
-const banning = ref(false);
-const unbanning = ref(false);
 
 async function confirmDelete() {
   deleting.value = true;
@@ -543,25 +544,29 @@ async function confirmUnban() {
 
 <template>
   <div>
-    <div class="flex items-center justify-between mb-8 animate-fade-in">
-      <div class="flex items-center gap-4">
+    <div class="flex items-center justify-between mb-6 sm:mb-8 animate-fade-in">
+      <div class="flex items-center gap-3 sm:gap-4">
         <button
           @click="router.back()"
-          class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all duration-300 group cursor-pointer"
+          class="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all duration-300 group cursor-pointer shrink-0"
         >
           <UIcon
             name="i-heroicons-chevron-left"
-            class="w-5 h-5 group-hover:-translate-x-0.5 transition-transform"
+            class="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-x-0.5 transition-transform"
           />
         </button>
-        <div class="flex flex-col">
+        <div class="flex flex-col min-w-0">
           <div
             class="flex items-center gap-2 text-[10px] font-bold text-indigo-400 uppercase tracking-[0.3em]"
           >
-            <UIcon name="i-heroicons-shield-check" class="w-3 h-3" />
-            {{ $t("comment_detail.terminal_label") }}
+            <UIcon name="i-heroicons-shield-check" class="w-3 h-3 shrink-0" />
+            <span class="truncate">{{
+              $t("comment_detail.terminal_label")
+            }}</span>
           </div>
-          <h1 class="text-2xl font-black text-white tracking-tighter">
+          <h1
+            class="text-xl sm:text-2xl font-black text-white tracking-tighter truncate"
+          >
             {{ $t("comment_detail.title") }}
           </h1>
         </div>
@@ -656,7 +661,8 @@ async function confirmUnban() {
                   target="_blank"
                   rel="noopener noreferrer"
                   class="font-bold text-white truncate hover:text-indigo-400 transition-colors"
-                >{{ data.comment.authorName }}</a>
+                  >{{ data.comment.authorName }}</a
+                >
                 <span v-else class="font-bold text-white truncate">{{
                   data.comment?.authorName
                 }}</span>
@@ -1022,8 +1028,13 @@ async function confirmUnban() {
         >
           <div v-if="data.comment?.status === 'published'" class="space-y-6">
             <div class="relative w-20 h-20 mx-auto">
-              <div class="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full"></div>
-              <UIcon name="i-heroicons-check-badge" class="relative w-20 h-20 text-emerald-500/40" />
+              <div
+                class="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full"
+              ></div>
+              <UIcon
+                name="i-heroicons-check-badge"
+                class="relative w-20 h-20 text-emerald-500/40"
+              />
             </div>
             <div class="px-8">
               <h3 class="text-lg font-bold text-white mb-2">
@@ -1032,16 +1043,25 @@ async function confirmUnban() {
               <p class="text-slate-500 text-sm max-w-xs mx-auto mb-6">
                 {{ $t("comments.your_response") }}
               </p>
-              
+
               <!-- Show the actual reply text even if no AI suggestion object is found -->
-              <div v-if="data.replies?.find(r => r.isOwner)" class="bg-white/5 border border-white/10 rounded-2xl p-6 text-left relative overflow-hidden max-w-md mx-auto">
-                <UIcon name="i-heroicons-chat-bubble-left-right" class="absolute -bottom-2 -right-2 w-16 h-16 text-white/[0.03]" />
-                <p class="text-sm text-slate-300 italic leading-relaxed relative z-10">
-                  "{{ data.replies.find(r => r.isOwner).text }}"
+              <div
+                v-if="data.replies?.find((r) => r.isOwner)"
+                class="bg-white/5 border border-white/10 rounded-2xl p-6 text-left relative overflow-hidden max-w-md mx-auto"
+              >
+                <UIcon
+                  name="i-heroicons-chat-bubble-left-right"
+                  class="absolute -bottom-2 -right-2 w-16 h-16 text-white/[0.03]"
+                />
+                <p
+                  class="text-sm text-slate-300 italic leading-relaxed relative z-10"
+                >
+                  "{{ data.replies.find((r) => r.isOwner).text }}"
                 </p>
               </div>
               <p v-else class="text-slate-500 text-xs italic">
-                El hilo ya ha sido respondido manualmente o fuera de la plataforma.
+                El hilo ya ha sido respondido manualmente o fuera de la
+                plataforma.
               </p>
             </div>
           </div>
@@ -1418,7 +1438,7 @@ async function confirmUnban() {
           </div>
 
           <!-- Publish CTA -->
-          <div class="pt-4 animate-fade-in stagger-4">
+          <div class="pt-2 animate-fade-in stagger-4">
             <button
               v-if="data.comment?.status !== 'published'"
               class="premium-btn-success w-full flex items-center justify-center gap-3"

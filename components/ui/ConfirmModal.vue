@@ -1,13 +1,20 @@
 <script setup lang="ts">
-defineProps<{
-  modelValue: boolean
-  title: string
-  description: string
-  confirmText: string
-  cancelText: string
-  loading?: boolean
-  type?: 'danger' | 'warning' | 'info' | 'success'
-}>()
+withDefaults(
+  defineProps<{
+    modelValue: boolean;
+    title: string;
+    description: string;
+    confirmText: string;
+    cancelText: string;
+    loading?: boolean;
+    type?: "danger" | "warning" | "info" | "success";
+  }>(),
+  {
+    modelValue: false,
+    loading: false,
+    type: "warning",
+  },
+);
 
 const emit = defineEmits(['update:modelValue', 'confirm', 'cancel'])
 

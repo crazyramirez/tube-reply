@@ -6,6 +6,16 @@ definePageMeta({ middleware: "auth" });
 const toast = useToast();
 const { t, locale, setLocale } = useI18n();
 
+const syncing = ref(false);
+const connecting = ref(false);
+const disconnecting = ref(false);
+const syncWarning = ref<{ minutesAgo: number; minutesLeft: number } | null>(
+  null,
+);
+const showDisconnectModal = ref(false);
+const showForceSuggestModal = ref(false);
+const forcingSuggest = ref(false);
+
 const { data: ytStatus, refresh } = await useFetch<YouTubeStatus>(
   "/api/youtube/status",
 );
@@ -32,12 +42,7 @@ const quotaBarClass = computed(() =>
       : "bg-emerald-500",
 );
 
-const syncing = ref(false);
-const connecting = ref(false);
-const disconnecting = ref(false);
-const syncWarning = ref<{ minutesAgo: number; minutesLeft: number } | null>(
-  null,
-);
+
 
 let syncInterval: any = null;
 
@@ -90,7 +95,7 @@ async function connectYouTube() {
   }
 }
 
-const showDisconnectModal = ref(false);
+
 
 async function disconnectYouTube() {
   disconnecting.value = true;
@@ -161,8 +166,7 @@ const { data: pendingCount, refresh: refreshPendingCount } = await useFetch<{
   count: number;
 }>("/api/comments/suggest-pending");
 
-const showForceSuggestModal = ref(false);
-const forcingSuggest = ref(false);
+
 
 async function updateAutoSuggest(enabled: boolean) {
   try {
@@ -287,8 +291,8 @@ onMounted(async () => {
 
 <template>
   <div>
-    <div class="mb-7">
-      <h1 class="text-2xl font-bold text-white tracking-tight">
+    <div class="mb-5 sm:mb-7">
+      <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">
         {{ $t("settings.title") }}
       </h1>
       <p class="text-slate-500 text-sm mt-0.5">{{ $t("settings.subtitle") }}</p>
@@ -347,7 +351,7 @@ onMounted(async () => {
               class="space-y-6"
             >
               <div
-                class="flex items-center gap-5 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05]"
+                class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05]"
               >
                 <img
                   :src="

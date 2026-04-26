@@ -150,7 +150,7 @@ watch(justAutoSuggestCompleted, (done) => {
 
 <template>
   <div>
-    <div class="flex items-end justify-between mb-8">
+    <div class="flex items-start sm:items-end justify-between mb-6 sm:mb-8 gap-4">
       <div>
         <div
           class="flex items-center gap-2 text-[10px] font-bold text-indigo-400 uppercase tracking-[0.3em] mb-1"
@@ -161,7 +161,7 @@ watch(justAutoSuggestCompleted, (done) => {
           />
           {{ $t('comments.hub_label') }}
         </div>
-        <h1 class="text-3xl font-black text-white tracking-tighter">
+        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tighter">
           {{ $t('comments.title') }}
         </h1>
       </div>
@@ -232,7 +232,9 @@ watch(justAutoSuggestCompleted, (done) => {
           class="font-bold text-[10px] tracking-widest uppercase"
           @click="toggleSelectAll"
         >
-          {{ isAllSelected ? $t('comments.deselect_all') : $t('comments.select_all') }}
+          <span class="hidden sm:inline">
+            {{ isAllSelected ? $t('comments.deselect_all') : $t('comments.select_all') }}
+          </span>
         </UButton>
       </div>
     </div>
@@ -261,7 +263,7 @@ watch(justAutoSuggestCompleted, (done) => {
     <!-- Grid View -->
     <div
       v-else-if="viewMode === 'grid'"
-      class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3"
+      class="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2 sm:gap-3"
     >
       <div v-for="(c, idx) in data.items" :key="c.id" class="flex flex-col">
         <NuxtLink
@@ -288,14 +290,13 @@ watch(justAutoSuggestCompleted, (done) => {
               class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60"
             />
 
-            <!-- Selection Overlay -->
             <div
               v-if="status !== 'published'"
-              class="absolute top-3 right-3 z-10"
+              class="absolute top-2 right-2 sm:top-3 sm:right-3 z-10"
               @click.stop.prevent="toggleSelection(c.id)"
             >
               <div
-                class="w-8 h-8 rounded-lg border-2 flex items-center justify-center transition-all duration-200"
+                class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg border-2 flex items-center justify-center transition-all duration-200"
                 :class="
                   selectedIds.includes(c.id)
                     ? 'bg-indigo-500 border-indigo-400 text-white scale-110 shadow-lg shadow-indigo-500/50'
@@ -305,23 +306,23 @@ watch(justAutoSuggestCompleted, (done) => {
                 <UIcon
                   v-if="selectedIds.includes(c.id)"
                   name="i-heroicons-check"
-                  class="w-4 h-4"
+                  class="w-3 h-3 sm:w-4 sm:h-4"
                 />
               </div>
             </div>
 
-            <div class="absolute top-3 left-3 flex gap-2">
+            <div class="absolute top-2 left-2 sm:top-3 sm:left-3 flex gap-1 sm:gap-2">
               <UBadge
                 :color="statusColor(c.status)"
                 variant="solid"
                 size="xs"
-                class="font-black tracking-tighter rounded-md"
+                class="font-black tracking-tighter rounded-md text-[8px] sm:text-[10px] px-1 sm:px-1.5"
               >
                 {{ c.status.toUpperCase() }}
               </UBadge>
               <span
                 v-if="c.detectedLang"
-                class="bg-black/40 backdrop-blur-md px-2 py-0.5 rounded text-sm font-bold text-white border border-white/10 uppercase"
+                class="bg-black/40 backdrop-blur-md px-1 sm:px-2 py-0.5 rounded text-[8px] sm:text-sm font-bold text-white border border-white/10 uppercase"
               >
                 {{ c.detectedLang }}
               </span>
@@ -336,62 +337,61 @@ watch(justAutoSuggestCompleted, (done) => {
             </div>
           </div>
 
-          <!-- Content -->
-          <div class="p-5 flex flex-col flex-1 gap-4">
-            <div class="flex items-center gap-3">
+          <div class="p-3 sm:p-5 flex flex-col flex-1 gap-2 sm:gap-4">
+            <div class="flex items-center gap-2 sm:gap-3">
               <div
-                class="w-8 h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-xs"
+                class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-[8px] sm:text-xs"
               >
                 {{ c.authorName?.[0] }}
               </div>
               <div class="flex flex-col min-w-0">
-                <span class="font-bold text-sm text-white truncate">{{
+                <span class="font-bold text-[10px] sm:text-sm text-white truncate">{{
                   c.authorName
                 }}</span>
-                <span class="mt-1 text-[12px] text-slate-500 font-medium">{{
+                <span class="mt-0.5 text-[8px] sm:text-[12px] text-slate-500 font-medium">{{
                   timeAgo(c.publishedAt)
                 }}</span>
               </div>
             </div>
 
-            <div class="bg-white/5 border border-white/5 rounded-xl p-4 flex-1">
+            <div class="bg-white/5 border border-white/5 rounded-lg sm:rounded-xl p-2 sm:p-4 flex-1">
               <p
-                class="text-sm text-slate-300 leading-relaxed line-clamp-3 italic"
+                class="text-[10px] sm:text-sm text-slate-300 leading-relaxed line-clamp-2 sm:line-clamp-3 italic"
               >
                 "{{ c.text }}"
               </p>
             </div>
 
             <!-- Published reply preview -->
-            <div v-if="c.replyText" class="mt-1 pl-4 border-l-2 border-emerald-500/30">
-              <div class="flex items-center gap-1.5 mb-1">
-                <UIcon name="i-heroicons-chat-bubble-left-right" class="w-3 h-3 text-emerald-400" />
-                <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">{{ $t('comments.your_response') }}</span>
+            <div v-if="c.replyText" class="mt-1 pl-2 sm:pl-4 border-l-2 border-emerald-500/30">
+              <div class="flex items-center gap-1 sm:gap-1.5 mb-0.5 sm:mb-1">
+                <UIcon name="i-heroicons-chat-bubble-left-right" class="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-400" />
+                <span class="text-[8px] sm:text-[10px] font-bold text-emerald-400 uppercase tracking-wider truncate">{{ $t('comments.your_response') }}</span>
               </div>
-              <p class="text-xs text-slate-400 line-clamp-2 italic">{{ c.replyText }}</p>
+              <p class="text-[9px] sm:text-xs text-slate-400 line-clamp-1 sm:line-clamp-2 italic">{{ c.replyText }}</p>
             </div>
             <!-- AI suggestion preview (inbox) -->
-            <div v-else-if="c.suggestedReplyText" class="mt-1 pl-4 border-l-2 border-indigo-500/30">
-              <div class="flex items-center gap-1.5 mb-1">
-                <UIcon name="i-heroicons-sparkles" class="w-3 h-3 text-indigo-400" />
-                <span class="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">{{ $t('comments.ai_suggestion') }}</span>
+            <div v-else-if="c.suggestedReplyText" class="mt-1 pl-2 sm:pl-4 border-l-2 border-indigo-500/30">
+              <div class="flex items-center gap-1 sm:gap-1.5 mb-0.5 sm:mb-1">
+                <UIcon name="i-heroicons-sparkles" class="w-2.5 h-2.5 sm:w-3 sm:h-3 text-indigo-400" />
+                <span class="text-[8px] sm:text-[10px] font-bold text-indigo-400 uppercase tracking-wider truncate">{{ $t('comments.ai_suggestion') }}</span>
               </div>
-              <p class="text-xs text-slate-400 line-clamp-2 italic">{{ c.suggestedReplyText }}</p>
+              <p class="text-[9px] sm:text-xs text-slate-400 line-clamp-1 sm:line-clamp-2 italic">{{ c.suggestedReplyText }}</p>
             </div>
             <!-- Pending — no suggestion yet -->
-            <div v-else-if="status === 'inbox'" class="mt-1 pl-4 border-l-2 border-white/10">
-              <span class="text-[10px] font-bold text-slate-700 uppercase tracking-wider">{{ $t('comments.awaiting_ai') }}</span>
+            <div v-else-if="status === 'inbox'" class="mt-1 pl-2 sm:pl-4 border-l-2 border-white/10">
+              <span class="text-[8px] sm:text-[10px] font-bold text-slate-700 uppercase tracking-wider truncate">{{ $t('comments.awaiting_ai') }}</span>
             </div>
 
-            <div class="flex items-center justify-between pt-2">
-              <div class="flex items-center gap-3">
+            <div class="flex items-center justify-between pt-1 sm:pt-2">
+              <div class="flex items-center gap-2 sm:gap-3">
                 <span
                   v-if="c.likeCount"
-                  class="text-[10px] font-bold text-slate-500 flex items-center gap-1"
+                  class="text-[8px] sm:text-[10px] font-bold text-slate-500 flex items-center gap-1"
                 >
                   <UIcon
                     name="i-heroicons-hand-thumb-up"
-                    class="w-3.5 h-3.5 text-indigo-500"
+                    class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-500"
                   />
                   {{ c.likeCount }}
                 </span>
@@ -399,7 +399,7 @@ watch(justAutoSuggestCompleted, (done) => {
               <div
                 class="flex items-center gap-1 text-[10px] font-bold text-indigo-400 group-hover:translate-x-1 transition-transform"
               >
-                {{ $t('comments.review') }} <UIcon name="i-heroicons-arrow-right" class="w-3 h-3" />
+                <span class="hidden sm:inline">{{ $t('comments.review') }}</span> <UIcon name="i-heroicons-arrow-right" class="w-3 h-3" />
               </div>
             </div>
           </div>
@@ -426,11 +426,10 @@ watch(justAutoSuggestCompleted, (done) => {
       >
         <NuxtLink
           :to="`/comments/${c.id}`"
-          class="glass-card p-4 flex items-center gap-6 group"
+          class="glass-card p-3 sm:p-4 flex items-center gap-3 sm:gap-5 group"
         >
-          <!-- Thumbnail -->
           <div
-            class="flex-shrink-0 w-24 aspect-video rounded-lg overflow-hidden border border-white/10 relative"
+            class="flex flex-shrink-0 w-16 sm:w-24 aspect-video rounded-lg overflow-hidden border border-white/10 relative"
           >
             <img
               v-if="c.videoThumbnail"
@@ -546,11 +545,11 @@ watch(justAutoSuggestCompleted, (done) => {
               <UIcon name="i-heroicons-arrow-uturn-left" class="w-5 h-5" />
             </button>
             <div
-              class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/5 text-slate-600 group-hover:text-indigo-400 group-hover:border-indigo-500/20 transition-all"
+              class="w-6 h-6 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl bg-transparent sm:bg-white/5 border-none sm:border sm:border-white/5 text-slate-600 group-hover:text-indigo-400 group-hover:border-indigo-500/20 transition-all"
             >
               <UIcon
                 name="i-heroicons-chevron-right"
-                class="w-5 h-5 group-hover:translate-x-0.5 transition-transform"
+                class="w-3 h-3 sm:w-5 sm:h-5 group-hover:translate-x-0.5 transition-transform"
               />
             </div>
           </div>
@@ -583,67 +582,80 @@ watch(justAutoSuggestCompleted, (done) => {
     >
       <div
         v-if="selectedIds.length > 0"
-        class="fixed bottom-8 left-1/2 -translate-x-1/2 z-50"
+        class="fixed bottom-6 sm:bottom-8 left-1/2 -translate-x-1/2 z-50 px-3 w-full sm:w-auto"
       >
         <div
-          class="bg-slate-900/80 backdrop-blur-xl border border-white/10 px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-6"
+          class="bg-slate-900/80 backdrop-blur-2xl border border-white/10 px-4 sm:px-6 py-2 sm:py-3 rounded-2xl sm:rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center justify-between sm:justify-start gap-3 sm:gap-6 w-full"
         >
-          <div class="flex flex-col">
-            <span
-              class="text-[10px] font-bold text-indigo-400 uppercase tracking-widest"
-              >{{ $t('comments.selected_items') }}</span
-            >
-            <span class="text-xl font-black text-white leading-none">{{
-              selectedIds.length
-            }}</span>
+          <div class="flex items-center gap-3 sm:gap-6">
+            <div class="flex items-center gap-1 sm:gap-2">
+              <span class="text-sm sm:text-lg font-black text-white leading-none">{{
+                selectedIds.length
+              }}</span>
+              <span class="hidden sm:inline text-[10px] font-bold text-indigo-400 uppercase tracking-widest">{{ $t('comments.selected_items_short') }}</span>
+            </div>
+
+            <div class="h-8 w-px bg-white/10 shrink-0" />
+
+            <div class="flex items-center gap-1 sm:gap-1.5">
+              <UButton
+                v-if="status !== 'pending' && status !== 'inbox'"
+                color="gray"
+                variant="soft"
+                size="sm"
+                icon="i-heroicons-clock"
+                class="rounded-xl px-1.5 sm:px-3"
+                @click="bulkStatusUpdate('pending')"
+              >
+                <span class="text-[8px] sm:text-xs">{{ $t('status.pending') }}</span>
+              </UButton>
+              <UButton
+                v-if="status !== 'published'"
+                color="emerald"
+                variant="soft"
+                size="sm"
+                icon="i-heroicons-check-circle"
+                class="rounded-xl px-1.5 sm:px-3"
+                @click="bulkStatusUpdate('published')"
+              >
+                <span class="text-[8px] sm:text-xs">{{ $t('status.published') }}</span>
+              </UButton>
+              <UButton
+                v-if="status !== 'dismissed'"
+                color="red"
+                variant="soft"
+                size="sm"
+                icon="i-heroicons-trash"
+                class="rounded-xl px-1.5 sm:px-3"
+                @click="bulkStatusUpdate('dismissed')"
+              >
+                <span class="text-[8px] sm:text-xs">{{ $t('status.dismissed') }}</span>
+              </UButton>
+              <UButton
+                v-if="status !== 'skipped'"
+                color="orange"
+                variant="soft"
+                size="sm"
+                icon="i-heroicons-forward"
+                class="rounded-xl px-1.5 sm:px-3"
+                @click="bulkStatusUpdate('skipped')"
+              >
+                <span class="text-[8px] sm:text-xs">{{ $t('status.skipped') }}</span>
+              </UButton>
+            </div>
           </div>
 
-          <div class="h-8 w-px bg-white/10" />
-
-          <div class="flex items-center gap-2">
-            <UButton
-              v-if="status !== 'pending' && status !== 'inbox'"
-              color="gray"
-              variant="soft"
-              icon="i-heroicons-clock"
-              :label="$t('status.pending')"
-              @click="bulkStatusUpdate('pending')"
-            />
-            <UButton
-              v-if="status !== 'published'"
-              color="emerald"
-              variant="soft"
-              icon="i-heroicons-check-circle"
-              :label="$t('status.published')"
-              @click="bulkStatusUpdate('published')"
-            />
-            <UButton
-              v-if="status !== 'dismissed'"
-              color="red"
-              variant="soft"
-              icon="i-heroicons-trash"
-              :label="$t('status.dismissed')"
-              @click="bulkStatusUpdate('dismissed')"
-            />
-            <UButton
-              v-if="status !== 'skipped'"
-              color="orange"
-              variant="soft"
-              icon="i-heroicons-forward"
-              :label="$t('status.skipped')"
-              @click="bulkStatusUpdate('skipped')"
-            />
-          </div>
-
-          <div class="h-8 w-px bg-white/10" />
+          <div class="h-8 w-px bg-white/10 shrink-0 hidden sm:block" />
 
           <UButton
             color="white"
             variant="ghost"
+            size="sm"
             icon="i-heroicons-x-mark"
+            class="shrink-0 rounded-xl px-1.5 sm:px-3"
             @click="selectedIds = []"
           >
-            {{ $t('comments.cancel') }}
+            <span class="hidden sm:inline text-xs">{{ $t('comments.cancel') }}</span>
           </UButton>
         </div>
       </div>

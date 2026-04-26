@@ -25,6 +25,7 @@ AI-powered YouTube comment management tool. Syncs comments from your channel, ge
 - **Quota management** — tracks daily YouTube API quota, configurable cap
 - **Security** — Rate limiting, CSRF protection, and AES-256-GCM token encryption
 - **PWA support** — installable web app with offline capabilities and custom icons
+- **Responsive Design** — Fully optimized for desktop, tablet, and mobile devices with a premium dark-mode aesthetic
 
 ---
 

@@ -25,6 +25,7 @@ Herramienta de gestión de comentarios de YouTube impulsada por IA. Sincroniza c
 - **Gestión de cuota** — monitoriza la cuota diaria de la API de YouTube, con un límite configurable.
 - **Seguridad avanzada** — rate limiting, protección CSRF y encriptación AES-256-GCM para tokens.
 - **Soporte PWA** — aplicación web instalable con capacidades offline e iconos personalizados.
+- **Diseño Responsivo** — Totalmente optimizado para escritorio, tablet y móviles con una estética premium en modo oscuro.
 
 ---
 

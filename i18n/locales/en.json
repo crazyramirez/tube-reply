@@ -13,7 +13,9 @@
     "knowledge_base": "Knowledge Base",
     "agent": "Channel AI",
     "settings": "Settings",
-    "sign_out": "Sign Out"
+    "sign_out": "Sign Out",
+    "open_menu": "Open menu",
+    "responsive": "Responsive Design"
   },
   "login": {
     "subtitle": "YouTube Comment Assistant",
@@ -72,6 +74,7 @@
     "restore": "Restore Comment",
     "review": "REVIEW",
     "selected_items": "Selected",
+    "selected_items_short": "selected",
     "bulk_success": "Bulk update successful",
     "bulk_moved": "Moved {n} comments to {status}",
     "bulk_failed": "Bulk update failed",
@@ -281,7 +284,7 @@
     "auto_suggest_saved": "Auto-suggest enabled",
     "auto_suggest_processing": "Processing {n} pending comments in background",
     "auto_suggest_failed": "Failed to update auto-suggest",
-    "force_suggest_button": "Run AI Suggestions Now",
+    "force_suggest_button": "AI Suggestions",
     "force_suggest_count": "{n} pending",
     "force_suggest_none": "0 pending",
     "force_suggest_started": "AI suggestions started",

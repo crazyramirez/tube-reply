@@ -29,6 +29,15 @@ const navItems = [
   },
   { key: "settings", icon: "i-heroicons-cog-6-tooth", to: "/settings" },
 ];
+
+const sidebarOpen = ref(false);
+
+watch(
+  () => route.path,
+  () => {
+    sidebarOpen.value = false;
+  },
+);
 </script>
 
 <template>
@@ -41,8 +50,70 @@ const navItems = [
       <div class="bg-bokeh-orange"></div>
       <div class="bg-bokeh-blue"></div>
     </div>
+
+    <!-- Mobile overlay -->
+    <Transition
+      enter-active-class="transition-opacity duration-300"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition-opacity duration-200"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div
+        v-if="sidebarOpen"
+        class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 lg:hidden"
+        @click="sidebarOpen = false"
+      />
+    </Transition>
+
+    <!-- Mobile top bar -->
+    <div
+      class="lg:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-[#030712]/90 backdrop-blur-md border-b border-white/[0.06] flex items-center justify-between px-4"
+    >
+      <button
+        class="w-9 h-9 flex items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.06] transition-all duration-150 cursor-pointer"
+        :aria-label="t('nav.open_menu')"
+        @click="sidebarOpen = !sidebarOpen"
+      >
+        <UIcon
+          :name="sidebarOpen ? 'i-heroicons-x-mark' : 'i-heroicons-bars-3'"
+          class="w-5 h-5 transition-all duration-200"
+        />
+      </button>
+      <div class="flex items-center gap-2.5">
+        <div
+          class="w-7 h-7 rounded-lg overflow-hidden bg-white/5 flex-shrink-0 ring-1 ring-white/10"
+        >
+          <img
+            v-if="brand?.logoUrl"
+            :src="brand.logoUrl"
+            alt="Channel Logo"
+            class="w-full h-full object-cover"
+            loading="eager"
+            referrerpolicy="no-referrer"
+          />
+          <img
+            v-else
+            src="/images/icons/web-app-manifest-192x192.webp"
+            alt="App Logo"
+            class="w-full h-full object-cover"
+            loading="eager"
+          />
+        </div>
+        <p class="font-semibold text-white text-sm tracking-tight">
+          {{ $t("nav.app_name") }}
+        </p>
+      </div>
+      <div class="w-9" />
+    </div>
+
+    <!-- Sidebar -->
     <aside
-      class="fixed inset-y-0 left-0 w-60 bg-[#13172072] border-r border-white/[0.06] flex flex-col z-40 backdrop-blur-md"
+      class="fixed inset-y-0 left-0 w-64 lg:w-60 bg-[#13172072] border-r border-white/[0.06] flex flex-col z-50 backdrop-blur-md transition-transform duration-300 ease-out lg:translate-x-0"
+      :class="
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      "
     >
       <div class="px-5 py-5 border-b border-white/[0.06]">
         <div class="flex items-center gap-3">
@@ -115,8 +186,8 @@ const navItems = [
       </div>
     </aside>
 
-    <main class="ml-60 min-h-screen">
-      <div class="max-w-[1440px] mx-auto px-10 py-10">
+    <main class="lg:ml-60 min-h-[100%] md:min-h-screen pt-14 lg:pt-0">
+      <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 py-6 lg:py-10">
         <slot />
       </div>
     </main>
@@ -132,7 +203,7 @@ const navItems = [
     >
       <div
         v-if="isRunning || justCompleted"
-        class="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-2.5 rounded-2xl border text-xs font-bold shadow-2xl backdrop-blur-xl transition-colors duration-500"
+        class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex items-center gap-3 px-4 py-2.5 rounded-2xl border text-xs font-bold shadow-2xl backdrop-blur-xl transition-colors duration-500 max-w-[calc(100vw-2rem)] sm:max-w-none"
         :class="
           isRunning
             ? 'bg-slate-900/90 border-blue-500/30 text-blue-300'
@@ -147,17 +218,25 @@ const navItems = [
           />
           <UIcon v-else name="i-heroicons-check-circle" class="w-4 h-4" />
         </div>
-        <div class="flex items-center gap-2">
-          <span v-if="isRunning">{{ t("sync_pill.syncing") }}</span>
-          <span v-else>{{ t("sync_pill.done") }}</span>
+        <div class="flex items-center gap-2 min-w-0">
+          <span v-if="isRunning" class="truncate">{{
+            t("sync_pill.syncing")
+          }}</span>
+          <span v-else class="truncate">{{ t("sync_pill.done") }}</span>
           <template v-if="lastSync">
-            <span class="text-slate-600">·</span>
-            <span :class="isRunning ? 'text-slate-400' : 'text-slate-400'">
+            <span class="text-slate-600 shrink-0">·</span>
+            <span
+              :class="isRunning ? 'text-slate-400' : 'text-slate-400'"
+              class="shrink-0"
+            >
               {{ lastSync.videosProcessed ?? 0 }} {{ t("sync_pill.videos") }}
             </span>
             <template v-if="(lastSync.newComments ?? 0) > 0">
-              <span class="text-slate-600">·</span>
-              <span :class="isRunning ? 'text-blue-400' : 'text-emerald-400'">
+              <span class="text-slate-600 shrink-0">·</span>
+              <span
+                :class="isRunning ? 'text-blue-400' : 'text-emerald-400'"
+                class="shrink-0"
+              >
                 +{{ lastSync.newComments }} {{ t("sync_pill.new") }}
               </span>
             </template>

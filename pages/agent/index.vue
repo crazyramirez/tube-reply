@@ -6,13 +6,6 @@ const toast = useToast();
 
 // ─── Agent status (Gemini key gate) ─────────────────────────────────────────
 
-const { data: statusData } = await useFetch<{
-  configured: boolean;
-  model: string;
-}>("/api/agent/status");
-const geminiConfigured = computed(() => statusData.value?.configured ?? false);
-const activeModel = computed(() => statusData.value?.model ?? "");
-
 // ─── Chat list ───────────────────────────────────────────────────────────────
 
 interface AgentChat {
@@ -37,6 +30,23 @@ const activeChatId = ref<number | null>(null);
 const messages = ref<AgentMessage[]>([]);
 const loadingChats = ref(false);
 const loadingMessages = ref(false);
+const creating = ref(false);
+const showDeleteConfirm = ref(false);
+const chatToDelete = ref<AgentChat | null>(null);
+const deleting = ref(false);
+const input = ref("");
+const sending = ref(false);
+const messagesContainer = ref<HTMLElement | null>(null);
+const mobileChatView = ref(false);
+
+// ─── Agent status (Gemini key gate) ─────────────────────────────────────────
+
+const { data: statusData } = await useFetch<{
+  configured: boolean;
+  model: string;
+}>("/api/agent/status");
+const geminiConfigured = computed(() => statusData.value?.configured ?? false);
+const activeModel = computed(() => statusData.value?.model ?? "");
 
 async function fetchChats() {
   loadingChats.value = true;
@@ -63,17 +73,14 @@ async function fetchMessages(chatId: number) {
   }
 }
 
-await fetchChats();
-
 async function selectChat(id: number) {
   activeChatId.value = id;
+  mobileChatView.value = true;
   await fetchMessages(id);
   nextTick(() => scrollToBottom());
 }
 
 // ─── Create / delete chat ────────────────────────────────────────────────────
-
-const creating = ref(false);
 
 async function createChat() {
   creating.value = true;
@@ -84,15 +91,12 @@ async function createChat() {
       headers: useCsrfHeaders(),
     });
     chats.value.unshift(res.chat);
+    mobileChatView.value = true;
     await selectChat(res.chat.id);
   } finally {
     creating.value = false;
   }
 }
-
-const showDeleteConfirm = ref(false);
-const chatToDelete = ref<AgentChat | null>(null);
-const deleting = ref(false);
 
 function openDeleteConfirm(chat: AgentChat, e: MouseEvent) {
   e.stopPropagation();
@@ -124,10 +128,6 @@ async function confirmDeleteChat() {
 }
 
 // ─── Send message ────────────────────────────────────────────────────────────
-
-const input = ref("");
-const sending = ref(false);
-const messagesContainer = ref<HTMLElement | null>(null);
 
 function scrollToBottom(smooth = true) {
   if (!messagesContainer.value) return;
@@ -292,6 +292,10 @@ const promptColors: Record<string, string> = {
 const activeChat = computed(
   () => chats.value.find((c) => c.id === activeChatId.value) ?? null,
 );
+
+// ─── Mobile view toggle ──────────────────────────────────────────────────────
+
+await fetchChats();
 
 // ─── Relative date ───────────────────────────────────────────────────────────
 
@@ -469,7 +473,9 @@ watch(messages, () => {
 <template>
   <div>
     <!-- Page header -->
-    <div class="flex items-center justify-between mb-6 animate-fade-in">
+    <div
+      class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 animate-fade-in gap-4"
+    >
       <div class="flex flex-col">
         <div
           class="flex items-center gap-2 text-[10px] font-bold text-indigo-400 uppercase tracking-[0.3em]"
@@ -477,12 +483,12 @@ watch(messages, () => {
           <UIcon name="i-heroicons-cpu-chip" class="w-3 h-3" />
           {{ $t("agent.center_label") }}
         </div>
-        <h1 class="text-3xl font-black text-white tracking-tighter">
+        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tighter">
           {{ $t("agent.title") }}
         </h1>
         <p class="text-slate-500 text-sm mt-1">{{ $t("agent.subtitle") }}</p>
       </div>
-      <div v-if="geminiConfigured" class="flex items-center gap-2">
+      <div v-if="geminiConfigured" class="flex items-center gap-2 shrink-0">
         <div
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08]"
         >
@@ -533,129 +539,146 @@ watch(messages, () => {
     <div
       v-else
       class="glass-card overflow-hidden animate-fade-in"
-      style="height: calc(100vh - 200px); min-height: 600px"
+      style="height: calc(100vh - 260px); min-height: 380px"
     >
-      <div class="flex h-full">
+      <div class="flex h-[100%]">
         <!-- Sidebar -->
-        <div class="w-64 shrink-0 chat-sidebar">
-          <!-- Sidebar header -->
-          <div
-            class="px-4 py-4 border-b border-white/[0.06] flex items-center justify-between"
-          >
-            <span
-              class="text-[10px] font-bold text-slate-500 uppercase tracking-widest"
-              >{{ $t("agent.agent_name") }}</span
+        <div
+          class="shrink-0 w-full md:w-64"
+          :class="mobileChatView ? 'hidden md:block' : 'block'"
+        >
+          <div class="chat-sidebar h-full">
+            <!-- Sidebar header -->
+            <div
+              class="px-4 py-4 border-b border-white/[0.06] flex items-center justify-between"
             >
-            <button
-              class="premium-btn py-1.5 px-3 text-xs"
-              :disabled="creating"
-              @click="createChat"
-            >
-              <UIcon
-                :name="creating ? 'i-heroicons-arrow-path' : 'i-heroicons-plus'"
-                class="w-3.5 h-3.5"
-                :class="creating ? 'animate-spin' : ''"
-              />
-              {{ $t("agent.new_chat") }}
-            </button>
-          </div>
-
-          <!-- Chat list -->
-          <div class="flex-1 overflow-y-auto custom-scrollbar py-2 px-2">
-            <div v-if="loadingChats" class="flex justify-center py-8">
-              <UIcon
-                name="i-heroicons-arrow-path"
-                class="w-5 h-5 text-slate-600 animate-spin"
-              />
-            </div>
-
-            <div v-else-if="!chats.length" class="py-12 px-4 text-center">
-              <UIcon
-                name="i-heroicons-chat-bubble-left-right"
-                class="w-8 h-8 text-slate-700 mx-auto mb-3"
-              />
-              <p class="text-xs text-slate-600 font-medium">
-                {{ $t("agent.no_chats_title") }}
-              </p>
-              <p class="text-[10px] text-slate-700 mt-1">
-                {{ $t("agent.no_chats_hint") }}
-              </p>
-            </div>
-
-            <TransitionGroup
-              name="list"
-              tag="div"
-              class="space-y-0.5"
-              style="user-select: none"
-            >
-              <div
-                v-for="chat in chats"
-                :key="chat.id"
-                class="chat-item group"
-                :class="activeChatId === chat.id ? 'active' : ''"
-                @click="selectChat(chat.id)"
+              <span
+                class="text-[10px] font-bold text-slate-500 uppercase tracking-widest"
+                >{{ $t("agent.agent_name") }}</span
+              >
+              <button
+                class="premium-btn py-1.5 px-3 text-xs"
+                :disabled="creating"
+                @click="createChat"
               >
                 <UIcon
-                  name="i-heroicons-chat-bubble-oval-left"
-                  class="w-4 h-4 shrink-0 transition-colors"
-                  :class="
-                    activeChatId === chat.id
-                      ? 'text-indigo-400'
-                      : 'text-slate-600 group-hover:text-slate-400'
+                  :name="
+                    creating ? 'i-heroicons-arrow-path' : 'i-heroicons-plus'
                   "
+                  class="w-3.5 h-3.5"
+                  :class="creating ? 'animate-spin' : ''"
                 />
-                <div class="flex-1 min-w-0">
-                  <p
-                    class="text-xs font-semibold truncate"
+                {{ $t("agent.new_chat") }}
+              </button>
+            </div>
+
+            <!-- Chat list -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar py-2 px-2">
+              <div v-if="loadingChats" class="flex justify-center py-8">
+                <UIcon
+                  name="i-heroicons-arrow-path"
+                  class="w-5 h-5 text-slate-600 animate-spin"
+                />
+              </div>
+
+              <div v-else-if="!chats.length" class="py-12 px-4 text-center">
+                <UIcon
+                  name="i-heroicons-chat-bubble-left-right"
+                  class="w-8 h-8 text-slate-700 mx-auto mb-3"
+                />
+                <p class="text-xs text-slate-600 font-medium">
+                  {{ $t("agent.no_chats_title") }}
+                </p>
+                <p class="text-[10px] text-slate-700 mt-1">
+                  {{ $t("agent.no_chats_hint") }}
+                </p>
+              </div>
+
+              <TransitionGroup
+                name="list"
+                tag="div"
+                class="space-y-0.5"
+                style="user-select: none"
+              >
+                <div
+                  v-for="chat in chats"
+                  :key="chat.id"
+                  class="chat-item group"
+                  :class="activeChatId === chat.id ? 'active' : ''"
+                  @click="selectChat(chat.id)"
+                >
+                  <UIcon
+                    name="i-heroicons-chat-bubble-oval-left"
+                    class="w-4 h-4 shrink-0 transition-colors"
                     :class="
                       activeChatId === chat.id
-                        ? 'text-indigo-200'
-                        : 'text-slate-400'
+                        ? 'text-indigo-400'
+                        : 'text-slate-600 group-hover:text-slate-400'
                     "
+                  />
+                  <div class="flex-1 min-w-0">
+                    <p
+                      class="text-xs font-semibold truncate"
+                      :class="
+                        activeChatId === chat.id
+                          ? 'text-indigo-200'
+                          : 'text-slate-400'
+                      "
+                    >
+                      {{ chat.title }}
+                    </p>
+                    <p class="text-[10px] text-slate-600">
+                      {{ relativeDate(chat.updatedAt) }}
+                      <span v-if="chat.messageCount">
+                        · {{ chat.messageCount }} {{ $t("agent.messages") }}
+                      </span>
+                    </p>
+                  </div>
+                  <button
+                    class="opacity-0 group-hover:opacity-100 p-1 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-all duration-150 cursor-pointer"
+                    @click="openDeleteConfirm(chat, $event)"
                   >
-                    {{ chat.title }}
-                  </p>
-                  <p class="text-[10px] text-slate-600">
-                    {{ relativeDate(chat.updatedAt) }}
-                    <span v-if="chat.messageCount">
-                      · {{ chat.messageCount }} {{ $t("agent.messages") }}
-                    </span>
-                  </p>
+                    <UIcon name="i-heroicons-trash" class="w-3.5 h-3.5" />
+                  </button>
                 </div>
-                <button
-                  class="opacity-0 group-hover:opacity-100 p-1 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-500/10 transition-all duration-150 cursor-pointer"
-                  @click="openDeleteConfirm(chat, $event)"
-                >
-                  <UIcon name="i-heroicons-trash" class="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </TransitionGroup>
-          </div>
+              </TransitionGroup>
+            </div>
 
-          <!-- Sidebar footer -->
-          <div class="px-4 py-3 border-t border-white/[0.06]">
-            <div class="flex items-center gap-2">
-              <div
-                class="w-6 h-6 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center"
-              >
-                <UIcon
-                  name="i-heroicons-sparkles"
-                  class="w-3.5 h-3.5 text-indigo-400"
-                />
+            <!-- Sidebar footer -->
+            <div class="px-4 py-3 border-t border-white/[0.06]">
+              <div class="flex items-center gap-2">
+                <div
+                  class="w-6 h-6 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center"
+                >
+                  <UIcon
+                    name="i-heroicons-sparkles"
+                    class="w-3.5 h-3.5 text-indigo-400"
+                  />
+                </div>
+                <span class="text-[10px] text-slate-600 font-medium"
+                  >AI · Gemini Flash</span
+                >
               </div>
-              <span class="text-[10px] text-slate-600 font-medium"
-                >AI · Gemini Flash</span
-              >
             </div>
           </div>
         </div>
 
         <!-- Chat area -->
-        <div class="flex-1 flex flex-col min-w-0">
+        <div
+          class="flex-1 flex-col min-w-0"
+          :class="mobileChatView ? 'flex' : 'hidden md:flex'"
+        >
           <!-- Chat header -->
           <div
-            class="px-6 py-4 border-b border-white/[0.06] flex items-center gap-3 bg-white/[0.01] shrink-0"
+            class="px-4 sm:px-6 py-4 border-b border-white/[0.06] flex items-center gap-3 bg-white/[0.01] shrink-0"
           >
+            <!-- Mobile back button -->
+            <button
+              class="md:hidden w-8 h-8 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white transition-all cursor-pointer shrink-0"
+              @click="mobileChatView = false"
+            >
+              <UIcon name="i-heroicons-chevron-left" class="w-4 h-4" />
+            </button>
             <template v-if="activeChat">
               <div
                 class="w-8 h-8 rounded-xl bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center"

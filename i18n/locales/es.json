@@ -13,7 +13,9 @@
     "knowledge_base": "Base de Conocimiento",
     "agent": "IA del Canal",
     "settings": "Ajustes",
-    "sign_out": "Cerrar sesión"
+    "sign_out": "Cerrar sesión",
+    "open_menu": "Abrir menú",
+    "responsive": "Diseño Responsivo"
   },
   "login": {
     "subtitle": "Asistente de Comentarios YouTube",
@@ -72,6 +74,7 @@
     "restore": "Restaurar Comentario",
     "review": "REVISAR",
     "selected_items": "Seleccionados",
+    "selected_items_short": "seleccionados",
     "bulk_success": "Actualización masiva exitosa",
     "bulk_moved": "Se movieron {n} comentarios a {status}",
     "bulk_failed": "Error en actualización masiva",
@@ -282,7 +285,7 @@
     "auto_suggest_saved": "Auto-sugerencia activada",
     "auto_suggest_processing": "Procesando {n} comentarios pendientes en segundo plano",
     "auto_suggest_failed": "Error al actualizar auto-sugerencia",
-    "force_suggest_button": "Ejecutar Sugerencias IA Ahora",
+    "force_suggest_button": "Auto Sugerencias IA",
     "force_suggest_count": "{n} pendientes",
     "force_suggest_none": "0 pendientes",
     "force_suggest_started": "Sugerencias IA iniciadas",
@@ -299,7 +302,7 @@
     "found": "encontrados",
     "new": "nuevos",
     "quota": "cuota",
-    "next_sync": "Próxima sincronización",
+    "next_sync": "Next Sync",
     "key_missing_title": "API Key faltante",
     "gemini_key_missing_desc": "GEMINI_API_KEY no está configurada en el archivo .env",
     "openai_key_missing_desc": "OPENAI_API_KEY no está configurada en el archivo .env",

@@ -5,16 +5,8 @@ definePageMeta({ middleware: "auth" });
 
 const { t } = useI18n();
 
-const commentPage = ref(1);
 const { data: stats, refresh } = await useFetch<DashboardStats>(
-  "/api/dashboard/stats",
-  {
-    query: computed(() => ({ commentPage: commentPage.value })),
-  },
-);
-
-const totalCommentPages = computed(() =>
-  Math.ceil((stats.value?.recentCommentsTotal ?? 0) / 4),
+  "/api/dashboard/stats"
 );
 
 const SYNC_COOLDOWN_MINUTES = 30;
@@ -158,7 +150,7 @@ const statCards = computed(() => [
 
 <template>
   <div>
-    <div class="flex items-end justify-between mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-6 sm:mb-8 gap-4">
       <div>
         <div
           class="flex items-center gap-2 text-[10px] font-bold text-indigo-400 uppercase tracking-[0.3em] mb-1"
@@ -169,11 +161,11 @@ const statCards = computed(() => [
           />
           {{ $t('dashboard.analytics_label') }}
         </div>
-        <h1 class="text-3xl font-black text-white tracking-tighter">
+        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tighter">
           {{ $t('dashboard.title') }}
         </h1>
       </div>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3 flex-wrap">
         <Transition
           enter-active-class="transition-all duration-300 ease-out"
           enter-from-class="opacity-0 translate-x-3 scale-95"
@@ -223,7 +215,7 @@ const statCards = computed(() => [
     </div>
 
     <!-- Stats -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-8 sm:mb-12">
       <div
         v-for="(card, idx) in statCards"
         :key="card.label"
@@ -294,7 +286,7 @@ const statCards = computed(() => [
 
     <div
       v-else
-      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 dashboard-single-row"
+      class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2 sm:gap-6 dashboard-single-row"
     >
       <NuxtLink
         v-for="(comment, idx) in stats.recentComments"
@@ -322,12 +314,12 @@ const statCards = computed(() => [
             class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60"
           />
 
-          <div class="absolute top-3 left-3 flex gap-2">
+          <div class="absolute top-2 left-2 sm:top-3 sm:left-3 flex gap-2">
             <UBadge
               :color="statusColor(comment.status)"
               variant="solid"
               size="xs"
-              class="font-black tracking-tighter rounded-md"
+              class="font-black tracking-tighter rounded-md text-[8px] sm:text-[10px] px-1 sm:px-1.5"
             >
               {{ comment.status.toUpperCase() }}
             </UBadge>
@@ -343,40 +335,39 @@ const statCards = computed(() => [
         </div>
 
         <!-- Content -->
-        <div class="p-5 flex flex-col flex-1 gap-4">
-          <div class="flex items-center gap-3">
+        <div class="p-3 sm:p-5 flex flex-col flex-1 gap-2 sm:gap-4">
+          <div class="flex items-center gap-2 sm:gap-3">
             <div
-              class="w-8 h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-xs"
+              class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-[8px] sm:text-xs"
             >
               {{ comment.authorName?.[0] }}
             </div>
             <div class="flex flex-col min-w-0">
-              <span class="font-bold text-sm text-white truncate">{{
+              <span class="font-bold text-[10px] sm:text-sm text-white truncate">{{
                 comment.authorName
               }}</span>
-              <span class="mt-1 text-[12px] text-slate-500 font-medium">{{
+              <span class="mt-0.5 text-[8px] sm:text-[12px] text-slate-500 font-medium">{{
                 timeAgo(comment.publishedAt)
               }}</span>
             </div>
           </div>
 
-          <div class="bg-white/5 border border-white/5 rounded-xl p-4 flex-1">
+          <div class="bg-white/5 border border-white/5 rounded-lg sm:rounded-xl p-2 sm:p-4 flex-1">
             <p
-              class="text-sm text-slate-300 leading-relaxed line-clamp-2 italic"
+              class="text-[10px] sm:text-sm text-slate-300 leading-relaxed line-clamp-2 italic"
             >
               "{{ comment.text }}"
             </p>
           </div>
 
-          <div class="flex items-center justify-between pt-2">
-            <div class="flex items-center gap-3">
+          <div class="flex items-center justify-between pt-1 sm:pt-2">
+            <div class="flex items-center gap-2 sm:gap-3">
               <span
-                v-if="comment.likeCount"
-                class="text-[10px] font-bold text-slate-500 flex items-center gap-1"
+                class="text-[8px] sm:text-[10px] font-bold text-slate-500 flex items-center gap-1"
               >
                 <UIcon
                   name="i-heroicons-hand-thumb-up"
-                  class="w-3.5 h-3.5 text-indigo-500"
+                  class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-500"
                 />
                 {{ comment.likeCount }}
               </span>
@@ -384,37 +375,29 @@ const statCards = computed(() => [
             <div
               class="flex items-center gap-1 text-[10px] font-bold text-indigo-400 group-hover:translate-x-1 transition-transform"
             >
-              {{ $t('comments.review') }} <UIcon name="i-heroicons-arrow-right" class="w-3 h-3" />
+              <span class="hidden sm:inline">{{ $t('comments.review') }}</span> <UIcon name="i-heroicons-arrow-right" class="w-3 h-3" />
             </div>
           </div>
         </div>
       </NuxtLink>
     </div>
 
-    <div class="flex justify-center items-center mt-8 mb-4">
-      <UPagination
-        v-if="totalCommentPages > 1"
-        v-model="commentPage"
-        :page-count="6"
-        size="lg"
-        :total="stats?.recentCommentsTotal ?? 0"
-      />
-    </div>
+
   </div>
 </template>
 <style scoped>
-.dashboard-single-row > *:nth-child(n + 2) {
+/* Show all 4 items on mobile (stacked) */
+.dashboard-single-row > *:nth-child(n + 5) {
   display: none;
 }
 @media (min-width: 768px) {
-  .dashboard-single-row > *:nth-child(n + 2) {
-    display: flex;
-  }
+  /* On tablets, keep 2 items to maintain a nice look if they are wide */
   .dashboard-single-row > *:nth-child(n + 3) {
     display: none;
   }
 }
 @media (min-width: 1024px) {
+  /* On desktop, show 3 items */
   .dashboard-single-row > *:nth-child(n + 3) {
     display: flex;
   }
@@ -423,6 +406,7 @@ const statCards = computed(() => [
   }
 }
 @media (min-width: 1536px) {
+  /* On large screens, show all 4 */
   .dashboard-single-row > *:nth-child(n + 4) {
     display: flex;
   }

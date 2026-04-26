@@ -4,6 +4,36 @@ import type { KnowledgeBaseEntry, KBType } from "~/shared/types";
 definePageMeta({ middleware: "auth" });
 
 const { t } = useI18n();
+const page = ref(1);
+const itemsPerPage = 12;
+const showForm = ref(false);
+const editingEntry = ref<KnowledgeBaseEntry | null>(null);
+const saving = ref(false);
+const toast = useToast();
+const showConfirm = ref(false);
+const entryToDelete = ref<KnowledgeBaseEntry | null>(null);
+const deleting = ref(false);
+const form = ref({
+  type: "faq" as KBType,
+  title: "",
+  content: "",
+  priority: 0,
+});
+const showGenerate = ref(false);
+const generating = ref(false);
+const savingBulk = ref(false);
+const generateCount = ref(10);
+const generatedEntries = ref<
+  Array<{
+    type: string;
+    title: string;
+    content: string;
+    priority: number;
+    selected: boolean;
+  }>
+>([]);
+const generateProvider = ref("");
+
 const { data: settings } = await useFetch<any>("/api/settings");
 
 const { data, refresh } = await useFetch<{ items: KnowledgeBaseEntry[] }>(
@@ -15,8 +45,6 @@ const { data, refresh } = await useFetch<{ items: KnowledgeBaseEntry[] }>(
   },
 );
 
-const page = ref(1);
-const itemsPerPage = 12;
 
 const paginatedItems = computed(() => {
   if (!data.value?.items) return [];
@@ -38,17 +66,7 @@ watch(
   },
 );
 
-const showForm = ref(false);
-const editingEntry = ref<KnowledgeBaseEntry | null>(null);
-const saving = ref(false);
-const toast = useToast();
 
-const form = ref({
-  type: "faq" as KBType,
-  title: "",
-  content: "",
-  priority: 0,
-});
 
 function openNew() {
   editingEntry.value = null;
@@ -150,14 +168,11 @@ const typeOptions = computed(() => [
   { label: t("knowledge_base.types.rule"), value: "rule" },
 ]);
 
-const showConfirm = ref(false);
-const entryToDelete = ref<KnowledgeBaseEntry | null>(null);
-const deleting = ref(false);
-
 function openDelete(entry: KnowledgeBaseEntry) {
   entryToDelete.value = entry;
   showConfirm.value = true;
 }
+
 
 async function confirmDelete() {
   if (!entryToDelete.value) return;
@@ -183,20 +198,7 @@ async function confirmDelete() {
 }
 
 // ─── AI Generate ──────────────────────────────────────────────────────────────
-const showGenerate = ref(false);
-const generating = ref(false);
-const savingBulk = ref(false);
-const generateCount = ref(10);
-const generatedEntries = ref<
-  Array<{
-    type: string;
-    title: string;
-    content: string;
-    priority: number;
-    selected: boolean;
-  }>
->([]);
-const generateProvider = ref("");
+
 
 async function generateWithAI() {
   generating.value = true;
@@ -363,7 +365,7 @@ async function saveBulkEntries() {
 
 <template>
   <div>
-    <div class="flex items-center justify-between mb-8 animate-fade-in">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 animate-fade-in gap-4">
       <div class="flex flex-col">
         <div
           class="flex items-center gap-2 text-[10px] font-bold text-indigo-400 uppercase tracking-[0.3em]"
@@ -371,14 +373,14 @@ async function saveBulkEntries() {
           <UIcon name="i-heroicons-cpu-chip" class="w-3 h-3" />
           {{ $t("knowledge_base.center_label") }}
         </div>
-        <h1 class="text-3xl font-black text-white tracking-tighter">
+        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tighter">
           {{ $t("knowledge_base.title") }}
         </h1>
         <p class="text-slate-500 text-sm mt-1">
           {{ $t("knowledge_base.subtitle") }}
         </p>
       </div>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3 flex-wrap">
         <!-- AI Generate button -->
         <button
           v-if="settings?.geminiKeyConfigured"
@@ -549,6 +551,10 @@ async function saveBulkEntries() {
         width: 'sm:max-w-lg',
         background: 'bg-transparent',
         shadow: 'none',
+        container: 'flex items-center justify-center min-h-screen',
+        overlay: {
+          background: 'bg-black/80 backdrop-blur-md',
+        },
       }"
     >
       <div
@@ -697,6 +703,10 @@ async function saveBulkEntries() {
         width: 'sm:max-w-2xl',
         background: 'bg-transparent',
         shadow: 'none',
+        container: 'flex items-center justify-center min-h-screen',
+        overlay: {
+          background: 'bg-black/80 backdrop-blur-md',
+        },
       }"
     >
       <div

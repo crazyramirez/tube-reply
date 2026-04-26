@@ -111,10 +111,10 @@ body {
   background: radial-gradient(
     circle,
     rgba(249, 115, 22, 0.35) 0%,
-    transparent 70%
+    transparent 60%
   );
   filter: blur(120px);
-  border-radius: 50%;
+  border-radius: 60%;
   opacity: 0.8;
   animation: float-orange 20s ease-in-out infinite;
 }
@@ -136,6 +136,26 @@ body {
   animation: float-blue 25s ease-in-out infinite;
 }
 
+/* Mobile Glow Adjustments */
+@media (max-width: 639px) {
+  .bg-bokeh-orange {
+    top: -5%;
+    right: -25%;
+    width: 100vw;
+    height: 100vw;
+    opacity: 0.9;
+    filter: blur(80px);
+  }
+  .bg-bokeh-blue {
+    bottom: -5%;
+    left: -25%;
+    width: 110vw;
+    height: 110vw;
+    opacity: 0.8;
+    filter: blur(90px);
+  }
+}
+
 @keyframes float-orange {
   0%,
   100% {
@@ -153,5 +173,19 @@ body {
   }
   50% {
     transform: translate(5%, -5%) scale(1.05);
+  }
+}
+
+/* Global mobile button optimization */
+@media (max-width: 639px) {
+  button, 
+  .u-button,
+  .u-button-label,
+  button span,
+  .glass-card button {
+    font-size: 11px !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+    min-height: 28px !important;
   }
 }
