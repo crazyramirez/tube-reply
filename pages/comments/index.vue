@@ -263,12 +263,23 @@ watch(justAutoSuggestCompleted, (done) => {
     </div>
 
     <!-- Loading - Only show skeletons if we have no data and it's pending -->
-    <div v-if="pending && !data?.items?.length" class="space-y-2.5">
-      <div
-        v-for="i in 5"
-        :key="i"
-        class="h-20 rounded-2xl bg-white/[0.03] border border-white/[0.06] animate-pulse"
-      />
+    <div v-if="pending && !data?.items?.length">
+      <!-- Grid Loading -->
+      <div v-if="viewMode === 'grid'" class="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2 sm:gap-3">
+        <div
+          v-for="i in 8"
+          :key="i"
+          class="aspect-[4/5] rounded-3xl bg-white/[0.03] border border-white/[0.06] animate-pulse"
+        />
+      </div>
+      <!-- List Loading -->
+      <div v-else class="space-y-3">
+        <div
+          v-for="i in 6"
+          :key="i"
+          class="h-24 rounded-2xl bg-white/[0.03] border border-white/[0.06] animate-pulse"
+        />
+      </div>
     </div>
 
     <!-- Empty -->
