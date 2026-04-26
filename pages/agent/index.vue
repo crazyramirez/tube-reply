@@ -362,8 +362,8 @@ watch(messages, () => {
 }
 
 .premium-btn {
-  @apply relative overflow-hidden px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 cursor-pointer flex items-center gap-2;
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  @apply relative overflow-hidden px-4 py-1.5 rounded-xl font-bold text-xs transition-all duration-300 cursor-pointer flex items-center gap-2;
+  background: linear-gradient(135deg, #6366f1 0%, #403ac1 100%);
   box-shadow: 0 4px 14px -4px rgba(79, 70, 229, 0.5);
 }
 .premium-btn:hover:not(:disabled) {
@@ -557,7 +557,7 @@ watch(messages, () => {
                 >{{ $t("agent.agent_name") }}</span
               >
               <button
-                class="premium-btn py-1.5 px-3 text-xs"
+                class="premium-btn py-1 px-3 text-xs"
                 :disabled="creating"
                 @click="createChat"
               >
