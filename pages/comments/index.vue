@@ -11,9 +11,10 @@ const { t } = useI18n();
 const status = ref((route.query.status as string) || "inbox");
 const page = ref(Number(route.query.page || 1));
 
-const { data, refresh, pending } = await useFetch<
+const { data, refresh, pending } = useFetch<
   PaginatedResponse<CommentListItem>
 >("/api/comments", {
+  lazy: true,
   query: computed(() => ({
     status: status.value,
     page: page.value,
@@ -174,8 +175,13 @@ watch(justAutoSuggestCompleted, (done) => {
           />
           {{ $t("comments.hub_label") }}
         </div>
-        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tighter">
+        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tighter flex items-center gap-3">
           {{ $t("comments.title") }}
+          <UIcon 
+            v-if="pending && data?.items?.length" 
+            name="i-heroicons-arrow-path" 
+            class="w-5 h-5 text-indigo-500/50 animate-spin" 
+          />
         </h1>
       </div>
 
