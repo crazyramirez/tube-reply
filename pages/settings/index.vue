@@ -287,6 +287,27 @@ onMounted(async () => {
     }
   }
 });
+
+const nextSyncDisplay = computed(() => {
+  if (!ytStatus.value?.lastSync?.nextSyncAt) return "-";
+  const next = new Date(ytStatus.value.lastSync.nextSyncAt).getTime();
+  const now = Date.now();
+  const diffMs = next - now;
+
+  if (diffMs <= 0) return t("settings.sync_imminent");
+
+  const diffMin = Math.round(diffMs / 60000);
+  if (diffMin < 60) {
+    return t("settings.sync_in_minutes", { m: diffMin });
+  }
+
+  const diffHours = Math.floor(diffMin / 60);
+  const remainingMin = diffMin % 60;
+  if (remainingMin === 0) {
+    return t("settings.sync_in_hours", { h: diffHours });
+  }
+  return t("settings.sync_in_hours_mins", { h: diffHours, m: remainingMin });
+});
 </script>
 
 <template>
@@ -458,18 +479,7 @@ onMounted(async () => {
                         <UIcon name="i-heroicons-clock" class="w-3 h-3" />
                         {{ $t("settings.next_sync") }}:
                         <span class="font-mono text-emerald-400 ml-0.5">
-                          {{
-                            new Date(
-                              ytStatus.lastSync.nextSyncAt,
-                            ).toLocaleString([], {
-                              year: "numeric",
-                              month: "2-digit",
-                              day: "2-digit",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              hour12: false,
-                            })
-                          }}
+                          {{ nextSyncDisplay }}
                         </span>
                       </div>
                     </div>
