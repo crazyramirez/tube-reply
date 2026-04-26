@@ -1,4 +1,7 @@
 export default defineNuxtPlugin(async () => {
-  // Fetch CSRF token on app start and store in cookie
-  await $fetch('/api/auth/csrf').catch(() => {})
+  const csrfToken = useState<string>('csrf-token', () => '')
+  try {
+    const data = await $fetch<{ token: string }>('/api/auth/csrf')
+    csrfToken.value = data.token
+  } catch {}
 })

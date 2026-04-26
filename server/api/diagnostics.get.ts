@@ -1,9 +1,12 @@
 import { useDb } from '../utils/db'
+import { requireSession } from '../utils/session'
 import { sql } from 'drizzle-orm'
 import { existsSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 export default defineEventHandler(async (event) => {
+  requireSession(event)
+
   const config = useRuntimeConfig()
   const db = useDb()
   

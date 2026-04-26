@@ -6,7 +6,31 @@ definePageMeta({ middleware: "auth" });
 const route = useRoute();
 const router = useRouter();
 const id = route.params.id as string;
-const { t } = useI18n();
+const { t, locale } = useI18n();
+
+const languageNames: Record<string, string> = {
+  en: "English",
+  es: "Spanish",
+  pt: "Portuguese",
+  fr: "French",
+  de: "German",
+  it: "Italian",
+  nl: "Dutch",
+  pl: "Polish",
+  ru: "Russian",
+  ja: "Japanese",
+  zh: "Chinese",
+  ar: "Arabic",
+  ko: "Korean",
+  tr: "Turkish",
+  sv: "Swedish",
+  no: "Norwegian",
+  da: "Danish",
+  fi: "Finnish",
+  ca: "Catalan",
+};
+
+const userLangName = computed(() => languageNames[locale.value] || "Spanish");
 
 const toast = useToast();
 const generating = ref(false);
@@ -20,6 +44,9 @@ let translateTimeout: NodeJS.Timeout | null = null;
 // Auto-translate logic
 watch(editedText, (newText) => {
   if (!newText || newText.length < 10 || !activeSuggestion.value) return;
+
+  const targetLang = selectedLang.value || data.value?.comment?.detectedLang;
+  if (targetLang === locale.value) return;
 
   if (translateTimeout) clearTimeout(translateTimeout);
 
@@ -38,12 +65,15 @@ watch(editedText, (newText) => {
         "/api/utils/translate",
         {
           method: "POST",
-          body: { text: newText },
+          body: {
+            text: newText,
+            targetLang: userLangName.value,
+          },
           headers: useCsrfHeaders(),
         },
       );
       if (activeSuggestion.value) {
-        activeSuggestion.value.responseEs = translation;
+        activeSuggestion.value.verificationTranslation = translation;
       }
     } catch (err) {
       console.error("Auto-translation failed:", err);
@@ -236,6 +266,7 @@ async function generateSuggestion() {
       body: {
         additionalContext: additionalContext.value,
         targetLang: selectedLang.value,
+        userLang: userLangName.value,
       },
       headers: useCsrfHeaders(),
     });
@@ -268,15 +299,19 @@ async function saveEdit() {
   if (!activeSuggestion.value) return;
   const res = await $fetch<{
     ok: boolean;
-    suggestion?: { responseEs: string; videoLinksUsed: any[] };
+    suggestion?: { verificationTranslation: string; videoLinksUsed: any[] };
   }>(`/api/suggestions/${activeSuggestion.value.id}`, {
     method: "PATCH",
-    body: { editedText: editedText.value },
+    body: {
+      editedText: editedText.value,
+      userLang: userLangName.value,
+    },
     headers: useCsrfHeaders(),
   });
 
   if (res.ok && res.suggestion) {
-    activeSuggestion.value.responseEs = res.suggestion.responseEs;
+    activeSuggestion.value.verificationTranslation =
+      res.suggestion.verificationTranslation;
     activeSuggestion.value.videoLinksUsed = res.suggestion.videoLinksUsed;
   }
 
@@ -350,17 +385,24 @@ const finalText = computed(
     "",
 );
 
+const showTranslationVerification = computed(() => {
+  if (!activeSuggestion.value?.verificationTranslation) return false;
+  const replyLang = selectedLang.value || data.value?.comment?.detectedLang;
+  return replyLang !== locale.value;
+});
+
 const confidence = computed(() => activeSuggestion.value?.confidenceScore ?? 0);
 const confidenceLabel = computed(
   () => `${Math.round(confidence.value * 100)}%`,
 );
-const confidenceColor = computed(() =>
-  confidence.value >= 0.7
+const confidenceColor = computed(() => {
+  if (selectedStatus.value === "published") return "green";
+  return confidence.value >= 0.7
     ? "green"
     : confidence.value >= 0.4
       ? "yellow"
-      : "red",
-);
+      : "red";
+});
 const confidenceBarClass = computed(() =>
   confidence.value >= 0.7
     ? "bg-emerald-500"
@@ -715,7 +757,7 @@ async function confirmUnban() {
       <div class="lg:col-span-5 space-y-6">
         <!-- Unified Conversation Hub -->
         <div
-          class="glass-card animate-slide-up stagger-1 flex flex-col h-[600px]"
+          class="glass-card animate-slide-up stagger-1 flex flex-col md:min-h-[700px]"
         >
           <div
             class="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between bg-white/[0.01]"
@@ -735,7 +777,7 @@ async function confirmUnban() {
               :color="confidenceColor"
               variant="subtle"
               size="xs"
-              class="rounded-full px-2.5 font-bold uppercase"
+              class="rounded-full px-3 py-1 font-bold uppercase"
             >
               {{ $t("status." + selectedStatus) }}
             </UBadge>
@@ -1034,7 +1076,7 @@ async function confirmUnban() {
 
               <!-- Translation Preview (Directly under textarea) -->
               <div
-                v-if="activeSuggestion?.responseEs"
+                v-if="showTranslationVerification"
                 class="mb-6 p-5 rounded-2xl bg-white/[0.02] border border-white/5 animate-fade-in"
               >
                 <div class="flex items-center justify-between mb-3">
@@ -1059,7 +1101,7 @@ async function confirmUnban() {
                   </div>
                 </div>
                 <p class="text-sm text-slate-400 italic leading-relaxed">
-                  "{{ activeSuggestion.responseEs }}"
+                  "{{ activeSuggestion.verificationTranslation }}"
                 </p>
               </div>
 
@@ -1241,7 +1283,7 @@ async function confirmUnban() {
 
           <!-- Success Translation Preview -->
           <div
-            v-if="activeSuggestion?.responseEs"
+            v-if="showTranslationVerification"
             class="bg-emerald-500/[0.03] border border-emerald-500/10 rounded-2xl p-5 text-left max-w-lg mx-auto mb-8 animate-fade-in"
           >
             <div class="flex items-center gap-2 mb-2 opacity-50">
@@ -1251,7 +1293,7 @@ async function confirmUnban() {
               }}</span>
             </div>
             <p class="text-sm text-emerald-100/60 italic leading-relaxed">
-              "{{ activeSuggestion.responseEs }}"
+              "{{ activeSuggestion.verificationTranslation }}"
             </p>
           </div>
         </div>

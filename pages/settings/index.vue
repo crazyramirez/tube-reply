@@ -79,10 +79,32 @@ onUnmounted(() => {
   stopPolling();
 });
 
-const languageOptions = computed(() => [
-  { label: "🇬🇧 " + t("settings.language_english"), value: "en" },
-  { label: "🇪🇸 " + t("settings.language_spanish"), value: "es" },
-]);
+const languageOptions = [
+  { label: "🇬🇧 English", value: "en" },
+  { label: "🇪🇸 Español", value: "es" },
+  { label: "🇧🇷 Português", value: "pt" },
+  { label: "🇫🇷 Français", value: "fr" },
+  { label: "🇩🇪 Deutsch", value: "de" },
+  { label: "🇮🇹 Italiano", value: "it" },
+  { label: "🇳🇱 Nederlands", value: "nl" },
+  { label: "🇵🇱 Polski", value: "pl" },
+  { label: "🇷🇺 Русский", value: "ru" },
+  { label: "🇯🇵 日本語", value: "ja" },
+  { label: "🇨🇳 中文", value: "zh" },
+  { label: "🇸🇦 العربية", value: "ar" },
+  { label: "🇰🇷 한국어", value: "ko" },
+  { label: "🇹🇷 Türkçe", value: "tr" },
+  { label: "🇸🇪 Svenska", value: "sv" },
+  { label: "🇳🇴 Norsk", value: "no" },
+  { label: "🇩🇰 Dansk", value: "da" },
+  { label: "🇫🇮 Suomi", value: "fi" },
+  { label: "🇨🇦 Català", value: "ca" },
+];
+
+const currentLocale = computed({
+  get: () => locale.value,
+  set: (val: any) => setLocale(val),
+});
 
 async function connectYouTube() {
   connecting.value = true;
@@ -743,23 +765,25 @@ const nextSyncDisplay = computed(() => {
                   $t("settings.language_title")
                 }}</span>
               </div>
-              <div
-                class="flex bg-black/40 p-1 rounded-xl border border-white/[0.05] shadow-inner"
+              <USelectMenu
+                v-model="currentLocale"
+                :options="languageOptions"
+                value-attribute="value"
+                option-attribute="label"
+                class="w-40"
+                :ui-menu="{
+                  background: 'bg-slate-900',
+                  ring: 'ring-1 ring-white/10',
+                  option: {
+                    active: 'bg-white/10',
+                    selected: 'text-indigo-400'
+                  }
+                }"
               >
-                <button
-                  v-for="opt in languageOptions"
-                  :key="opt.value"
-                  class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer whitespace-nowrap"
-                  :class="
-                    locale === opt.value
-                      ? 'bg-white/[0.08] text-white shadow-[0_0_10px_rgba(255,255,255,0.05)] ring-1 ring-white/10'
-                      : 'text-slate-500 hover:text-slate-300'
-                  "
-                  @click="setLocale(opt.value as 'en' | 'es')"
-                >
-                  {{ opt.label.split(" ")[0] }} {{ opt.label.split(" ")[1] }}
-                </button>
-              </div>
+                <template #label>
+                  <span class="text-xs font-bold">{{ languageOptions.find(o => o.value === locale)?.label }}</span>
+                </template>
+              </USelectMenu>
             </div>
 
             <!-- AI Provider Row -->

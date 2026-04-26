@@ -13,8 +13,8 @@ export default defineEventHandler(async (event) => {
   try {
     const provider = await getAiProvider()
     const prompt = `Translate the following YouTube comment reply to ${targetLang}. 
-Maintain the tone and any technical terms. 
-Return ONLY the translation, no preamble.
+Maintain the tone, style, and any technical terms. 
+Return ONLY the translation, no preamble, no explanations.
 
 REPLY TO TRANSLATE:
 "${text}"`

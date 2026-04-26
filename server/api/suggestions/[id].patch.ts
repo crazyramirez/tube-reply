@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
   const db = useDb()
   const id = Number(getRouterParam(event, 'id'))
   const body = await readBody(event)
-  const { editedText } = body ?? {}
+  const { editedText, userLang = "Spanish" } = body ?? {}
 
   if (!editedText || typeof editedText !== 'string' || !editedText.trim()) {
     throw createError({ statusCode: 400, statusMessage: 'editedText required' })
@@ -54,11 +54,11 @@ export default defineEventHandler(async (event) => {
     videoLinksUsed = []
   }
 
-  // 2. Sync Spanish Translation
-  let responseEs = suggestion.responseEs
+  // 2. Sync Verification Translation
+  let verificationTranslation = suggestion.verificationTranslation
   try {
     const provider = await getAiProvider()
-    const prompt = `Translate the following YouTube comment reply to Spanish. 
+    const prompt = `Translate the following YouTube comment reply to ${userLang}. 
 Maintain the tone and any technical terms. 
 Return ONLY the translation, no preamble.
 
@@ -69,7 +69,7 @@ REPLY TO TRANSLATE:
       ? await openai.openaiGenerate(prompt)
       : await gemini.generateWithRetry(prompt)
     
-    responseEs = aiRes.text.trim().replace(/^"|"$/g, '')
+    verificationTranslation = aiRes.text.trim().replace(/^"|"$/g, '')
   } catch (err) {
     console.error('[suggestion-patch] Translation failed:', err)
   }
@@ -77,7 +77,7 @@ REPLY TO TRANSLATE:
   await db.update(suggestedReplies)
     .set({ 
       editedText: editedText.trim(), 
-      responseEs,
+      verificationTranslation,
       videoLinksUsed: JSON.stringify(videoLinksUsed),
       reviewedAt: new Date().toISOString() 
     })
@@ -86,7 +86,7 @@ REPLY TO TRANSLATE:
   return { 
     ok: true, 
     suggestion: { 
-      responseEs, 
+      verificationTranslation, 
       videoLinksUsed 
     } 
   }

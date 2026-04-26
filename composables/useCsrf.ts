@@ -1,6 +1,6 @@
 export function useCsrf(): string {
   if (import.meta.server) return ''
-  return document.cookie.match(/csrf_token=([^;]+)/)?.[1] ?? ''
+  return useState<string>('csrf-token', () => '').value
 }
 
 export function useCsrfHeaders(): Record<string, string> {

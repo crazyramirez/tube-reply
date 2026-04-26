@@ -11,6 +11,8 @@ const PROTECTED_PREFIXES = [
   '/api/youtube/disconnect',
   '/api/youtube/connect',
   '/api/agent/chats',
+  '/api/agent/status',
+  '/api/diagnostics',
 ]
 
 export default defineEventHandler(async (event) => {

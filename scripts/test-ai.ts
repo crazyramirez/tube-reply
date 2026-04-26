@@ -16,6 +16,7 @@
  *   -m, --model        Model ID (e.g. 'gpt-4o', 'gemini-3-flash-preview')
  *   -v, --video        Specific Video ID to attach the comment to
  *   -l, --lang         Force the REPLY language (e.g. 'en', 'es', 'pt')
+ *   -u, --user-lang    User's UI language for verification translation (default: 'Spanish')
  *   -c, --context      Additional AI instructions (e.g. "usa un tono muy alegre")
  *       --list-langs   Show all available language presets and exit
  *
@@ -94,6 +95,7 @@ const langPreset = getArg('--comment-lang') || getArg('-L')
 const providerArg = getArg('--provider') || getArg('-p')
 const modelArg    = getArg('--model')    || getArg('-m')
 const langArg     = getArg('--lang')     || getArg('-l')
+const userLangArg = getArg('--user-lang') || getArg('-u') || 'Spanish'
 const contextArg  = getArg('--context')  || getArg('-c')
 const videoArg    = getArg('--video')    || getArg('-v')
 const customQuery = args.find(a => !a.startsWith('-') && a !== (langPreset ?? '') && a !== (providerArg ?? '') && a !== (modelArg ?? '') && a !== (langArg ?? '') && a !== (contextArg ?? '') && a !== (videoArg ?? ''))
@@ -163,6 +165,7 @@ async function main() {
   const model = provider === 'openai' ? config.openaiModel : config.geminiModel
   console.log(`${B}Provider:${R} ${GR}${provider}${R}  ${B}Model:${R} ${GR}${model}${R}`)
   if (langArg)    console.log(`${B}Reply lang override:${R} ${langArg}`)
+  if (userLangArg) console.log(`${B}User UI lang:${R} ${userLangArg}`)
   if (contextArg) console.log(`${B}Extra context:${R} ${contextArg}`)
   if (videoArg)   console.log(`${B}Video ID:${R} ${videoArg}`)
 
@@ -196,7 +199,7 @@ async function main() {
 
   try {
     const t0 = Date.now()
-    const { suggestionId } = await generateSuggestion(testCommentId, langArg, contextArg)
+    const { suggestionId } = await generateSuggestion(testCommentId, langArg, contextArg, userLangArg)
     const elapsed = ((Date.now() - t0) / 1000).toFixed(2)
 
     const sug = await db.query.suggestedReplies.findFirst({
@@ -217,9 +220,9 @@ async function main() {
     console.log(`\n${B}${GR}▶ Response (${sug.detectedCommentLang}):${R}`)
     console.log(sug.responseText)
 
-    if (sug.responseEs && sug.responseEs !== sug.responseText) {
-      console.log(`\n${B}${MG}▶ Respuesta en español:${R}`)
-      console.log(sug.responseEs)
+    if (sug.verificationTranslation && sug.verificationTranslation !== sug.responseText) {
+      console.log(`\n${B}${MG}▶ Verification (${userLangArg}):${R}`)
+      console.log(sug.verificationTranslation)
     }
 
     const ctx   = JSON.parse(sug.contextUsed as string ?? '{}')

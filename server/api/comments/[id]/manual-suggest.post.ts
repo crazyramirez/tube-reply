@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   const [inserted] = await db.insert(suggestedReplies).values({
     commentId: id,
     responseText: '',
-    responseEs: '',
+    verificationTranslation: '',
     originalGenerated: 'MANUAL_ENTRY',
     status: 'pending_review',
     confidenceScore: 1.0,

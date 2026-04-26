@@ -5,10 +5,10 @@ export default defineEventHandler(async (event) => {
   if (!id) throw createError({ statusCode: 400, statusMessage: 'Missing ID' })
 
   const body = await readBody(event)
-  const { langOverride, additionalContext } = body
+  const { langOverride, additionalContext, userLang } = body
 
   try {
-    return await generateSuggestion(id, langOverride, additionalContext)
+    return await generateSuggestion(id, langOverride, additionalContext, userLang)
   } catch (err: any) {
     throw createError({
       statusCode: 500,

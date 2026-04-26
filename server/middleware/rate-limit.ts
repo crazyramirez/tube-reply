@@ -1,4 +1,4 @@
-import type { H3Event } from 'h3'
+import { getClientIp } from '../utils/ip'
 
 interface RateLimitEntry {
   count: number
@@ -30,15 +30,6 @@ function checkLimit(key: string, max: number, windowMs: number): { allowed: bool
   }
 
   return { allowed: true, retryAfter: 0 }
-}
-
-function getClientIp(event: H3Event): string {
-  return (
-    getRequestHeader(event, 'x-forwarded-for')?.split(',')[0]?.trim()
-    ?? getRequestHeader(event, 'x-real-ip')
-    ?? event.node.req.socket?.remoteAddress
-    ?? 'unknown'
-  )
 }
 
 export default defineEventHandler((event) => {

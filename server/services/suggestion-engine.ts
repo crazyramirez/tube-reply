@@ -10,7 +10,7 @@ import { comments, suggestedReplies, videos, publishedReplies } from '../db/sche
 
 interface AIOutput {
   response_text: string
-  response_es: string
+  verification_translation: string
   context_used: {
     kb_entries: string[]
     video_title: string | null
@@ -26,7 +26,12 @@ interface AIOutput {
   detected_language: string
 }
 
-export async function generateSuggestion(commentId: string, langOverride: string | null = null, additionalContext: string | null = null): Promise<{ suggestionId: number }> {
+export async function generateSuggestion(
+  commentId: string,
+  langOverride: string | null = null,
+  additionalContext: string | null = null,
+  userLang: string = "Spanish",
+): Promise<{ suggestionId: number }> {
   const db = useDb()
 
 
@@ -40,7 +45,7 @@ export async function generateSuggestion(commentId: string, langOverride: string
   await generateVideoSummary(comment.videoId)
 
   const ctx = await buildContext(commentId, langOverride, additionalContext)
-  const prompt = buildPrompt(ctx)
+  const prompt = buildPrompt(ctx, userLang)
 
   // ─── Multilingual Stopword List ───────────────────────────────────────────────
   // Covers: ES, EN, FR, PT/BR, IT, RO, RU (Cyrillic), AR
@@ -337,7 +342,7 @@ export async function generateSuggestion(commentId: string, langOverride: string
   const [inserted] = await db.insert(suggestedReplies).values({
     commentId,
     responseText: validated.response_text,
-    responseEs: validated.response_es,
+    verificationTranslation: validated.verification_translation,
     originalGenerated: rawText,
     contextUsed: JSON.stringify(validated.context_used),
     confidenceScore: validated.confidence,
@@ -370,7 +375,7 @@ function validateOutput(raw: AIOutput, allVideoIds: Set<string>): AIOutput {
 
   return {
     response_text: raw.response_text ?? '',
-    response_es: raw.response_es ?? raw.response_text ?? '',
+    verification_translation: raw.verification_translation ?? raw.response_text ?? '',
     context_used: raw.context_used ?? {
       kb_entries: [],
       video_title: null,

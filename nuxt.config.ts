@@ -53,9 +53,27 @@ export default defineNuxtConfig({
 
   i18n: {
     locales: [
-      { code: 'en', name: 'English', file: 'en.json' },
-      { code: 'es', name: 'Español', file: 'es.json' },
+      { code: 'en', iso: 'en-US', name: 'English', file: 'en.json' },
+      { code: 'es', iso: 'es-ES', name: 'Español', file: 'es.json' },
+      { code: 'pt', iso: 'pt-BR', name: 'Português', file: 'en.json' },
+      { code: 'fr', iso: 'fr-FR', name: 'Français', file: 'en.json' },
+      { code: 'de', iso: 'de-DE', name: 'Deutsch', file: 'en.json' },
+      { code: 'it', iso: 'it-IT', name: 'Italiano', file: 'en.json' },
+      { code: 'nl', iso: 'nl-NL', name: 'Nederlands', file: 'en.json' },
+      { code: 'pl', iso: 'pl-PL', name: 'Polski', file: 'en.json' },
+      { code: 'ru', iso: 'ru-RU', name: 'Русский', file: 'en.json' },
+      { code: 'ja', iso: 'ja-JP', name: '日本語', file: 'en.json' },
+      { code: 'zh', iso: 'zh-CN', name: '中文', file: 'en.json' },
+      { code: 'ar', iso: 'ar-SA', name: 'العربية', file: 'en.json' },
+      { code: 'ko', iso: 'ko-KR', name: '한국어', file: 'en.json' },
+      { code: 'tr', iso: 'tr-TR', name: 'Türkçe', file: 'en.json' },
+      { code: 'sv', iso: 'sv-SE', name: 'Svenska', file: 'en.json' },
+      { code: 'no', iso: 'no-NO', name: 'Norsk', file: 'en.json' },
+      { code: 'da', iso: 'da-DK', name: 'Dansk', file: 'en.json' },
+      { code: 'fi', iso: 'fi-FI', name: 'Suomi', file: 'en.json' },
+      { code: 'ca', iso: 'ca-ES', name: 'Català', file: 'en.json' },
     ],
+    lazy: true,
     defaultLocale: 'en',
     strategy: 'no_prefix',
     langDir: 'locales/',
@@ -68,6 +86,7 @@ export default defineNuxtConfig({
     bundle: {
       optimizeTranslationDirective: false,
     },
+    vueI18n: './i18n.config.ts',
   },
 
   css: ['~/assets/css/main.css'],

@@ -63,7 +63,7 @@ export const suggestedReplies = sqliteTable('suggested_replies', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   commentId: text('comment_id').notNull().references(() => comments.id),
   responseText: text('response_text').notNull(), // in commenter's language
-  responseEs: text('response_es'), // always Spanish translation
+  verificationTranslation: text('response_es'), // translation for user verification
   originalGenerated: text('original_generated').notNull(), // LLM raw output — immutable
   editedText: text('edited_text'), // human edits
   contextUsed: text('context_used'), // JSON

@@ -2,16 +2,8 @@ import bcrypt from 'bcryptjs'
 import { eq, and, gt, count, sql } from 'drizzle-orm'
 import { useDb } from '../../utils/db'
 import { createSession } from '../../utils/session'
+import { getClientIp } from '../../utils/ip'
 import { loginAttempts } from '../../db/schema'
-
-function getClientIp(event: Parameters<typeof defineEventHandler>[0] extends (e: infer E) => unknown ? E : never): string {
-  return (
-    getRequestHeader(event, 'x-forwarded-for')?.split(',')[0]?.trim()
-    ?? getRequestHeader(event, 'x-real-ip')
-    ?? event.node.req.socket?.remoteAddress
-    ?? 'unknown'
-  )
-}
 
 export default defineEventHandler(async (event) => {
   const db = useDb()

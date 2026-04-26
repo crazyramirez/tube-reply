@@ -303,7 +303,7 @@ export async function buildContext(commentId: string, langOverride: string | nul
   }
 }
 
-export function buildPrompt(ctx: CommentContext): string {
+export function buildPrompt(ctx: CommentContext, userLang: string = "Spanish"): string {
   const kbText = ctx.knowledgeBaseEntries.length > 0
     ? ctx.knowledgeBaseEntries.map((e) => {
         const tagsStr = e.tags.length > 0 ? ` [tags: ${e.tags.join(', ')}]` : ''
@@ -353,7 +353,7 @@ ABSOLUTE RULES — NEVER VIOLATE:
    e. Maximum 2 search_videos calls per response
 4. If uncertain: set needs_confirmation=true and explain why in confirmation_reason
 5. Respond in the SAME LANGUAGE as the comment (use detected_language) — UNLESS langOverride is specified
-6. Always include response_es (Spanish translation of the reply)
+6. Always include verification_translation (${userLang} translation of the reply)
 7. RESPONSE LENGTH — calibrate by intent and importance:
    - video_request / question / help_needed: 2–4 sentences, be complete
    - complaint: 2–3 sentences, acknowledge then solve
@@ -378,7 +378,7 @@ ${kbText}
 Return ONLY valid JSON matching this exact schema. No markdown, no explanation outside JSON:
 {
   "response_text": "reply in commenter's language",
-  "response_es": "Spanish translation",
+  "verification_translation": "${userLang} translation",
   "context_used": {
     "kb_entries": ["array of KB entry titles actually used"],
     "video_title": "exact video title or null",

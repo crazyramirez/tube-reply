@@ -53,7 +53,7 @@ export interface SuggestedReply {
   id: number
   commentId: string
   responseText: string
-  responseEs: string | null
+  verificationTranslation: string | null
   originalGenerated: string
   editedText: string | null
   contextUsed: ContextUsed | null
