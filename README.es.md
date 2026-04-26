@@ -125,7 +125,7 @@ Tube Reply cuenta con un motor de sincronización altamente optimizado diseñado
 
 ## Requisitos
 
-- Node.js 20+
+- Node.js 20+ (Probado en 25.9.0)
 - Proyecto en Google Cloud con:
   - YouTube Data API v3 habilitada
   - Credenciales OAuth 2.0 (Tipo Aplicación Web)

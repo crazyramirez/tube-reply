@@ -60,7 +60,7 @@ Tube Reply is highly optimized for performance and cost-efficiency. It uses **Mi
 
 ### Model Comparison & Pricing (per 1M tokens)
 
-| Feature            | GPT-4o mini       | Gemini 3.0 Flash Preview             |
+| Feature            | GPT-4o mini       | Gemini 3.0 Flash Preview           |
 | :----------------- | :---------------- | :--------------------------------- |
 | **Input Price**    | $0.15             | $0.50                              |
 | **Cached Input**   | $0.075            | $0.05                              |
@@ -123,12 +123,11 @@ Tube Reply features a highly optimized synchronization engine designed to minimi
 - **Replying Cost**: Posting a comment reply costs **50 units** per action.
 - **Quota Guard**: The app tracks your daily consumption and automatically stops syncing if you approach your daily limit (configurable in `.env`).
 
-
 ---
 
 ## Requirements
 
-- Node.js 20+
+- Node.js 20+ (Tested on 25.9.0)
 - Google Cloud project with:
   - YouTube Data API v3 enabled
   - OAuth 2.0 credentials (Web application type)
