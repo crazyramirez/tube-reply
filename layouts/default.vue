@@ -22,6 +22,11 @@ const navItems = [
     icon: "i-heroicons-book-open",
     to: "/knowledge-base",
   },
+  {
+    key: "agent",
+    icon: "i-heroicons-cpu-chip",
+    to: "/agent",
+  },
   { key: "settings", icon: "i-heroicons-cog-6-tooth", to: "/settings" },
 ];
 </script>

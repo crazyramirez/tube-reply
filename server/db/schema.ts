@@ -222,3 +222,26 @@ export const bannedAuthors = sqliteTable('banned_authors', {
   bannedAt: text('banned_at').default(sql`(datetime('now'))`),
   reason: text('reason'),
 })
+
+// ─── Agent Chats ──────────────────────────────────────────────────────────────
+
+export const agentChats = sqliteTable('agent_chats', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  title: text('title').notNull().default('New conversation'),
+  messageCount: integer('message_count').default(0),
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').default(sql`(datetime('now'))`),
+})
+
+// ─── Agent Messages ───────────────────────────────────────────────────────────
+
+export const agentMessages = sqliteTable('agent_messages', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  chatId: integer('chat_id').notNull().references(() => agentChats.id, { onDelete: 'cascade' }),
+  role: text('role', { enum: ['user', 'assistant'] }).notNull(),
+  content: text('content').notNull(),
+  metadata: text('metadata'), // JSON: { promptTokens, completionTokens, model }
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
+}, (t) => ({
+  chatIdx: index('agent_messages_chat_idx').on(t.chatId),
+}))

@@ -188,7 +188,13 @@ const generating = ref(false);
 const savingBulk = ref(false);
 const generateCount = ref(10);
 const generatedEntries = ref<
-  Array<{ type: string; title: string; content: string; selected: boolean }>
+  Array<{
+    type: string;
+    title: string;
+    content: string;
+    priority: number;
+    selected: boolean;
+  }>
 >([]);
 const generateProvider = ref("");
 
@@ -239,7 +245,7 @@ async function saveBulkEntries() {
           type: entry.type,
           title: entry.title,
           content: entry.content,
-          priority: 0,
+          priority: entry.priority ?? 0,
         },
         headers: useCsrfHeaders(),
       });
@@ -832,6 +838,11 @@ async function saveBulkEntries() {
                   <span class="text-sm font-bold text-white truncate">{{
                     entry.title
                   }}</span>
+                  <span
+                    class="ml-auto text-[10px] font-black text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full"
+                  >
+                    {{ entry.priority }}
+                  </span>
                 </div>
                 <p class="text-slate-400 text-xs leading-relaxed line-clamp-3">
                   {{ entry.content }}

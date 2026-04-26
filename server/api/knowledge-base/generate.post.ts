@@ -7,11 +7,12 @@ import OpenAI from 'openai'
 
 const SYSTEM_PROMPT = `You are a Knowledge Base generator for a YouTube crochet channel assistant.
 Analyze the channel data and generate Knowledge Base entries. Return ONLY a valid JSON array.
-Each object: { "type": "faq"|"info"|"style"|"rule", "title": "string (max 80 chars)", "content": "string (max 400 chars)" }
+Each object: { "type": "faq"|"info"|"style"|"rule", "title": "string (max 80 chars)", "content": "string (max 400 chars)", "priority": number (0-100) }
 - faq: frequent user question with canonical answer
 - info: factual channel/technique/product data
 - style: tone, persona, voice guidelines for replies
 - rule: hard AI behavior constraint
+Calculate 'priority' (0-100) based on how frequently similar questions/comments appear in the data (frequency) or how essential the information is for the channel's identity and AI behavior (relevance).
 Write ALL content in Spanish. Be specific to THIS crochet channel. No markdown, no explanation, only the JSON array.`
 
 export default defineEventHandler(async (event) => {
@@ -103,7 +104,7 @@ Return a JSON array of exactly ${count} objects.`
   }
 
   // ─── Parse & validate ─────────────────────────────────────────────
-  let entries: Array<{ type: string; title: string; content: string }>
+  let entries: Array<{ type: string; title: string; content: string; priority: number }>
   try {
     const clean = raw.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim()
     const parsed = JSON.parse(clean)
@@ -126,6 +127,7 @@ Return a JSON array of exactly ${count} objects.`
     type: e.type,
     title: e.title.trim().substring(0, 120),
     content: e.content.trim().substring(0, 600),
+    priority: Math.min(Math.max(Number(e.priority ?? 0), 0), 100),
   }))
 
   return { entries: filtered, provider, total: filtered.length }
