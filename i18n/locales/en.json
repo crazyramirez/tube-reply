@@ -1,8 +1,10 @@
 {
   "sync_pill": {
     "syncing": "Syncing",
+    "syncing_manual": "Manual sync",
     "done": "Sync complete",
     "videos": "videos",
+    "channel": "channel",
     "new": "new"
   },
   "nav": {

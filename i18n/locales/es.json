@@ -1,8 +1,10 @@
 {
   "sync_pill": {
     "syncing": "Sincronizando",
+    "syncing_manual": "Sincronización manual",
     "done": "Sincronización completa",
     "videos": "videos",
+    "channel": "canal",
     "new": "nuevos"
   },
   "nav": {

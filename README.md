@@ -107,16 +107,21 @@ In a typical scenario with **200 videos in your database** and an active **Knowl
 
 ---
 
-## YouTube API Quota & Automation
+## YouTube API Quota & Smart Synchronization
 
-Tube Reply is designed to be efficient, but you must be aware of the YouTube Data API v3 limits:
+Tube Reply features a highly optimized synchronization engine designed to minimize API quota consumption while keeping your comments up-to-date.
 
 - **Daily Free Quota**: 10,000 units.
-- **Deep Sync Cost**: Each deep sync for all videos costs approximately **1 unit per video**. 
-  - *Example*: If you have **1,000 videos**, a deep sync consumes **1,000 units**.
-  - At **4 times a day** (default), this uses **4,000 units/day** just for synchronization.
+- **Smart Sync (Default)**: Uses a channel-wide optimized query (`allThreadsRelatedToChannelId`) to fetch the latest comments from the entire channel in one go.
+  - **Cost**: ~1-5 units per sync.
+  - **Frequency**: Every 30-60 minutes (configurable).
+  - **Benefit**: Even with 3,000+ videos, a manual or scheduled "recent" sync only uses a handful of quota units.
+- **Deep Sync**: Performs a full scan of all videos in your channel to catch comments on older content.
+  - **Cost**: ~1 unit per video.
+  - **Frequency**: 4 times per day (every 6 hours) by default.
+  - **Example**: If you have 1,000 videos, one deep sync uses 1,000 units.
 - **Replying Cost**: Posting a comment reply costs **50 units** per action.
-- **Recommendation**: We recommend keeping the deep sync frequency between **2 to 4 times a day** to stay well within the free tier. You can modify this in `server/plugins/scheduler.ts`.
+- **Quota Guard**: The app tracks your daily consumption and automatically stops syncing if you approach your daily limit (configurable in `.env`).
 
 
 ---

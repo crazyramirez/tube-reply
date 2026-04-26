@@ -219,9 +219,13 @@ watch(
           <UIcon v-else name="i-heroicons-check-circle" class="w-4 h-4" />
         </div>
         <div class="flex items-center gap-2 min-w-0">
-          <span v-if="isRunning" class="truncate">{{
-            t("sync_pill.syncing")
-          }}</span>
+          <span v-if="isRunning" class="truncate">
+            {{
+              lastSync?.syncType === "manual"
+                ? t("sync_pill.syncing_manual")
+                : t("sync_pill.syncing")
+            }}
+          </span>
           <span v-else class="truncate">{{ t("sync_pill.done") }}</span>
           <template v-if="lastSync">
             <span class="text-slate-600 shrink-0">·</span>
@@ -229,7 +233,12 @@ watch(
               :class="isRunning ? 'text-slate-400' : 'text-slate-400'"
               class="shrink-0"
             >
-              {{ lastSync.videosProcessed ?? 0 }} {{ t("sync_pill.videos") }}
+              <template v-if="lastSync.videosProcessed === 1">
+                {{ t("sync_pill.channel") }}
+              </template>
+              <template v-else>
+                {{ lastSync.videosProcessed ?? 0 }} {{ t("sync_pill.videos") }}
+              </template>
             </span>
             <template v-if="(lastSync.newComments ?? 0) > 0">
               <span class="text-slate-600 shrink-0">·</span>

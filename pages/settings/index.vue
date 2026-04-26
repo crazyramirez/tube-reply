@@ -26,8 +26,8 @@ const youtubeError = computed(
   () => route.query.youtube_error as string | undefined,
 );
 
-const SYNC_COOLDOWN_MINUTES = 30;
-const SYNC_QUOTA_COST = 123;
+const SYNC_COOLDOWN_MINUTES = 5;
+const SYNC_QUOTA_COST = 5;
 const MAX_QUOTA_PER_DAY = 10000;
 
 const quotaUsed = computed(() => ytStatus.value?.dailyQuotaUsed ?? 0);

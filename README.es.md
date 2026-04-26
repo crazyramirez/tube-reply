@@ -104,16 +104,21 @@ En un escenario típico con **200 vídeos en tu base de datos** y una **Base de 
 
 ---
 
-## Cuota de API de YouTube y Automatización
+## Cuota de API de YouTube y Sincronización Inteligente
 
-Tube Reply está diseñado para ser eficiente, pero es importante conocer los límites de la API de YouTube Data v3:
+Tube Reply cuenta con un motor de sincronización altamente optimizado diseñado para minimizar el consumo de cuota de la API mientras mantiene tus comentarios actualizados.
 
 - **Cuota Gratuita Diaria**: 10,000 unidades.
-- **Coste de Sincronización Profunda**: Cada escaneo profundo de todos los vídeos consume aproximadamente **1 unidad por vídeo**.
-  - *Ejemplo*: Si tienes **1,000 vídeos**, una sincronización profunda consume **1,000 unidades**.
-  - A **4 veces al día** (por defecto), esto consume **4,000 unidades diarias** solo en consultas.
+- **Sincronización Inteligente (Por defecto)**: Utiliza una consulta optimizada a nivel de canal (`allThreadsRelatedToChannelId`) para obtener los últimos comentarios de todo el canal en una sola operación.
+  - **Coste**: ~1-5 unidades por sincronización.
+  - **Frecuencia**: Cada 30-60 minutos (configurable).
+  - **Beneficio**: Incluso con más de 3,000 vídeos, una sincronización manual o programada "reciente" solo consume un puñado de unidades de cuota.
+- **Sincronización Profunda**: Realiza un escaneo completo de todos los vídeos del canal para capturar comentarios en contenido antiguo.
+  - **Coste**: ~1 unidad por vídeo.
+  - **Frecuencia**: 4 veces al día (cada 6 horas) por defecto.
+  - **Ejemplo**: Si tienes 1,000 vídeos, una sincronización profunda consume 1,000 unidades.
 - **Coste de Respuesta**: Publicar una respuesta a un comentario consume **50 unidades** por acción.
-- **Recomendación**: Se recomienda mantener la frecuencia de sincronización profunda entre **2 y 4 veces al día** para mantenerse dentro del límite gratuito. Puedes modificar esto en `server/plugins/scheduler.ts`.
+- **Protección de Cuota**: La app rastrea el consumo diario y detiene automáticamente la sincronización si se acerca al límite diario (configurable en el `.env`).
 
 
 ---

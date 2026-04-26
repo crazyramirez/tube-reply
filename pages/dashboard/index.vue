@@ -6,11 +6,11 @@ definePageMeta({ middleware: "auth" });
 const { t } = useI18n();
 
 const { data: stats, refresh } = await useFetch<DashboardStats>(
-  "/api/dashboard/stats"
+  "/api/dashboard/stats",
 );
 
-const SYNC_COOLDOWN_MINUTES = 30;
-const SYNC_QUOTA_COST = 123;
+const SYNC_COOLDOWN_MINUTES = 2;
+const SYNC_QUOTA_COST = 5;
 
 const syncLoading = ref(false);
 const syncWarning = ref<{ minutesAgo: number; minutesLeft: number } | null>(
@@ -92,11 +92,11 @@ async function triggerSync(force = false) {
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return t('time.just_now');
-  if (mins < 60) return t('time.minutes_ago', { m: mins });
+  if (mins < 1) return t("time.just_now");
+  if (mins < 60) return t("time.minutes_ago", { m: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return t('time.hours_ago', { h: hrs });
-  return t('time.days_ago', { d: Math.floor(hrs / 24) });
+  if (hrs < 24) return t("time.hours_ago", { h: hrs });
+  return t("time.days_ago", { d: Math.floor(hrs / 24) });
 }
 
 const statusColor = (s: string) =>
@@ -110,7 +110,7 @@ const statusColor = (s: string) =>
 
 const statCards = computed(() => [
   {
-    label: t('dashboard.pending_review'),
+    label: t("dashboard.pending_review"),
     value: stats.value?.comments.pending ?? 0,
     icon: "i-heroicons-clock",
     color: "amber",
@@ -119,7 +119,7 @@ const statCards = computed(() => [
     glow: "from-amber-400 to-orange-400",
   },
   {
-    label: t('dashboard.ai_suggested'),
+    label: t("dashboard.ai_suggested"),
     value: stats.value?.comments.suggested ?? 0,
     icon: "i-heroicons-sparkles",
     color: "indigo",
@@ -128,7 +128,7 @@ const statCards = computed(() => [
     glow: "from-indigo-400 to-violet-400",
   },
   {
-    label: t('dashboard.published_today'),
+    label: t("dashboard.published_today"),
     value: stats.value?.comments.publishedToday ?? 0,
     icon: "i-heroicons-check-circle",
     color: "emerald",
@@ -137,7 +137,7 @@ const statCards = computed(() => [
     glow: "from-emerald-400 to-teal-400",
   },
   {
-    label: t('dashboard.total_published'),
+    label: t("dashboard.total_published"),
     value: stats.value?.comments.totalPublished ?? 0,
     icon: "i-heroicons-paper-airplane",
     color: "slate",
@@ -150,7 +150,9 @@ const statCards = computed(() => [
 
 <template>
   <div>
-    <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-6 sm:mb-8 gap-4">
+    <div
+      class="flex flex-col sm:flex-row sm:items-end justify-between mb-6 sm:mb-8 gap-4"
+    >
       <div>
         <div
           class="flex items-center gap-2 text-[10px] font-bold text-indigo-400 uppercase tracking-[0.3em] mb-1"
@@ -159,10 +161,10 @@ const statCards = computed(() => [
             name="i-heroicons-presentation-chart-line"
             class="w-3.5 h-3.5"
           />
-          {{ $t('dashboard.analytics_label') }}
+          {{ $t("dashboard.analytics_label") }}
         </div>
         <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tighter">
-          {{ $t('dashboard.title') }}
+          {{ $t("dashboard.title") }}
         </h1>
       </div>
       <div class="flex items-center gap-3 flex-wrap">
@@ -174,29 +176,38 @@ const statCards = computed(() => [
           leave-from-class="opacity-100 translate-x-0 scale-100"
           leave-to-class="opacity-0 translate-x-3 scale-95"
         >
-        <div
-          v-if="syncWarning"
-          class="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs"
-        >
-          <UIcon
-            name="i-heroicons-exclamation-triangle"
-            class="w-4 h-4 text-amber-400 shrink-0"
-          />
-          <div>
-            <p class="text-amber-300 font-semibold">
-              {{ $t('dashboard.sync_warning_title', { m: syncWarning.minutesAgo }) }}
-            </p>
-            <p class="text-amber-500/80">
-              {{ $t('dashboard.sync_warning_cost', { cost: SYNC_QUOTA_COST, m: syncWarning.minutesLeft }) }}
-            </p>
-          </div>
-          <button
-            class="shrink-0 text-amber-400 hover:text-white font-bold cursor-pointer transition-colors ml-1"
-            @click="triggerSync(true)"
+          <div
+            v-if="syncWarning"
+            class="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs"
           >
-            {{ $t('dashboard.force') }}
-          </button>
-        </div>
+            <UIcon
+              name="i-heroicons-exclamation-triangle"
+              class="w-4 h-4 text-amber-400 shrink-0"
+            />
+            <div>
+              <p class="text-amber-300 font-semibold">
+                {{
+                  $t("dashboard.sync_warning_title", {
+                    m: syncWarning.minutesAgo,
+                  })
+                }}
+              </p>
+              <p class="text-amber-500/80">
+                {{
+                  $t("dashboard.sync_warning_cost", {
+                    cost: SYNC_QUOTA_COST,
+                    m: syncWarning.minutesLeft,
+                  })
+                }}
+              </p>
+            </div>
+            <button
+              class="shrink-0 text-amber-400 hover:text-white font-bold cursor-pointer transition-colors ml-1"
+              @click="triggerSync(true)"
+            >
+              {{ $t("dashboard.force") }}
+            </button>
+          </div>
         </Transition>
 
         <button
@@ -209,7 +220,11 @@ const statCards = computed(() => [
             class="w-4 h-4 transition-transform duration-500"
             :class="syncLoading ? 'animate-spin' : 'group-hover:rotate-180'"
           />
-          {{ syncLoading ? $t('dashboard.synchronizing') : $t('dashboard.force_sync') }}
+          {{
+            syncLoading
+              ? $t("dashboard.synchronizing")
+              : $t("dashboard.force_sync")
+          }}
         </button>
       </div>
     </div>
@@ -252,14 +267,14 @@ const statCards = computed(() => [
         <h2
           class="font-black text-lg text-white tracking-tight uppercase tracking-widest"
         >
-          {{ $t('dashboard.live_feed') }}
+          {{ $t("dashboard.live_feed") }}
         </h2>
       </div>
       <NuxtLink
         to="/comments"
         class="flex items-center gap-2 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-all group"
       >
-        {{ $t('dashboard.access_all') }}
+        {{ $t("dashboard.access_all") }}
         <UIcon
           name="i-heroicons-arrow-right"
           class="w-4 h-4 group-hover:translate-x-1 transition-transform"
@@ -277,10 +292,10 @@ const statCards = computed(() => [
         <UIcon name="i-heroicons-inbox" class="w-8 h-8 text-slate-700" />
       </div>
       <p class="text-slate-400 font-bold uppercase tracking-widest text-sm">
-        {{ $t('dashboard.no_comments') }}
+        {{ $t("dashboard.no_comments") }}
       </p>
       <p class="text-slate-600 text-xs mt-2">
-        {{ $t('dashboard.init_sync') }}
+        {{ $t("dashboard.init_sync") }}
       </p>
     </div>
 
@@ -343,16 +358,20 @@ const statCards = computed(() => [
               {{ comment.authorName?.[0] }}
             </div>
             <div class="flex flex-col min-w-0">
-              <span class="font-bold text-[10px] sm:text-sm text-white truncate">{{
-                comment.authorName
-              }}</span>
-              <span class="mt-0.5 text-[8px] sm:text-[12px] text-slate-500 font-medium">{{
-                timeAgo(comment.publishedAt)
-              }}</span>
+              <span
+                class="font-bold text-[10px] sm:text-sm text-white truncate"
+                >{{ comment.authorName }}</span
+              >
+              <span
+                class="mt-0.5 text-[8px] sm:text-[12px] text-slate-500 font-medium"
+                >{{ timeAgo(comment.publishedAt) }}</span
+              >
             </div>
           </div>
 
-          <div class="bg-white/5 border border-white/5 rounded-lg sm:rounded-xl p-2 sm:p-4 flex-1">
+          <div
+            class="bg-white/5 border border-white/5 rounded-lg sm:rounded-xl p-2 sm:p-4 flex-1"
+          >
             <p
               class="text-[10px] sm:text-sm text-slate-300 leading-relaxed line-clamp-2 italic"
             >
@@ -375,14 +394,13 @@ const statCards = computed(() => [
             <div
               class="flex items-center gap-1 text-[10px] font-bold text-indigo-400 group-hover:translate-x-1 transition-transform"
             >
-              <span class="hidden sm:inline">{{ $t('comments.review') }}</span> <UIcon name="i-heroicons-arrow-right" class="w-3 h-3" />
+              <span class="hidden sm:inline">{{ $t("comments.review") }}</span>
+              <UIcon name="i-heroicons-arrow-right" class="w-3 h-3" />
             </div>
           </div>
         </div>
       </NuxtLink>
     </div>
-
-
   </div>
 </template>
 <style scoped>

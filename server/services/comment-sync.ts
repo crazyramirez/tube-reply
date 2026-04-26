@@ -29,7 +29,6 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
   if (!token) return
 
   isRunning = true
-  const config = useRuntimeConfig()
   let logId: number | null = null
   let totalQuota = 0
 
@@ -56,27 +55,51 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
     // Refresh cached channel metadata (1 quota unit, done once per sync)
     await refreshChannelMetadata().catch(() => {})
 
-    // Sync video list (always on manual, or if no videos exist)
-    // Optimization: check existing videos only once
+    // Sync video list if needed (on manual or if DB is empty)
     const existingVideos = await db.query.videos.findMany({ columns: { id: true } })
     if (syncType === 'manual' || existingVideos.length === 0) {
-      await syncVideoList(yt, db, config)
+      await syncVideoList(yt, db)
       totalQuota += 2
     }
 
-    // Re-fetch all videos after potential syncVideoList
-    const allVideos = await db.query.videos.findMany()
     const ownerChannelId = token.channelId
 
+    // Optimization: for scheduled/recent syncs, use the channel-wide comment threads list
+    // This is much more efficient than iterating through 3000+ videos
+    if (scope === 'recent' || (syncType === 'scheduled' && scope !== 'all')) {
+      await logger.info('comment-sync', 'Starting optimized channel-wide sync')
+      const { found, newCount, quotaUsed } = await syncChannelComments(yt, db, ownerChannelId)
+      totalFound = found
+      totalNew = newCount
+      totalQuota += quotaUsed
+      
+      // Mark as completed
+      if (logId) {
+        await db.update(syncLog)
+          .set({
+            status: 'completed',
+            videosProcessed: 1, // Global sync counts as 1 virtual process
+            commentsFound: totalFound,
+            newComments: totalNew,
+            quotaUsed: totalQuota,
+            completedAt: new Date().toISOString(),
+          })
+          .where(eq(syncLog.id, logId))
+      }
+      await logger.info('comment-sync', 'Optimized sync completed', { totalNew, totalQuota })
+      return
+    }
+
+    // Fallback: per-video sync (only for 'all' scope or legacy reasons)
+    const allVideos = await db.query.videos.findMany()
     const cutoff = new Date(Date.now() - RECENT_VIDEO_DAYS * 24 * 60 * 60 * 1000).toISOString()
-    const videosToSync = syncType === 'manual' || scope === 'all'
+    const videosToSync = scope === 'all'
       ? allVideos
       : allVideos.filter(v => v.publishedAt >= cutoff)
 
     await logger.info('comment-sync', `Syncing ${videosToSync.length} videos (type: ${syncType}, scope: ${scope})`)
 
     for (const video of videosToSync) {
-      // Abort if this run consumed most of its share (real daily guard is at start)
       if (totalQuota >= remaining - 10) {
         await logger.warn('comment-sync', 'Approaching quota limit, stopping sync', { totalQuota, remaining })
         break
@@ -88,14 +111,11 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
       totalQuota += quotaUsed
       videosProcessed++
 
-      // Write incremental progress every 10 videos so UI can poll it
       if (logId && videosProcessed % 10 === 0) {
         await db.update(syncLog)
           .set({ videosProcessed, commentsFound: totalFound, newComments: totalNew, quotaUsed: totalQuota })
           .where(eq(syncLog.id, logId))
       }
-
-      // Small delay between videos to be polite
       await new Promise(r => setTimeout(r, 200))
     }
 
@@ -112,7 +132,7 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
         .where(eq(syncLog.id, logId))
     }
 
-    await logger.info('comment-sync', 'Sync completed', { totalNew, totalQuota, videosProcessed })
+    await logger.info('comment-sync', 'Full sync completed', { totalNew, totalQuota, videosProcessed })
   }
   catch (err) {
     await logger.error('comment-sync', 'Sync failed', err as Error)
@@ -132,10 +152,162 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
   }
 }
 
+async function syncChannelComments(
+  yt: Awaited<ReturnType<typeof getAuthenticatedYouTube>>,
+  db: ReturnType<typeof useDb>,
+  ownerChannelId: string,
+): Promise<{ found: number; newCount: number; quotaUsed: number }> {
+  let found = 0
+  let newCount = 0
+  let quotaUsed = 0
+  let pageToken: string | undefined
+  let stopCondition = false
+  let consecutiveExisting = 0
+  const MAX_CONSECUTIVE_EXISTING = 5 // Stop after finding 5 existing comments in a row (time ordered)
+
+  try {
+    do {
+      const res = await yt.commentThreads.list({
+        part: ['snippet', 'replies'],
+        allThreadsRelatedToChannelId: ownerChannelId,
+        order: 'time',
+        maxResults: 100,
+        ...(pageToken ? { pageToken } : {}),
+      })
+      quotaUsed++
+
+      const items = res.data.items ?? []
+      if (items.length === 0) break
+
+      for (const thread of items) {
+        const top = thread.snippet?.topLevelComment
+        const videoId = thread.snippet?.videoId
+        if (!top?.id || !top.snippet || !videoId) continue
+
+        // Ensure video exists in our DB (foreign key requirement)
+        await ensureVideoExists(yt, db, videoId)
+
+        found++
+        const lang = detectLanguage(top.snippet.textDisplay ?? '')
+
+        const threadReplies = thread.replies?.comments ?? []
+        const ownerAlreadyReplied = threadReplies.some((r) => {
+          const authorId = (r.snippet?.authorChannelId as unknown as { value?: string } | null)?.value
+          return authorId === ownerChannelId
+        })
+
+        const isNew = await upsertComment(db, {
+          id: top.id,
+          videoId,
+          parentId: null,
+          authorName: top.snippet.authorDisplayName ?? 'Unknown',
+          authorChannelId: (top.snippet.authorChannelId as unknown as { value?: string } | null)?.value ?? null,
+          text: top.snippet.textDisplay ?? '',
+          textOriginal: top.snippet.textOriginal ?? null,
+          likeCount: top.snippet.likeCount ?? 0,
+          detectedLang: lang.lang,
+          langConfidence: lang.confidence,
+          publishedAt: top.snippet.publishedAt ?? new Date().toISOString(),
+          updatedAt: top.snippet.updatedAt ?? new Date().toISOString(),
+          ownerAlreadyReplied,
+        })
+
+        if (isNew) {
+          newCount++
+          consecutiveExisting = 0
+        } else {
+          consecutiveExisting++
+        }
+
+        // Process replies
+        for (const reply of threadReplies) {
+          if (!reply.id || !reply.snippet) continue
+          found++
+          const replyLang = detectLanguage(reply.snippet.textDisplay ?? '')
+          const replyIsNew = await upsertComment(db, {
+            id: reply.id,
+            videoId,
+            parentId: top.id,
+            authorName: reply.snippet.authorDisplayName ?? 'Unknown',
+            authorChannelId: (reply.snippet.authorChannelId as unknown as { value?: string } | null)?.value ?? null,
+            text: reply.snippet.textDisplay ?? '',
+            textOriginal: reply.snippet.textOriginal ?? null,
+            likeCount: reply.snippet.likeCount ?? 0,
+            detectedLang: replyLang.lang,
+            langConfidence: replyLang.confidence,
+            publishedAt: reply.snippet.publishedAt ?? new Date().toISOString(),
+            updatedAt: reply.snippet.updatedAt ?? new Date().toISOString(),
+            ownerAlreadyReplied: false,
+          })
+          if (replyIsNew) newCount++
+        }
+
+        if (consecutiveExisting >= MAX_CONSECUTIVE_EXISTING) {
+          stopCondition = true
+          break
+        }
+      }
+
+      pageToken = res.data.nextPageToken ?? undefined
+      
+      // Quota safety: don't loop forever in case of very active channel
+      if (quotaUsed > 50) break
+
+    } while (pageToken && !stopCondition)
+  } catch (err: any) {
+    const message = err?.message ?? ''
+    if (message.toLowerCase().includes('quota')) throw err
+    await logger.warn('comment-sync', `Global sync error: ${message}`)
+  }
+
+  return { found, newCount, quotaUsed }
+}
+
+async function ensureVideoExists(
+  yt: Awaited<ReturnType<typeof getAuthenticatedYouTube>>,
+  db: ReturnType<typeof useDb>,
+  videoId: string
+) {
+  const existing = await db.query.videos.findFirst({
+    where: eq(videos.id, videoId),
+    columns: { id: true }
+  })
+  
+  if (existing) return
+
+  try {
+    const res = await yt.videos.list({
+      part: ['snippet', 'statistics', 'contentDetails'],
+      id: [videoId]
+    })
+    
+    const v = res.data.items?.[0]
+    if (!v || !v.id || !v.snippet) return
+
+    await db.insert(videos).values({
+      id: v.id,
+      channelId: v.snippet.channelId ?? '',
+      title: v.snippet.title ?? '',
+      description: v.snippet.description ?? '',
+      publishedAt: v.snippet.publishedAt ?? new Date().toISOString(),
+      thumbnailUrl: (v.snippet.thumbnails?.maxres?.url || v.snippet.thumbnails?.high?.url || v.snippet.thumbnails?.medium?.url || v.snippet.thumbnails?.default?.url || null)?.replace('mqdefault.jpg', 'hqdefault.jpg') || null,
+      duration: v.contentDetails?.duration ?? null,
+      tags: v.snippet.tags ? JSON.stringify(v.snippet.tags) : null,
+      categoryId: v.snippet.categoryId ?? null,
+      defaultLanguage: v.snippet.defaultLanguage ?? null,
+      viewCount: Number(v.statistics?.viewCount ?? 0),
+      commentCount: Number(v.statistics?.commentCount ?? 0),
+      lastSyncedAt: new Date().toISOString(),
+    })
+  } catch (err) {
+    await logger.warn('comment-sync', `Failed to fetch missing video ${videoId}`)
+  }
+}
+
+
 async function syncVideoList(
   yt: Awaited<ReturnType<typeof getAuthenticatedYouTube>>,
   db: ReturnType<typeof useDb>,
-  config: ReturnType<typeof useRuntimeConfig>,
 ) {
   // Get the uploads playlist ID for the channel
   const channelRes = await yt.channels.list({ part: ['contentDetails'], mine: true })
