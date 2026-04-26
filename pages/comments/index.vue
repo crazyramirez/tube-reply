@@ -37,7 +37,7 @@ async function undismiss(commentId: string) {
     method: "POST",
     headers: useCsrfHeaders(),
   });
-  toast.add({ title: t('comments.restored'), color: "green" });
+  toast.add({ title: t("comments.restored"), color: "green" });
   await refresh();
 }
 
@@ -56,11 +56,11 @@ const langFlag: Record<string, string> = {
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return t('time.just_now');
-  if (mins < 60) return t('time.minutes_ago', { m: mins });
+  if (mins < 1) return t("time.just_now");
+  if (mins < 60) return t("time.minutes_ago", { m: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return t('time.hours_ago', { h: hrs });
-  return t('time.days_ago', { d: Math.floor(hrs / 24) });
+  if (hrs < 24) return t("time.hours_ago", { h: hrs });
+  return t("time.days_ago", { d: Math.floor(hrs / 24) });
 }
 
 const statusColor = (s: string) =>
@@ -77,9 +77,17 @@ const viewMode = useCookie<"grid" | "list">("comment-view-mode", {
 });
 
 const statusTabs = computed(() => [
-  { label: t('status.inbox'), value: "inbox", icon: "i-heroicons-inbox" },
-  { label: t('status.published'), value: "published", icon: "i-heroicons-check-circle" },
-  { label: t('status.dismissed'), value: "dismissed", icon: "i-heroicons-trash" },
+  { label: t("status.inbox"), value: "inbox", icon: "i-heroicons-inbox" },
+  {
+    label: t("status.published"),
+    value: "published",
+    icon: "i-heroicons-check-circle",
+  },
+  {
+    label: t("status.dismissed"),
+    value: "dismissed",
+    icon: "i-heroicons-trash",
+  },
 ]);
 
 // --- Bulk Actions ---
@@ -122,8 +130,11 @@ async function bulkStatusUpdate(newStatus: string) {
     });
 
     toast.add({
-      title: t('comments.bulk_success'),
-      description: t('comments.bulk_moved', { n: selectedIds.value.length, status: newStatus }),
+      title: t("comments.bulk_success"),
+      description: t("comments.bulk_moved", {
+        n: selectedIds.value.length,
+        status: newStatus,
+      }),
       color: "green",
     });
 
@@ -131,7 +142,7 @@ async function bulkStatusUpdate(newStatus: string) {
     await refresh();
   } catch (err) {
     toast.add({
-      title: t('comments.bulk_failed'),
+      title: t("comments.bulk_failed"),
       description: (err as any).message,
       color: "red",
     });
@@ -150,7 +161,9 @@ watch(justAutoSuggestCompleted, (done) => {
 
 <template>
   <div>
-    <div class="flex items-start sm:items-end justify-between mb-6 sm:mb-8 gap-4">
+    <div
+      class="flex items-start sm:items-end justify-between mb-6 sm:mb-8 gap-4"
+    >
       <div>
         <div
           class="flex items-center gap-2 text-[10px] font-bold text-indigo-400 uppercase tracking-[0.3em] mb-1"
@@ -159,10 +172,10 @@ watch(justAutoSuggestCompleted, (done) => {
             name="i-heroicons-chat-bubble-bottom-center-text"
             class="w-3.5 h-3.5"
           />
-          {{ $t('comments.hub_label') }}
+          {{ $t("comments.hub_label") }}
         </div>
         <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tighter">
-          {{ $t('comments.title') }}
+          {{ $t("comments.title") }}
         </h1>
       </div>
 
@@ -171,7 +184,7 @@ watch(justAutoSuggestCompleted, (done) => {
         class="flex items-center gap-1 p-1 bg-white/[0.03] border border-white/[0.07] rounded-xl"
       >
         <button
-          class="p-2 rounded-lg transition-all duration-200 cursor-pointer"
+          class="flex p-2 rounded-lg transition-all duration-200 cursor-pointer"
           :class="
             viewMode === 'list'
               ? 'bg-white/10 text-white shadow-sm'
@@ -183,7 +196,7 @@ watch(justAutoSuggestCompleted, (done) => {
           <UIcon name="i-heroicons-bars-3" class="w-5 h-5" />
         </button>
         <button
-          class="p-2 rounded-lg transition-all duration-200 cursor-pointer"
+          class="flex p-2 rounded-lg transition-all duration-200 cursor-pointer"
           :class="
             viewMode === 'grid'
               ? 'bg-white/10 text-white shadow-sm'
@@ -233,7 +246,11 @@ watch(justAutoSuggestCompleted, (done) => {
           @click="toggleSelectAll"
         >
           <span class="hidden sm:inline">
-            {{ isAllSelected ? $t('comments.deselect_all') : $t('comments.select_all') }}
+            {{
+              isAllSelected
+                ? $t("comments.deselect_all")
+                : $t("comments.select_all")
+            }}
           </span>
         </UButton>
       </div>
@@ -257,7 +274,11 @@ watch(justAutoSuggestCompleted, (done) => {
         name="i-heroicons-check-circle"
         class="w-12 h-12 mx-auto mb-3 text-emerald-700"
       />
-      <p class="text-slate-500 text-sm">{{ $t(`comments.no_comments_${status === 'inbox' ? 'inbox' : status}`) }}</p>
+      <p class="text-slate-500 text-sm">
+        {{
+          $t(`comments.no_comments_${status === "inbox" ? "inbox" : status}`)
+        }}
+      </p>
     </div>
 
     <!-- Grid View -->
@@ -311,7 +332,9 @@ watch(justAutoSuggestCompleted, (done) => {
               </div>
             </div>
 
-            <div class="absolute top-2 left-2 sm:top-3 sm:left-3 flex gap-1 sm:gap-2">
+            <div
+              class="absolute top-2 left-2 sm:top-3 sm:left-3 flex gap-1 sm:gap-2"
+            >
               <UBadge
                 :color="statusColor(c.status)"
                 variant="solid"
@@ -345,16 +368,20 @@ watch(justAutoSuggestCompleted, (done) => {
                 {{ c.authorName?.[0] }}
               </div>
               <div class="flex flex-col min-w-0">
-                <span class="font-bold text-[10px] sm:text-sm text-white truncate">{{
-                  c.authorName
-                }}</span>
-                <span class="mt-0.5 text-[8px] sm:text-[12px] text-slate-500 font-medium">{{
-                  timeAgo(c.publishedAt)
-                }}</span>
+                <span
+                  class="font-bold text-[10px] sm:text-sm text-white truncate"
+                  >{{ c.authorName }}</span
+                >
+                <span
+                  class="mt-0.5 text-[8px] sm:text-[12px] text-slate-500 font-medium"
+                  >{{ timeAgo(c.publishedAt) }}</span
+                >
               </div>
             </div>
 
-            <div class="bg-white/5 border border-white/5 rounded-lg sm:rounded-xl p-2 sm:p-4 flex-1">
+            <div
+              class="bg-white/5 border border-white/5 rounded-lg sm:rounded-xl p-2 sm:p-4 flex-1"
+            >
               <p
                 class="text-[10px] sm:text-sm text-slate-300 leading-relaxed line-clamp-2 sm:line-clamp-3 italic"
               >
@@ -363,24 +390,56 @@ watch(justAutoSuggestCompleted, (done) => {
             </div>
 
             <!-- Published reply preview -->
-            <div v-if="c.replyText" class="mt-1 pl-2 sm:pl-4 border-l-2 border-emerald-500/30">
+            <div
+              v-if="c.replyText"
+              class="mt-1 pl-2 sm:pl-4 border-l-2 border-emerald-500/30"
+            >
               <div class="flex items-center gap-1 sm:gap-1.5 mb-0.5 sm:mb-1">
-                <UIcon name="i-heroicons-chat-bubble-left-right" class="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-400" />
-                <span class="text-[8px] sm:text-[10px] font-bold text-emerald-400 uppercase tracking-wider truncate">{{ $t('comments.your_response') }}</span>
+                <UIcon
+                  name="i-heroicons-chat-bubble-left-right"
+                  class="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-400"
+                />
+                <span
+                  class="text-[8px] sm:text-[10px] font-bold text-emerald-400 uppercase tracking-wider truncate"
+                  >{{ $t("comments.your_response") }}</span
+                >
               </div>
-              <p class="text-[9px] sm:text-xs text-slate-400 line-clamp-1 sm:line-clamp-2 italic">{{ c.replyText }}</p>
+              <p
+                class="text-[9px] sm:text-xs text-slate-400 line-clamp-1 sm:line-clamp-2 italic"
+              >
+                {{ c.replyText }}
+              </p>
             </div>
             <!-- AI suggestion preview (inbox) -->
-            <div v-else-if="c.suggestedReplyText" class="mt-1 pl-2 sm:pl-4 border-l-2 border-indigo-500/30">
+            <div
+              v-else-if="c.suggestedReplyText"
+              class="mt-1 pl-2 sm:pl-4 border-l-2 border-indigo-500/30"
+            >
               <div class="flex items-center gap-1 sm:gap-1.5 mb-0.5 sm:mb-1">
-                <UIcon name="i-heroicons-sparkles" class="w-2.5 h-2.5 sm:w-3 sm:h-3 text-indigo-400" />
-                <span class="text-[8px] sm:text-[10px] font-bold text-indigo-400 uppercase tracking-wider truncate">{{ $t('comments.ai_suggestion') }}</span>
+                <UIcon
+                  name="i-heroicons-sparkles"
+                  class="w-2.5 h-2.5 sm:w-3 sm:h-3 text-indigo-400"
+                />
+                <span
+                  class="text-[8px] sm:text-[10px] font-bold text-indigo-400 uppercase tracking-wider truncate"
+                  >{{ $t("comments.ai_suggestion") }}</span
+                >
               </div>
-              <p class="text-[9px] sm:text-xs text-slate-400 line-clamp-1 sm:line-clamp-2 italic">{{ c.suggestedReplyText }}</p>
+              <p
+                class="text-[9px] sm:text-xs text-slate-400 line-clamp-1 sm:line-clamp-2 italic"
+              >
+                {{ c.suggestedReplyText }}
+              </p>
             </div>
             <!-- Pending — no suggestion yet -->
-            <div v-else-if="status === 'inbox'" class="mt-1 pl-2 sm:pl-4 border-l-2 border-white/10">
-              <span class="text-[8px] sm:text-[10px] font-bold text-slate-700 uppercase tracking-wider truncate">{{ $t('comments.awaiting_ai') }}</span>
+            <div
+              v-else-if="status === 'inbox'"
+              class="mt-1 pl-2 sm:pl-4 border-l-2 border-white/10"
+            >
+              <span
+                class="text-[8px] sm:text-[10px] font-bold text-slate-700 uppercase tracking-wider truncate"
+                >{{ $t("comments.awaiting_ai") }}</span
+              >
             </div>
 
             <div class="flex items-center justify-between pt-1 sm:pt-2">
@@ -399,7 +458,10 @@ watch(justAutoSuggestCompleted, (done) => {
               <div
                 class="flex items-center gap-1 text-[10px] font-bold text-indigo-400 group-hover:translate-x-1 transition-transform"
               >
-                <span class="hidden sm:inline">{{ $t('comments.review') }}</span> <UIcon name="i-heroicons-arrow-right" class="w-3 h-3" />
+                <span class="hidden sm:inline">{{
+                  $t("comments.review")
+                }}</span>
+                <UIcon name="i-heroicons-arrow-right" class="w-3 h-3" />
               </div>
             </div>
           </div>
@@ -410,7 +472,7 @@ watch(justAutoSuggestCompleted, (done) => {
             @click.prevent="undismiss(c.id)"
           >
             <UIcon name="i-heroicons-arrow-uturn-left" class="w-3.5 h-3.5" />
-            {{ $t('comments.restore') }}
+            {{ $t("comments.restore") }}
           </button>
         </div>
       </div>
@@ -483,7 +545,9 @@ watch(justAutoSuggestCompleted, (done) => {
                 c.authorName
               }}</span>
             </div>
-            <div class="flex items-center justify-between gap-4 mb-2 order-1 sm:order-2">
+            <div
+              class="flex items-center justify-between gap-4 mb-2 order-1 sm:order-2"
+            >
               <div class="flex items-center gap-2 min-w-0">
                 <UBadge
                   :color="statusColor(c.status)"
@@ -511,19 +575,33 @@ watch(justAutoSuggestCompleted, (done) => {
                 <span>{{ timeAgo(c.publishedAt) }}</span>
               </div>
             </div>
-            <p class="text-xs sm:text-sm text-slate-400 line-clamp-2 italic order-3">
+            <p
+              class="text-xs sm:text-sm text-slate-400 line-clamp-2 italic order-3"
+            >
               "{{ c.text }}"
             </p>
-            <div v-if="c.replyText" class="mt-1 pl-3 border-l-2 border-emerald-500/30 order-4">
+            <div
+              v-if="c.replyText"
+              class="mt-1 pl-3 border-l-2 border-emerald-500/30 order-4"
+            >
               <p class="text-[11px] text-slate-500 line-clamp-1 italic">
-                <span class="font-bold text-emerald-500/70 mr-1">{{ $t('comments.your_response') }}:</span>
+                <span class="font-bold text-emerald-500/70 mr-1"
+                  >{{ $t("comments.your_response") }}:</span
+                >
                 {{ c.replyText }}
               </p>
             </div>
-            <div v-else-if="c.suggestedReplyText" class="mt-1 pl-3 border-l-2 border-indigo-500/30 order-4">
+            <div
+              v-else-if="c.suggestedReplyText"
+              class="mt-1 pl-3 border-l-2 border-indigo-500/30 order-4"
+            >
               <p class="text-[11px] text-slate-500 line-clamp-1 italic">
-                <span class="font-bold text-indigo-400/70 mr-1 inline-flex items-center gap-1">
-                  <UIcon name="i-heroicons-sparkles" class="w-2.5 h-2.5" />{{ $t('comments.ai_suggestion') }}:
+                <span
+                  class="font-bold text-indigo-400/70 mr-1 inline-flex items-center gap-1"
+                >
+                  <UIcon name="i-heroicons-sparkles" class="w-2.5 h-2.5" />{{
+                    $t("comments.ai_suggestion")
+                  }}:
                 </span>
                 {{ c.suggestedReplyText }}
               </p>
@@ -591,10 +669,14 @@ watch(justAutoSuggestCompleted, (done) => {
         >
           <div class="flex items-center gap-3 sm:gap-6">
             <div class="flex items-center gap-1 sm:gap-2">
-              <span class="text-sm sm:text-lg font-black text-white leading-none">{{
-                selectedIds.length
-              }}</span>
-              <span class="hidden sm:inline text-[10px] font-bold text-indigo-400 uppercase tracking-widest">{{ $t('comments.selected_items_short') }}</span>
+              <span
+                class="text-sm sm:text-lg font-black text-white leading-none"
+                >{{ selectedIds.length }}</span
+              >
+              <span
+                class="hidden sm:inline text-[10px] font-bold text-indigo-400 uppercase tracking-widest"
+                >{{ $t("comments.selected_items_short") }}</span
+              >
             </div>
 
             <div class="h-8 w-px bg-white/10 shrink-0" />
@@ -609,7 +691,9 @@ watch(justAutoSuggestCompleted, (done) => {
                 class="rounded-xl px-1.5 sm:px-3"
                 @click="bulkStatusUpdate('pending')"
               >
-                <span class="text-[8px] sm:text-xs">{{ $t('status.pending') }}</span>
+                <span class="text-[8px] sm:text-xs">{{
+                  $t("status.pending")
+                }}</span>
               </UButton>
               <UButton
                 v-if="status !== 'published'"
@@ -620,7 +704,9 @@ watch(justAutoSuggestCompleted, (done) => {
                 class="rounded-xl px-1.5 sm:px-3"
                 @click="bulkStatusUpdate('published')"
               >
-                <span class="text-[8px] sm:text-xs">{{ $t('status.published') }}</span>
+                <span class="text-[8px] sm:text-xs">{{
+                  $t("status.published")
+                }}</span>
               </UButton>
               <UButton
                 v-if="status !== 'dismissed'"
@@ -631,7 +717,9 @@ watch(justAutoSuggestCompleted, (done) => {
                 class="rounded-xl px-1.5 sm:px-3"
                 @click="bulkStatusUpdate('dismissed')"
               >
-                <span class="text-[8px] sm:text-xs">{{ $t('status.dismissed') }}</span>
+                <span class="text-[8px] sm:text-xs">{{
+                  $t("status.dismissed")
+                }}</span>
               </UButton>
               <UButton
                 v-if="status !== 'skipped'"
@@ -642,7 +730,9 @@ watch(justAutoSuggestCompleted, (done) => {
                 class="rounded-xl px-1.5 sm:px-3"
                 @click="bulkStatusUpdate('skipped')"
               >
-                <span class="text-[8px] sm:text-xs">{{ $t('status.skipped') }}</span>
+                <span class="text-[8px] sm:text-xs">{{
+                  $t("status.skipped")
+                }}</span>
               </UButton>
             </div>
           </div>
@@ -657,7 +747,9 @@ watch(justAutoSuggestCompleted, (done) => {
             class="shrink-0 rounded-xl px-1.5 sm:px-3"
             @click="selectedIds = []"
           >
-            <span class="hidden sm:inline text-xs">{{ $t('comments.cancel') }}</span>
+            <span class="hidden sm:inline text-xs">{{
+              $t("comments.cancel")
+            }}</span>
           </UButton>
         </div>
       </div>
