@@ -25,10 +25,12 @@ export default defineEventHandler(async (event) => {
     ...(videoId ? [eq(comments.videoId, videoId)] : []),
   ]
 
-  // Inbox: suggested first (ready to act on), then pending — within each group by recency
+  // Inbox: suggested first (ready to act on), then pending — within each group by recency of last activity
+  const lastActivitySql = sql`COALESCE((SELECT published_at FROM comments c2 WHERE c2.parent_id = ${comments.id} ORDER BY published_at DESC LIMIT 1), ${comments.publishedAt})`;
+  
   const orderBy = isInbox
-    ? [sql`CASE WHEN ${comments.status} = 'suggested' THEN 0 ELSE 1 END`, desc(comments.publishedAt)]
-    : [desc(comments.publishedAt)]
+    ? [sql`CASE WHEN ${comments.status} = 'suggested' THEN 0 ELSE 1 END`, desc(lastActivitySql)]
+    : [desc(lastActivitySql)]
 
   const rows = await db
     .select({
@@ -36,15 +38,38 @@ export default defineEventHandler(async (event) => {
       videoId: comments.videoId,
       authorName: comments.authorName,
       text: comments.text,
+      lastText: sql<string>`COALESCE((
+        SELECT text FROM comments c2 
+        WHERE c2.parent_id = ${comments.id} 
+        ORDER BY published_at DESC 
+        LIMIT 1
+      ), ${comments.text})`,
+      lastAuthor: sql<string>`COALESCE((
+        SELECT author_name FROM comments c2 
+        WHERE c2.parent_id = ${comments.id} 
+        ORDER BY published_at DESC 
+        LIMIT 1
+      ), ${comments.authorName})`,
       likeCount: comments.likeCount,
       detectedLang: comments.detectedLang,
       langConfidence: comments.langConfidence,
       publishedAt: comments.publishedAt,
+      lastActivityAt: sql<string>`COALESCE((
+        SELECT published_at FROM comments c2 
+        WHERE c2.parent_id = ${comments.id} 
+        ORDER BY published_at DESC 
+        LIMIT 1
+      ), ${comments.publishedAt})`,
       status: comments.status,
       fetchedAt: comments.fetchedAt,
       videoTitle: videos.title,
       videoThumbnail: videos.thumbnailUrl,
-      replyText: publishedReplies.finalText,
+      replyText: sql<string | null>`(
+        SELECT final_text FROM published_replies
+        WHERE comment_id = ${comments.id}
+        ORDER BY published_at DESC
+        LIMIT 1
+      )`,
       suggestedReplyText: sql<string | null>`(
         SELECT COALESCE(edited_text, response_text) FROM suggested_replies
         WHERE comment_id = ${comments.id}
@@ -55,7 +80,6 @@ export default defineEventHandler(async (event) => {
     })
     .from(comments)
     .leftJoin(videos, eq(comments.videoId, videos.id))
-    .leftJoin(publishedReplies, eq(comments.id, publishedReplies.commentId))
     .where(and(...whereConditions))
     .orderBy(...orderBy)
     .limit(limit)

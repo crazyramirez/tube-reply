@@ -433,13 +433,15 @@ Return ONLY valid JSON matching this exact schema. No markdown, no explanation o
     ? ctx.videoKeyTopics.join(', ')
     : null
 
-  const userPrompt = `COMMENT TO REPLY TO:
-Author: ${ctx.comment.authorName}
-Intent: ${ctx.comment.intent}
+  const userPrompt = `CONVERSATION CONTEXT:
+The following is a thread. You must respond to the LATEST message (either the original comment if there are no replies, or the most recent reply listed below).
+
+Author of Original Comment: ${ctx.comment.authorName}
+Intent of Original Comment: ${ctx.comment.intent}
 Language detected: ${ctx.comment.detectedLang} (confidence: ${ctx.comment.langConfidence.toFixed(2)})
 Importance: ${importanceLabel}
-Age: ${ageLabel}
-Text: "${ctx.comment.text}"
+Age of Original Comment: ${ageLabel}
+Original Comment Text: "${ctx.comment.text}"
 
 VIDEO THIS COMMENT IS ON:
 ID: ${ctx.video.id}
@@ -453,13 +455,14 @@ VIDEO SUMMARY:
 ${ctx.videoSummary ?? 'No summary available. Use video title and description only.'}
 ${faqsText ? `\nVIDEO FAQs (pre-analyzed viewer questions — use these to answer directly):\n${faqsText}` : ''}
 
-EXISTING REPLIES ON THIS COMMENT THREAD (check for duplicate topics):
+EXISTING REPLIES IN THIS THREAD (MOST RECENT FIRST):
 ${repliesText}
 
 RECENT VIDEOS (most recent ${ctx.recentVideos.length} — use search_videos tool to find specific older videos):
 ${recentVideosText}
 
-Generate a reply to this comment. ${ctx.comment.langOverride
+YOUR TASK:
+Generate a reply to the LATEST activity in this thread. ${ctx.comment.langOverride
     ? `IMPORTANT: The user has manually selected the reply language. You MUST respond in "${ctx.comment.langOverride}" regardless of the detected language.`
     : `Respond in ${ctx.comment.detectedLang} language (auto-detected).`
   }

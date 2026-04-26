@@ -8,11 +8,11 @@ import { assertQuotaAvailable } from '../utils/quota'
 export async function publishReply(commentId: string, suggestionId: number): Promise<{ youtubeReplyId: string }> {
   const db = useDb()
 
-  // Check not already published
+  // Check if this specific suggestion has already been published
   const alreadyPublished = await db.query.publishedReplies.findFirst({
-    where: eq(publishedReplies.commentId, commentId),
+    where: eq(publishedReplies.suggestionId, suggestionId),
   })
-  if (alreadyPublished) throw new Error('Reply already published for this comment')
+  if (alreadyPublished) throw new Error('This specific suggestion has already been published')
 
   // Load suggestion
   const suggestion = await db.query.suggestedReplies.findFirst({

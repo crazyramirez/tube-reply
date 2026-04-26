@@ -1,4 +1,4 @@
-import { eq, and, gt, count, isNull, desc, or } from 'drizzle-orm'
+import { eq, and, gt, count, isNull, desc, or, sql } from 'drizzle-orm'
 import { useDb } from '../../utils/db'
 import { comments, videos, publishedReplies } from '../../db/schema'
 
@@ -9,10 +9,6 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const commentPage = Math.max(1, Number(query.commentPage ?? 1))
   const commentOffset = (commentPage - 1) * COMMENT_PAGE_SIZE
-
-  const todayStart = new Date()
-  todayStart.setHours(0, 0, 0, 0)
-  const todayIso = todayStart.toISOString()
 
   const needsAttentionWhere = and(
     isNull(comments.parentId),
@@ -35,7 +31,7 @@ export default defineEventHandler(async (event) => {
       .where(and(eq(comments.status, 'suggested'), isNull(comments.parentId))),
 
     db.select({ publishedToday: count() }).from(publishedReplies)
-      .where(gt(publishedReplies.publishedAt!, todayIso)),
+      .where(sql`date(${publishedReplies.publishedAt}, 'localtime') = date('now', 'localtime')`),
 
     db.select({ totalPublished: count() }).from(publishedReplies),
 

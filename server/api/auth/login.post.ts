@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs'
-import { eq, and, gt, count } from 'drizzle-orm'
+import { eq, and, gt, count, sql } from 'drizzle-orm'
 import { useDb } from '../../utils/db'
 import { createSession } from '../../utils/session'
 import { loginAttempts } from '../../db/schema'
@@ -30,7 +30,7 @@ export default defineEventHandler(async (event) => {
       and(
         eq(loginAttempts.ipAddress, ip),
         eq(loginAttempts.success, false),
-        gt(loginAttempts.attemptedAt, lockoutUntil),
+        sql`datetime(${loginAttempts.attemptedAt}) > datetime(${lockoutUntil})`,
       ),
     )
 

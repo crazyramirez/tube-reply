@@ -25,12 +25,11 @@ export async function autoSuggestPendingComments(): Promise<void> {
     const rows = await db
       .select({ id: comments.id })
       .from(comments)
-      .leftJoin(suggestedReplies, eq(comments.id, suggestedReplies.commentId))
       .where(
         and(
           eq(comments.status, 'pending'),
           isNull(comments.parentId),
-          isNull(suggestedReplies.id),
+          isNull(comments.processedAt),
         ),
       )
 

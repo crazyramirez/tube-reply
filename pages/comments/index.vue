@@ -341,7 +341,7 @@ watch(justAutoSuggestCompleted, (done) => {
                 size="xs"
                 class="font-black tracking-tighter rounded-md text-[8px] sm:text-[10px] px-1 sm:px-1.5"
               >
-                {{ c.status.toUpperCase() }}
+                {{ $t('status.' + c.status).toUpperCase() }}
               </UBadge>
               <span
                 v-if="c.detectedLang"
@@ -370,11 +370,11 @@ watch(justAutoSuggestCompleted, (done) => {
               <div class="flex flex-col min-w-0">
                 <span
                   class="font-bold text-[10px] sm:text-sm text-white truncate"
-                  >{{ c.authorName }}</span
+                  >{{ c.lastAuthor || c.authorName }}</span
                 >
                 <span
                   class="mt-0.5 text-[8px] sm:text-[12px] text-slate-500 font-medium"
-                  >{{ timeAgo(c.publishedAt) }}</span
+                  >{{ timeAgo(c.lastActivityAt || c.publishedAt) }}</span
                 >
               </div>
             </div>
@@ -385,7 +385,7 @@ watch(justAutoSuggestCompleted, (done) => {
               <p
                 class="text-[10px] sm:text-sm text-slate-300 leading-relaxed line-clamp-2 sm:line-clamp-3 italic"
               >
-                "{{ c.text }}"
+                "{{ c.lastText || c.text }}"
               </p>
             </div>
 
@@ -542,7 +542,7 @@ watch(justAutoSuggestCompleted, (done) => {
           <div class="flex-1 min-w-0 flex flex-col">
             <div class="mb-1.5 order-2 sm:order-1">
               <span class="font-bold text-white text-sm truncate block">{{
-                c.authorName
+                c.lastAuthor || c.authorName
               }}</span>
             </div>
             <div
@@ -555,7 +555,7 @@ watch(justAutoSuggestCompleted, (done) => {
                   size="xs"
                   class="rounded-md font-bold text-[9px] px-1.5 py-0"
                 >
-                  {{ c.status.toUpperCase() }}
+                  {{ $t('status.' + c.status).toUpperCase() }}
                 </UBadge>
                 <span
                   v-if="c.detectedLang"
@@ -572,13 +572,13 @@ watch(justAutoSuggestCompleted, (done) => {
                     class="w-3.5 h-3.5"
                   />{{ c.likeCount }}</span
                 >
-                <span>{{ timeAgo(c.publishedAt) }}</span>
+                <span>{{ timeAgo(c.lastActivityAt || c.publishedAt) }}</span>
               </div>
             </div>
             <p
               class="text-xs sm:text-sm text-slate-400 line-clamp-2 italic order-3"
             >
-              "{{ c.text }}"
+              "{{ c.lastText || c.text }}"
             </p>
             <div
               v-if="c.replyText"

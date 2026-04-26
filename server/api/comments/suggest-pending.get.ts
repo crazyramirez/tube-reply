@@ -8,12 +8,11 @@ export default defineEventHandler(async () => {
   const [{ value }] = await db
     .select({ value: count() })
     .from(comments)
-    .leftJoin(suggestedReplies, eq(comments.id, suggestedReplies.commentId))
     .where(
       and(
         eq(comments.status, 'pending'),
         isNull(comments.parentId),
-        isNull(suggestedReplies.id),
+        isNull(comments.processedAt),
       ),
     )
 

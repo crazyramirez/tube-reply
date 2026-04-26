@@ -224,12 +224,15 @@ async function syncChannelComments(
           if (!reply.id || !reply.snippet) continue
           found++
           const replyLang = detectLanguage(reply.snippet.textDisplay ?? '')
+          const authorId = (reply.snippet?.authorChannelId as unknown as { value?: string } | null)?.value ?? null
+          const isOwnerReply = authorId === ownerChannelId
+
           const replyIsNew = await upsertComment(db, {
             id: reply.id,
             videoId,
             parentId: top.id,
             authorName: reply.snippet.authorDisplayName ?? 'Unknown',
-            authorChannelId: (reply.snippet.authorChannelId as unknown as { value?: string } | null)?.value ?? null,
+            authorChannelId: authorId,
             text: reply.snippet.textDisplay ?? '',
             textOriginal: reply.snippet.textOriginal ?? null,
             likeCount: reply.snippet.likeCount ?? 0,
@@ -239,7 +242,37 @@ async function syncChannelComments(
             updatedAt: reply.snippet.updatedAt ?? new Date().toISOString(),
             ownerAlreadyReplied: false,
           })
-          if (replyIsNew) newCount++
+
+          if (replyIsNew) {
+            newCount++
+          }
+
+          // ROBUST REOPEN LOGIC: 
+          // If this is a reply from a user (not the owner) AND it was published AFTER 
+          // we last processed this thread (or if it's a brand new reply to a finished thread),
+          // we must reopen the thread.
+          if (!isOwnerReply) {
+            const parent = await db.query.comments.findFirst({
+              where: eq(comments.id, top.id),
+              columns: { status: true, processedAt: true }
+            })
+            
+            if (parent && (parent.status === 'published' || parent.status === 'dismissed' || parent.status === 'skipped')) {
+              const lastProcessed = parent.processedAt ? new Date(parent.processedAt).getTime() : 0
+              const replyTime = new Date(reply.snippet.publishedAt || 0).getTime()
+              
+              if (replyTime > lastProcessed) {
+                await db.update(comments)
+                  .set({ 
+                    status: 'pending', 
+                    updatedAt: new Date().toISOString(),
+                    processedAt: null 
+                  })
+                  .where(eq(comments.id, top.id))
+                await logger.info('comment-sync', `Reopened thread ${top.id} due to activity from ${reply.snippet.authorDisplayName} after last processing`)
+              }
+            }
+          }
         }
 
         if (consecutiveExisting >= MAX_CONSECUTIVE_EXISTING) {
@@ -429,12 +462,15 @@ async function syncVideoComments(
         if (!reply.id || !reply.snippet) continue
         found++
         const replyLang = detectLanguage(reply.snippet.textDisplay ?? '')
+        const authorId = (reply.snippet?.authorChannelId as unknown as { value?: string } | null)?.value ?? null
+        const isOwnerReply = authorId === ownerChannelId
+
         const replyIsNew = await upsertComment(db, {
           id: reply.id,
           videoId,
           parentId: top.id,
           authorName: reply.snippet.authorDisplayName ?? 'Unknown',
-          authorChannelId: (reply.snippet.authorChannelId as unknown as { value?: string } | null)?.value ?? null,
+          authorChannelId: authorId,
           text: reply.snippet.textDisplay ?? '',
           textOriginal: reply.snippet.textOriginal ?? null,
           likeCount: reply.snippet.likeCount ?? 0,
@@ -444,7 +480,27 @@ async function syncVideoComments(
           updatedAt: reply.snippet.updatedAt ?? new Date().toISOString(),
           ownerAlreadyReplied: false,
         })
-        if (replyIsNew) newCount++
+        
+        if (replyIsNew) {
+          newCount++
+        }
+
+        if (!isOwnerReply) {
+          const parent = await db.query.comments.findFirst({
+            where: eq(comments.id, top.id),
+            columns: { status: true, processedAt: true }
+          })
+          if (parent && (parent.status === 'published' || parent.status === 'dismissed' || parent.status === 'skipped')) {
+            const lastProcessed = parent.processedAt ? new Date(parent.processedAt).getTime() : 0
+            const replyTime = new Date(reply.snippet.publishedAt || 0).getTime()
+            
+            if (replyTime > lastProcessed) {
+              await db.update(comments)
+                .set({ status: 'pending', updatedAt: new Date().toISOString(), processedAt: null })
+                .where(eq(comments.id, top.id))
+            }
+          }
+        }
       }
     }
 

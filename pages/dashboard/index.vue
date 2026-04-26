@@ -111,21 +111,21 @@ const statusColor = (s: string) =>
 const statCards = computed(() => [
   {
     label: t("dashboard.pending_review"),
-    value: stats.value?.comments.pending ?? 0,
-    icon: "i-heroicons-clock",
-    color: "amber",
-    bg: "bg-amber-500/10",
-    text: "text-amber-400",
-    glow: "from-amber-400 to-orange-400",
-  },
-  {
-    label: t("dashboard.ai_suggested"),
     value: stats.value?.comments.suggested ?? 0,
     icon: "i-heroicons-sparkles",
     color: "indigo",
     bg: "bg-indigo-500/10",
     text: "text-indigo-400",
     glow: "from-indigo-400 to-violet-400",
+  },
+  {
+    label: t("dashboard.awaiting_ai"),
+    value: stats.value?.comments.pending ?? 0,
+    icon: "i-heroicons-clock",
+    color: "amber",
+    bg: "bg-amber-500/10",
+    text: "text-amber-400",
+    glow: "from-amber-400 to-orange-400",
   },
   {
     label: t("dashboard.published_today"),
@@ -336,7 +336,7 @@ const statCards = computed(() => [
               size="xs"
               class="font-black tracking-tighter rounded-md text-[8px] sm:text-[10px] px-1 sm:px-1.5"
             >
-              {{ comment.status.toUpperCase() }}
+              {{ $t('status.' + comment.status).toUpperCase() }}
             </UBadge>
           </div>
 

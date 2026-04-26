@@ -29,10 +29,7 @@ interface AIOutput {
 export async function generateSuggestion(commentId: string, langOverride: string | null = null, additionalContext: string | null = null): Promise<{ suggestionId: number }> {
   const db = useDb()
 
-  const existing = await db.query.publishedReplies.findFirst({
-    where: eq(publishedReplies.commentId, commentId),
-  })
-  if (existing) throw new Error('Comment already has a published reply')
+
 
   const comment = await db.query.comments.findFirst({
     where: eq(comments.id, commentId),
