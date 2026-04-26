@@ -150,13 +150,42 @@ async function bulkStatusUpdate(newStatus: string) {
   }
 }
 
+const savedScrollPos = ref(0);
+
+onBeforeRouteLeave((to, from) => {
+  if (to.path.startsWith('/comments/')) {
+    savedScrollPos.value = window.scrollY;
+  }
+});
+
 onActivated(() => {
   refresh();
+  if (savedScrollPos.value > 0) {
+    // Forzamos una altura mínima temporal para evitar que el navegador resetee el scroll a 0
+    // si el contenido aún no se ha renderizado completamente o la página ha encogido.
+    const originalMinHeight = document.documentElement.style.minHeight;
+    document.documentElement.style.minHeight = '5000px'; 
+    
+    setTimeout(() => {
+      window.scrollTo({ top: savedScrollPos.value, behavior: 'instant' });
+      document.documentElement.style.minHeight = originalMinHeight;
+    }, 100);
+  }
 });
 
 const { justAutoSuggestCompleted } = useSyncStatus();
 watch(justAutoSuggestCompleted, (done) => {
   if (done) refresh();
+});
+
+// Solo hacer scroll al principio si cambian REALMENTE los filtros o página
+watch([status, page], (newVals, oldVals) => {
+  const [newS, newP] = newVals;
+  const [oldS, oldP] = oldVals;
+  
+  if (oldS !== undefined && (newS !== oldS || newP !== oldP)) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 });
 </script>
 
