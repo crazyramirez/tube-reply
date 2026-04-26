@@ -29,16 +29,16 @@ export default defineNitroPlugin(() => {
     await maybeTriggerAutoSuggest()
   }, intervalMs)
 
-  // Deep scan — all videos, twice per day (every 12h)
+  // Deep scan — all videos, 4 times per day (every 6h)
   setInterval(async () => {
     await syncComments('scheduled', 'all').catch(() => {})
     await maybeTriggerAutoSuggest()
-  }, 12 * 60 * 60 * 1000)
+  }, 6 * 60 * 60 * 1000)
 
   // DB Maintenance — once per day (every 24h)
   setInterval(async () => {
     await runDbCleanup().catch(() => {})
   }, 24 * 60 * 60 * 1000)
 
-  console.log(`[scheduler] Recent sync every ${config.syncIntervalMinutes}min | Deep scan every 12h | DB Cleanup every 24h`)
+  console.log(`[scheduler] Recent sync every ${config.syncIntervalMinutes}min | Deep scan every 6h | DB Cleanup every 24h`)
 })

@@ -100,6 +100,21 @@ En un escenario típico con **200 vídeos en tu base de datos** y una **Base de 
   - **Ejecución en Segundo Plano**: El proceso se ejecuta en segundo plano, permitiéndote seguir usando el panel de control mientras se generan las sugerencias.
 - **Agente de IA del Canal**: Una interfaz de chat interna dedicada, impulsada por Gemini Flash, que actúa como consultor de tu canal. Tiene acceso completo al contexto de tu base de datos (historial de vídeos, resúmenes y base de conocimientos) para ayudarte a idear nuevo contenido, responder preguntas específicas sobre tu canal o perfeccionar tu estrategia.
 - **Generación de Base de Conocimientos con IA**: Amplía automáticamente tu base de conocimientos permitiendo que la IA analice tus mejores vídeos y las preguntas más frecuentes de los usuarios. Identifica patrones y sugiere nuevas FAQs, reglas de estilo y entradas de contexto para mantener las respuestas de tu IA precisas y actualizadas con el mínimo esfuerzo.
+- **Planificador Automático (Scheduler)**: El sistema incluye un planificador en segundo plano que realiza "Escaneos Profundos" de tu canal (todos los vídeos) 4 veces al día (cada 6 horas) para asegurar que todos los comentarios estén sincronizados y las sugerencias de IA se disparen automáticamente.
+
+---
+
+## Cuota de API de YouTube y Automatización
+
+Tube Reply está diseñado para ser eficiente, pero es importante conocer los límites de la API de YouTube Data v3:
+
+- **Cuota Gratuita Diaria**: 10,000 unidades.
+- **Coste de Sincronización Profunda**: Cada escaneo profundo de todos los vídeos consume aproximadamente **1 unidad por vídeo**.
+  - *Ejemplo*: Si tienes **1,000 vídeos**, una sincronización profunda consume **1,000 unidades**.
+  - A **4 veces al día** (por defecto), esto consume **4,000 unidades diarias** solo en consultas.
+- **Coste de Respuesta**: Publicar una respuesta a un comentario consume **50 unidades** por acción.
+- **Recomendación**: Se recomienda mantener la frecuencia de sincronización profunda entre **2 y 4 veces al día** para mantenerse dentro del límite gratuito. Puedes modificar esto en `server/plugins/scheduler.ts`.
+
 
 ---
 

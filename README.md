@@ -103,6 +103,21 @@ In a typical scenario with **200 videos in your database** and an active **Knowl
   - **Background Execution**: The process runs in the background, allowing you to continue using the dashboard while suggestions are being generated.
 - **AI Channel Agent**: A dedicated internal chat interface powered by Gemini Flash that acts as your channel consultant. It has full access to your database context (video history, summaries, and knowledge base) to help you brainstorm new content, answer specific questions about your channel, or refine your strategy.
 - **AI Knowledge Base Generation**: Automatically expand your knowledge base by letting the AI analyze your top videos and most frequent user questions. It identifies patterns and suggests new FAQs, style rules, and context entries to keep your AI's responses accurate and up-to-date with minimal effort.
+- **Automated Scheduler**: The system includes a background scheduler that performs "Deep Scans" of your channel (all videos) 4 times a day (every 6 hours) to ensure all comments are synced and AI suggestions are triggered automatically.
+
+---
+
+## YouTube API Quota & Automation
+
+Tube Reply is designed to be efficient, but you must be aware of the YouTube Data API v3 limits:
+
+- **Daily Free Quota**: 10,000 units.
+- **Deep Sync Cost**: Each deep sync for all videos costs approximately **1 unit per video**. 
+  - *Example*: If you have **1,000 videos**, a deep sync consumes **1,000 units**.
+  - At **4 times a day** (default), this uses **4,000 units/day** just for synchronization.
+- **Replying Cost**: Posting a comment reply costs **50 units** per action.
+- **Recommendation**: We recommend keeping the deep sync frequency between **2 to 4 times a day** to stay well within the free tier. You can modify this in `server/plugins/scheduler.ts`.
+
 
 ---
 
