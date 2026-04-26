@@ -28,7 +28,6 @@ interface AgentMessage {
 const chats = ref<AgentChat[]>([]);
 const activeChatId = ref<number | null>(null);
 const messages = ref<AgentMessage[]>([]);
-const loadingChats = ref(false);
 const loadingMessages = ref(false);
 const creating = ref(false);
 const showDeleteConfirm = ref(false);
@@ -48,14 +47,20 @@ const { data: statusData } = await useFetch<{
 const geminiConfigured = computed(() => statusData.value?.configured ?? false);
 const activeModel = computed(() => statusData.value?.model ?? "");
 
+const {
+  data: chatsData,
+  pending: loadingChats,
+  refresh: refreshChats,
+} = await useFetch<{ chats: AgentChat[] }>("/api/agent/chats");
+
+// Initialize chats from fetched data and sync on refresh
+chats.value = chatsData.value?.chats ?? [];
+watch(chatsData, (newVal) => {
+  if (newVal) chats.value = newVal.chats;
+});
+
 async function fetchChats() {
-  loadingChats.value = true;
-  try {
-    const res = await $fetch<{ chats: AgentChat[] }>("/api/agent/chats");
-    chats.value = res.chats;
-  } finally {
-    loadingChats.value = false;
-  }
+  await refreshChats();
 }
 
 async function fetchMessages(chatId: number) {
@@ -294,8 +299,7 @@ const activeChat = computed(
 );
 
 // ─── Mobile view toggle ──────────────────────────────────────────────────────
-
-await fetchChats();
+// Initial load is handled by useFetch above
 
 // ─── Relative date ───────────────────────────────────────────────────────────
 
