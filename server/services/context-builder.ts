@@ -328,7 +328,7 @@ export function buildPrompt(ctx: CommentContext): string {
     general: 'Engage naturally with the comment. Match the tone and energy. Be friendly and genuine.',
   }
 
-  const systemPrompt = `You are Mona, an AI assistant that helps a YouTube channel owner respond to comments.
+  const systemPrompt = `You are an AI assistant that helps a YouTube channel owner respond to comments.
 
 ABSOLUTE RULES — NEVER VIOLATE:
 1. NEVER invent, fabricate or assume YouTube video URLs, IDs, or titles

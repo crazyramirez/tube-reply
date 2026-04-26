@@ -18,14 +18,14 @@ const navItems = [
     to: "/comments",
   },
   {
-    key: "knowledge_base",
-    icon: "i-heroicons-book-open",
-    to: "/knowledge-base",
-  },
-  {
     key: "agent",
     icon: "i-heroicons-cpu-chip",
     to: "/agent",
+  },
+  {
+    key: "knowledge_base",
+    icon: "i-heroicons-book-open",
+    to: "/knowledge-base",
   },
   { key: "settings", icon: "i-heroicons-cog-6-tooth", to: "/settings" },
 ];
@@ -145,24 +145,20 @@ const navItems = [
             name="i-heroicons-arrow-path"
             class="w-4 h-4 animate-spin"
           />
-          <UIcon
-            v-else
-            name="i-heroicons-check-circle"
-            class="w-4 h-4"
-          />
+          <UIcon v-else name="i-heroicons-check-circle" class="w-4 h-4" />
         </div>
         <div class="flex items-center gap-2">
-          <span v-if="isRunning">{{ t('sync_pill.syncing') }}</span>
-          <span v-else>{{ t('sync_pill.done') }}</span>
+          <span v-if="isRunning">{{ t("sync_pill.syncing") }}</span>
+          <span v-else>{{ t("sync_pill.done") }}</span>
           <template v-if="lastSync">
             <span class="text-slate-600">·</span>
             <span :class="isRunning ? 'text-slate-400' : 'text-slate-400'">
-              {{ lastSync.videosProcessed ?? 0 }} {{ t('sync_pill.videos') }}
+              {{ lastSync.videosProcessed ?? 0 }} {{ t("sync_pill.videos") }}
             </span>
             <template v-if="(lastSync.newComments ?? 0) > 0">
               <span class="text-slate-600">·</span>
               <span :class="isRunning ? 'text-blue-400' : 'text-emerald-400'">
-                +{{ lastSync.newComments }} {{ t('sync_pill.new') }}
+                +{{ lastSync.newComments }} {{ t("sync_pill.new") }}
               </span>
             </template>
           </template>

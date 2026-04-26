@@ -16,10 +16,11 @@ Herramienta de gestión de comentarios de YouTube impulsada por IA. Sincroniza c
 - **Sugerencias de respuesta con IA** — generadas mediante Google Gemini u OpenAI, informadas por tu Base de Conocimientos.
 - **Detección de idioma y corrección** — detecta el idioma (20+ idiomas) y permite cambiarlo manualmente si es necesario.
 - **Resúmenes de vídeos** — resúmenes generados por IA para cada vídeo, utilizados como contexto al generar respuestas.
-- **Base de Conocimientos** — entrena a la IA con guías de estilo, FAQs, personas, temas y reglas personalizadas.
+- **Base de Conocimientos** — entrena a la IA con guías de estilo, FAQs, personas, temas y reglas personalizadas. **Ahora con auto-generación impulsada por IA** basada en los datos reales de tu canal.
 - **Publicación en un clic** — aprueba y publica respuestas directamente en YouTube sin salir de la aplicación.
 - **Baneo de usuarios** — bloquea usuarios problemáticos directamente desde la vista de comentarios.
 - **Moderación masiva** — aprueba, descarta u omite múltiples comentarios a la vez desde la lista.
+- **Agente de IA del Canal** — chatbot especializado para generar ideas de vídeos, analizar el crecimiento del canal y consultar el contexto de tu base de datos.
 - **Cambio de proveedor IA** — alterna entre Google Gemini y OpenAI sobre la marcha desde los ajustes.
 - **Gestión de cuota** — monitoriza la cuota diaria de la API de YouTube, con un límite configurable.
 - **Seguridad avanzada** — rate limiting, protección CSRF y encriptación AES-256-GCM para tokens.
@@ -96,6 +97,8 @@ En un escenario típico con **200 vídeos en tu base de datos** y una **Base de 
   - **Procesamiento Secuencial**: Para respetar los límites de velocidad (RPM) de los proveedores de IA, los comentarios se procesan uno a uno con un retraso integrado.
   - **Selección Inteligente**: Solo procesa comentarios de nivel superior en estado "Pendiente" que aún no tengan una sugerencia generada, evitando llamadas redundantes e innecesarias.
   - **Ejecución en Segundo Plano**: El proceso se ejecuta en segundo plano, permitiéndote seguir usando el panel de control mientras se generan las sugerencias.
+- **Agente de IA del Canal**: Una interfaz de chat interna dedicada, impulsada por Gemini Flash, que actúa como consultor de tu canal. Tiene acceso completo al contexto de tu base de datos (historial de vídeos, resúmenes y base de conocimientos) para ayudarte a idear nuevo contenido, responder preguntas específicas sobre tu canal o perfeccionar tu estrategia.
+- **Generación de Base de Conocimientos con IA**: Amplía automáticamente tu base de conocimientos permitiendo que la IA analice tus mejores vídeos y las preguntas más frecuentes de los usuarios. Identifica patrones y sugiere nuevas FAQs, reglas de estilo y entradas de contexto para mantener las respuestas de tu IA precisas y actualizadas con el mínimo esfuerzo.
 
 ---
 

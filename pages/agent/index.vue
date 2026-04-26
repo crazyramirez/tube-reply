@@ -644,7 +644,7 @@ watch(messages, () => {
                 />
               </div>
               <span class="text-[10px] text-slate-600 font-medium"
-                >Mona AI · Gemini Flash</span
+                >AI · Gemini Flash</span
               >
             </div>
           </div>

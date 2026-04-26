@@ -16,10 +16,11 @@ AI-powered YouTube comment management tool. Syncs comments from your channel, ge
 - **AI reply suggestions** — generated via Google Gemini or OpenAI, informed by your Knowledge Base
 - **Language detection & Overrides** — auto-detects language (20+ languages) and allows manual overrides
 - **Video summaries** — AI-generated per-video summaries used as context for reply generation
-- **Knowledge Base** — train the AI with channel style guides, FAQs, personas, topics, and custom rules
+- **Knowledge Base** — train the AI with channel style guides, FAQs, personas, topics, and custom rules. **Now with AI-powered auto-generation** based on your channel's real data
 - **One-click publish** — approve and post replies directly to YouTube without leaving the app
 - **User Banning** — Block problematic users from your channel with one click
 - **Bulk Moderation** — Approve, dismiss, or skip multiple comments at once
+- **AI Channel Agent** — specialized chatbot to brainstorm video ideas, analyze channel growth, and query your database context
 - **Provider Switching** — Switch between Google Gemini and OpenAI models on-the-fly via settings
 - **Quota management** — tracks daily YouTube API quota, configurable cap
 - **Security** — Rate limiting, CSRF protection, and AES-256-GCM token encryption
@@ -99,6 +100,8 @@ In a typical scenario with **200 videos in your database** and an active **Knowl
   - **Sequential Processing**: To respect AI provider rate limits (RPM), comments are processed one-by-one with a built-in delay.
   - **Smart Selection**: It only targets top-level "Pending" comments that don't already have an AI suggestion, preventing redundant API calls.
   - **Background Execution**: The process runs in the background, allowing you to continue using the dashboard while suggestions are being generated.
+- **AI Channel Agent**: A dedicated internal chat interface powered by Gemini Flash that acts as your channel consultant. It has full access to your database context (video history, summaries, and knowledge base) to help you brainstorm new content, answer specific questions about your channel, or refine your strategy.
+- **AI Knowledge Base Generation**: Automatically expand your knowledge base by letting the AI analyze your top videos and most frequent user questions. It identifies patterns and suggests new FAQs, style rules, and context entries to keep your AI's responses accurate and up-to-date with minimal effort.
 
 ---
 
