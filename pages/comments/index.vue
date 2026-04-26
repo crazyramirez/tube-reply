@@ -426,10 +426,10 @@ watch(justAutoSuggestCompleted, (done) => {
       >
         <NuxtLink
           :to="`/comments/${c.id}`"
-          class="glass-card p-3 sm:p-4 flex items-center gap-3 sm:gap-5 group"
+          class="glass-card p-3 sm:p-4 flex items-stretch gap-3 sm:gap-5 group"
         >
           <div
-            class="flex flex-shrink-0 w-16 sm:w-24 aspect-video rounded-lg overflow-hidden border border-white/10 relative"
+            class="flex flex-shrink-0 w-28 sm:w-36 aspect-[4/3] sm:aspect-video rounded-xl overflow-hidden border border-white/10 relative"
           >
             <img
               v-if="c.videoThumbnail"
@@ -452,37 +452,39 @@ watch(justAutoSuggestCompleted, (done) => {
             >
               <UIcon name="i-heroicons-play" class="w-6 h-6 text-white" />
             </div>
-          </div>
 
-          <!-- Selection Checkbox -->
-          <div
-            v-if="status !== 'published'"
-            class="flex-shrink-0"
-            @click.stop.prevent="toggleSelection(c.id)"
-          >
+            <!-- Selection Checkbox (Always over thumbnail) -->
             <div
-              class="w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200"
-              :class="
-                selectedIds.includes(c.id)
-                  ? 'bg-indigo-500 border-indigo-400 text-white scale-110 shadow-lg shadow-indigo-500/50'
-                  : 'bg-white/5 border-white/10 hover:border-white/30'
-              "
+              v-if="status !== 'published'"
+              class="absolute top-2 left-2 z-20"
+              @click.stop.prevent="toggleSelection(c.id)"
             >
-              <UIcon
-                v-if="selectedIds.includes(c.id)"
-                name="i-heroicons-check"
-                class="w-4 h-4"
-              />
+              <div
+                class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg border-2 flex items-center justify-center transition-all duration-200 bg-black/40 backdrop-blur-md"
+                :class="
+                  selectedIds.includes(c.id)
+                    ? 'bg-indigo-500 border-indigo-400 text-white scale-110 shadow-lg shadow-indigo-500/50'
+                    : 'border-white/20 hover:border-white/40'
+                "
+              >
+                <UIcon
+                  v-if="selectedIds.includes(c.id)"
+                  name="i-heroicons-check"
+                  class="w-3.5 h-3.5 sm:w-4 sm:h-4"
+                />
+              </div>
             </div>
           </div>
 
           <!-- Content -->
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between gap-4 mb-2">
-              <div class="flex items-center gap-3 min-w-0">
-                <span class="font-bold text-white text-sm truncate">{{
-                  c.authorName
-                }}</span>
+          <div class="flex-1 min-w-0 flex flex-col">
+            <div class="mb-1.5 order-2 sm:order-1">
+              <span class="font-bold text-white text-sm truncate block">{{
+                c.authorName
+              }}</span>
+            </div>
+            <div class="flex items-center justify-between gap-4 mb-2 order-1 sm:order-2">
+              <div class="flex items-center gap-2 min-w-0">
                 <UBadge
                   :color="statusColor(c.status)"
                   variant="soft"
@@ -509,16 +511,16 @@ watch(justAutoSuggestCompleted, (done) => {
                 <span>{{ timeAgo(c.publishedAt) }}</span>
               </div>
             </div>
-            <p class="text-sm text-slate-400 line-clamp-1 italic">
+            <p class="text-xs sm:text-sm text-slate-400 line-clamp-2 italic order-3">
               "{{ c.text }}"
             </p>
-            <div v-if="c.replyText" class="mt-1 pl-3 border-l-2 border-emerald-500/30">
+            <div v-if="c.replyText" class="mt-1 pl-3 border-l-2 border-emerald-500/30 order-4">
               <p class="text-[11px] text-slate-500 line-clamp-1 italic">
                 <span class="font-bold text-emerald-500/70 mr-1">{{ $t('comments.your_response') }}:</span>
                 {{ c.replyText }}
               </p>
             </div>
-            <div v-else-if="c.suggestedReplyText" class="mt-1 pl-3 border-l-2 border-indigo-500/30">
+            <div v-else-if="c.suggestedReplyText" class="mt-1 pl-3 border-l-2 border-indigo-500/30 order-4">
               <p class="text-[11px] text-slate-500 line-clamp-1 italic">
                 <span class="font-bold text-indigo-400/70 mr-1 inline-flex items-center gap-1">
                   <UIcon name="i-heroicons-sparkles" class="w-2.5 h-2.5" />{{ $t('comments.ai_suggestion') }}:
@@ -526,7 +528,7 @@ watch(justAutoSuggestCompleted, (done) => {
                 {{ c.suggestedReplyText }}
               </p>
             </div>
-            <div class="mt-1 flex items-center gap-1.5">
+            <div class="mt-1 flex items-center gap-1.5 order-5">
               <UIcon name="i-heroicons-film" class="w-3 h-3 text-slate-700" />
               <span class="text-[10px] text-slate-600 font-medium truncate">{{
                 c.videoTitle
