@@ -21,9 +21,17 @@ export function useAuth() {
   }
 
   async function checkSession() {
-    const { authenticated: ok } = await $fetch<{ authenticated: boolean }>('/api/auth/session')
-    authenticated.value = ok
-    return ok
+    const headers = useRequestHeaders(['cookie']) as Record<string, string>
+    try {
+      const { authenticated: ok } = await $fetch<{ authenticated: boolean }>('/api/auth/session', {
+        headers
+      })
+      authenticated.value = ok
+      return ok
+    } catch {
+      authenticated.value = false
+      return false
+    }
   }
 
   return { authenticated, login, logout, checkSession }
