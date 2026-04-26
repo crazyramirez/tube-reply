@@ -6,7 +6,7 @@
 
 *🌍 [Read this in English](./README.md)*
 
-Herramienta de gestión de comentarios de YouTube impulsada por IA. Sincroniza comentarios de tu canal, genera sugerencias de respuesta mediante Google Gemini o OpenAI, y publica las respuestas directamente en YouTube — todo desde un único panel privado.
+Herramienta de gestión de comentarios y Asistente de YouTube impulsado por IA. Sincroniza comentarios de tu canal, genera sugerencias de respuesta, e incluye un Agente de IA dedicado para realizar consultas y asistir al creador en la estrategia del canal — todo desde un único panel privado.
 
 ---
 

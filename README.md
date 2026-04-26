@@ -6,7 +6,7 @@
 
 _🇪🇸 [Leer en Español](./README.es.md)_
 
-AI-powered YouTube comment management tool. Syncs comments from your channel, generates AI reply suggestions via Google Gemini, and publishes responses back to YouTube — all from a single private dashboard.
+AI-powered YouTube comment management tool and Channel Assistant. Syncs comments from your channel, generates AI reply suggestions via Google Gemini, and features a dedicated AI Agent to assist with channel queries and strategy — all from a single private dashboard.
 
 ---
 

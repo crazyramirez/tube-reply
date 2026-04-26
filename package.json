@@ -21,7 +21,7 @@
     "drizzle-kit": "^0.31.10",
     "drizzle-orm": "^0.45.2",
     "franc": "^6.2.0",
-    "googleapis": "^148.0.0",
+    "googleapis": "^171.4.0",
     "nuxt": "^3.16.0",
     "openai": "^6.34.0",
     "vue": "^3.5.13",
@@ -34,5 +34,9 @@
     "@types/better-sqlite3": "^7.6.12",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3"
+  },
+  "overrides": {
+    "vite": "^8.0.0",
+    "esbuild": "^0.25.0"
   }
 }
