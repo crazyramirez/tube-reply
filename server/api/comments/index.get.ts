@@ -25,21 +25,9 @@ export default defineEventHandler(async (event) => {
     ...(videoId ? [eq(comments.videoId, videoId)] : []),
   ]
 
-  // Inbox: suggested first (ready to act on), then pending — within each group by recency of last activity
-  const lastActivitySql = sql`COALESCE((SELECT published_at FROM comments c2 WHERE c2.parent_id = ${comments.id} ORDER BY published_at DESC LIMIT 1), ${comments.publishedAt})`;
-  
   const orderBy = isInbox
-    ? [sql`CASE WHEN ${comments.status} = 'suggested' THEN 0 ELSE 1 END`, desc(lastActivitySql)]
-    : [desc(lastActivitySql)]
-
-  // Pre-calculate last activity parts in a more efficient way for SQLite
-  // We use correlated subqueries but only those strictly necessary
-  const latestReplySubquery = (field: 'text' | 'author_name' | 'published_at') => sql<string>`(
-    SELECT ${sql.raw(field)} FROM comments c2 
-    WHERE c2.parent_id = ${comments.id} 
-    ORDER BY published_at DESC 
-    LIMIT 1
-  )`
+    ? [sql`CASE WHEN ${comments.status} = 'suggested' THEN 0 ELSE 1 END`, desc(comments.lastActivityAt)]
+    : [desc(comments.lastActivityAt)]
 
   const rows = await db
     .select({
@@ -47,13 +35,13 @@ export default defineEventHandler(async (event) => {
       videoId: comments.videoId,
       authorName: comments.authorName,
       text: comments.text,
-      lastText: sql<string>`COALESCE(${latestReplySubquery('text')}, ${comments.text})`,
-      lastAuthor: sql<string>`COALESCE(${latestReplySubquery('author_name')}, ${comments.authorName})`,
+      lastText: comments.lastActivityText,
+      lastAuthor: comments.lastActivityAuthor,
       likeCount: comments.likeCount,
       detectedLang: comments.detectedLang,
       langConfidence: comments.langConfidence,
       publishedAt: comments.publishedAt,
-      lastActivityAt: sql<string>`COALESCE(${latestReplySubquery('published_at')}, ${comments.publishedAt})`,
+      lastActivityAt: comments.lastActivityAt,
       status: comments.status,
       fetchedAt: comments.fetchedAt,
       videoTitle: videos.title,

@@ -52,9 +52,14 @@ export async function publishReply(commentId: string, suggestionId: number): Pro
     publishedBy: 'owner',
   })
 
-  // Update statuses
+  // Update statuses and denormalized activity
   await db.update(comments)
-    .set({ status: 'published' })
+    .set({ 
+      status: 'published',
+      lastActivityAt: new Date().toISOString(),
+      lastActivityText: finalText,
+      lastActivityAuthor: 'You'
+    })
     .where(eq(comments.id, commentId))
 
   await db.update(suggestedReplies)

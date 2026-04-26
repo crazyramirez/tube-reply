@@ -43,13 +43,18 @@ export const comments = sqliteTable('comments', {
   }).default('pending').notNull(),
   fetchedAt: text('fetched_at').default(sql`(datetime('now'))`),
   processedAt: text('processed_at'),
+  // Denormalized fields for high-performance indexing
+  lastActivityAt: text('last_activity_at'), 
+  lastActivityText: text('last_activity_text'),
+  lastActivityAuthor: text('last_activity_author'),
 }, (t) => ({
   videoIdx: index('comments_video_idx').on(t.videoId),
   statusIdx: index('comments_status_idx').on(t.status),
   publishedAtIdx: index('comments_published_at_idx').on(t.publishedAt),
   ytCommentUniq: uniqueIndex('comments_yt_id_unique').on(t.id),
   parentIdx: index('comments_parent_idx').on(t.parentId, t.publishedAt),
-  listPerfIdx: index('comments_list_perf_idx').on(t.status, t.parentId, t.publishedAt),
+  // Optimized index for the main list
+  listPerfIdx: index('comments_list_perf_idx').on(t.status, t.lastActivityAt),
 }))
 
 // ─── Suggested Replies ────────────────────────────────────────────────────────

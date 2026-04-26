@@ -567,7 +567,24 @@ async function upsertComment(db: ReturnType<typeof useDb>, data: CommentInsert):
       publishedAt: data.publishedAt,
       updatedAt: data.updatedAt,
       status,
+      // Default activity to self for new threads
+      lastActivityAt: data.parentId ? null : data.publishedAt,
+      lastActivityText: data.parentId ? null : data.text,
+      lastActivityAuthor: data.parentId ? null : data.authorName,
     })
+
+    // If it's a reply, update the parent's activity metadata
+    if (data.parentId) {
+      await db.update(comments)
+        .set({
+          lastActivityAt: data.publishedAt,
+          lastActivityText: data.text,
+          lastActivityAuthor: data.authorName,
+          updatedAt: new Date().toISOString()
+        })
+        .where(eq(comments.id, data.parentId))
+    }
+
     return true
   }
 
