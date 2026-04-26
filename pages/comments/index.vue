@@ -256,8 +256,8 @@ watch(justAutoSuggestCompleted, (done) => {
       </div>
     </div>
 
-    <!-- Loading -->
-    <div v-if="pending" class="space-y-2.5">
+    <!-- Loading - Only show skeletons if we have no data and it's pending -->
+    <div v-if="pending && !data?.items?.length" class="space-y-2.5">
       <div
         v-for="i in 5"
         :key="i"
@@ -267,7 +267,7 @@ watch(justAutoSuggestCompleted, (done) => {
 
     <!-- Empty -->
     <div
-      v-else-if="!data?.items?.length"
+      v-else-if="!pending && !data?.items?.length"
       class="bg-white/[0.02] border border-white/[0.06] border-dashed rounded-2xl py-20 text-center"
     >
       <UIcon

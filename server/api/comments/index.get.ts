@@ -32,34 +32,28 @@ export default defineEventHandler(async (event) => {
     ? [sql`CASE WHEN ${comments.status} = 'suggested' THEN 0 ELSE 1 END`, desc(lastActivitySql)]
     : [desc(lastActivitySql)]
 
+  // Pre-calculate last activity parts in a more efficient way for SQLite
+  // We use correlated subqueries but only those strictly necessary
+  const latestReplySubquery = (field: 'text' | 'author_name' | 'published_at') => sql<string>`(
+    SELECT ${sql.raw(field)} FROM comments c2 
+    WHERE c2.parent_id = ${comments.id} 
+    ORDER BY published_at DESC 
+    LIMIT 1
+  )`
+
   const rows = await db
     .select({
       id: comments.id,
       videoId: comments.videoId,
       authorName: comments.authorName,
       text: comments.text,
-      lastText: sql<string>`COALESCE((
-        SELECT text FROM comments c2 
-        WHERE c2.parent_id = ${comments.id} 
-        ORDER BY published_at DESC 
-        LIMIT 1
-      ), ${comments.text})`,
-      lastAuthor: sql<string>`COALESCE((
-        SELECT author_name FROM comments c2 
-        WHERE c2.parent_id = ${comments.id} 
-        ORDER BY published_at DESC 
-        LIMIT 1
-      ), ${comments.authorName})`,
+      lastText: sql<string>`COALESCE(${latestReplySubquery('text')}, ${comments.text})`,
+      lastAuthor: sql<string>`COALESCE(${latestReplySubquery('author_name')}, ${comments.authorName})`,
       likeCount: comments.likeCount,
       detectedLang: comments.detectedLang,
       langConfidence: comments.langConfidence,
       publishedAt: comments.publishedAt,
-      lastActivityAt: sql<string>`COALESCE((
-        SELECT published_at FROM comments c2 
-        WHERE c2.parent_id = ${comments.id} 
-        ORDER BY published_at DESC 
-        LIMIT 1
-      ), ${comments.publishedAt})`,
+      lastActivityAt: sql<string>`COALESCE(${latestReplySubquery('published_at')}, ${comments.publishedAt})`,
       status: comments.status,
       fetchedAt: comments.fetchedAt,
       videoTitle: videos.title,

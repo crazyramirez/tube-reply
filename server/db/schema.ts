@@ -48,6 +48,7 @@ export const comments = sqliteTable('comments', {
   statusIdx: index('comments_status_idx').on(t.status),
   publishedAtIdx: index('comments_published_at_idx').on(t.publishedAt),
   ytCommentUniq: uniqueIndex('comments_yt_id_unique').on(t.id),
+  parentIdx: index('comments_parent_idx').on(t.parentId),
 }))
 
 // ─── Suggested Replies ────────────────────────────────────────────────────────
