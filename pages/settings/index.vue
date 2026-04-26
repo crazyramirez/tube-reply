@@ -440,11 +440,11 @@ onMounted(async () => {
                           ytStatus.lastSync.completedAt
                             ? new Date(
                                 ytStatus.lastSync.completedAt,
-                              ).toLocaleString()
+                              ).toLocaleString([], { hour12: false })
                             : ytStatus.lastSync.startedAt
                               ? new Date(
                                   ytStatus.lastSync.startedAt,
-                                ).toLocaleString()
+                                ).toLocaleString([], { hour12: false })
                               : "-"
                         }}
                       </span>
@@ -461,9 +461,13 @@ onMounted(async () => {
                           {{
                             new Date(
                               ytStatus.lastSync.nextSyncAt,
-                            ).toLocaleTimeString([], {
+                            ).toLocaleString([], {
+                              year: "numeric",
+                              month: "2-digit",
+                              day: "2-digit",
                               hour: "2-digit",
                               minute: "2-digit",
+                              hour12: false,
                             })
                           }}
                         </span>
