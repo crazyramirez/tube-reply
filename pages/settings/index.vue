@@ -15,6 +15,7 @@ const syncWarning = ref<{ minutesAgo: number; minutesLeft: number } | null>(
 const showDisconnectModal = ref(false);
 const showForceSuggestModal = ref(false);
 const forcingSuggest = ref(false);
+const backfillingAvatars = ref(false);
 
 const { data: ytStatus, refresh } = await useFetch<YouTubeStatus>(
   "/api/youtube/status",
@@ -215,6 +216,25 @@ async function updateAutoSuggest(enabled: boolean) {
     }
   } catch {
     toast.add({ title: t("settings.auto_suggest_failed"), color: "red" });
+  }
+}
+
+async function backfillAvatars() {
+  backfillingAvatars.value = true;
+  try {
+    const result = await $fetch<{ updated: number; message?: string }>('/api/youtube/backfill-avatars', {
+      method: 'POST',
+      headers: useCsrfHeaders(),
+    });
+    toast.add({
+      title: 'Avatars backfilled',
+      description: result.message ?? t('settings.sync_completed', { n: result.updated }),
+      color: 'green',
+    });
+  } catch {
+    toast.add({ title: 'Backfill failed', color: 'red' });
+  } finally {
+    backfillingAvatars.value = false;
   }
 }
 
@@ -885,6 +905,24 @@ const nextSyncDisplay = computed(() => {
                   {{ opt.label }}
                 </button>
               </div>
+            </div>
+
+            <!-- Backfill Avatars Button -->
+            <div class="px-2 pb-1">
+              <button
+                class="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border border-indigo-500/20 bg-indigo-500/[0.06] hover:bg-indigo-500/[0.1] text-indigo-400 text-sm font-bold transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed group"
+                :disabled="backfillingAvatars"
+                @click="backfillAvatars"
+              >
+                <div class="flex items-center gap-2">
+                  <UIcon
+                    name="i-heroicons-user-circle"
+                    class="w-4 h-4 group-hover:scale-110 transition-transform"
+                    :class="backfillingAvatars ? 'animate-spin' : ''"
+                  />
+                  {{ backfillingAvatars ? $t('settings.syncing') : 'Backfill Avatars' }}
+                </div>
+              </button>
             </div>
 
             <!-- Force AI Suggest Button -->

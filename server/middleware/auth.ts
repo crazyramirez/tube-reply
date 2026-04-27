@@ -10,6 +10,7 @@ const PROTECTED_PREFIXES = [
   '/api/youtube/status',
   '/api/youtube/disconnect',
   '/api/youtube/connect',
+  '/api/youtube/backfill-avatars',
   '/api/agent/chats',
   '/api/agent/status',
   '/api/diagnostics',
