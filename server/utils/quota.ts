@@ -19,7 +19,7 @@ export async function getDailyQuotaUsed(): Promise<number> {
     total: sql<number>`COALESCE(SUM(${syncLog.quotaUsed}), 0)`
   })
     .from(syncLog)
-    .where(sql`date(${syncLog.startedAt}) = date('now')`)
+    .where(sql`date(${syncLog.startedAt}, 'localtime') = date('now', 'localtime')`)
   
   const syncQuota = Number(syncResult[0]?.total ?? 0)
 
@@ -28,7 +28,7 @@ export async function getDailyQuotaUsed(): Promise<number> {
     total: count()
   })
     .from(publishedReplies)
-    .where(sql`date(${publishedReplies.publishedAt}) = date('now')`)
+    .where(sql`date(${publishedReplies.publishedAt}, 'localtime') = date('now', 'localtime')`)
   
   const publishQuota = Number(publishResult[0]?.total ?? 0) * QUOTA_COSTS['comments.insert']
 

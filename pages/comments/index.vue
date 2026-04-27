@@ -9,13 +9,21 @@ const router = useRouter();
 const toast = useToast();
 const { t } = useI18n();
 
-const status = ref((route.query.status as string) || (route.query.videoId || route.query.intent ? "all" : "inbox"));
+const lastStatus = useCookie<string>("comment-last-status", {
+  default: () => "inbox",
+});
+
+const status = ref((route.query.status as string) || (route.query.videoId || route.query.intent ? "all" : lastStatus.value));
 const page = ref(Number(route.query.page || 1));
 const videoId = ref((route.query.videoId as string) || "");
 const authorId = ref((route.query.authorId as string) || "");
 const intent = ref((route.query.intent as string) || "");
 const searchInput = ref((route.query.search as string) || "");
 const search = ref(searchInput.value);
+
+watch(status, (newVal) => {
+  lastStatus.value = newVal;
+});
 
 // Debounce the search so we only fire the API after the user stops typing
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -247,9 +255,7 @@ async function bulkStatusUpdate(newStatus: string) {
 const savedScrollPos = ref(0);
 
 onBeforeRouteLeave((to, from) => {
-  if (to.path.startsWith('/comments/')) {
-    savedScrollPos.value = window.scrollY;
-  }
+  savedScrollPos.value = window.scrollY;
 });
 
 onActivated(() => {

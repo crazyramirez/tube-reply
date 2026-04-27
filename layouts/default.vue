@@ -13,6 +13,11 @@ const { data: brand } = await useFetch<{
 const navItems = [
   { key: "dashboard", icon: "i-heroicons-squares-2x2", to: "/dashboard" },
   {
+    key: "videos",
+    icon: "i-heroicons-video-camera",
+    to: "/videos",
+  },
+  {
     key: "comments",
     icon: "i-heroicons-chat-bubble-left-right",
     to: "/comments",

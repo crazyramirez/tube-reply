@@ -399,8 +399,10 @@ async function ensureVideoExists(
 
       lastSyncedAt: new Date().toISOString(),
     })
+    return 1
   } catch (err) {
     await logger.warn('comment-sync', `Failed to fetch missing video ${videoId}`)
+    return 1
   }
 }
 

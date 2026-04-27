@@ -19,8 +19,8 @@
     "open_menu": "Abrir menú",
     "responsive": "Diseño Responsivo",
     "analytics": "Analíticas",
-    "insights": "Ideas de Video"
-
+    "insights": "Ideas de Video",
+    "videos": "Vídeos"
   },
   "login": {
     "subtitle": "Inteligencia de Comunidad Impulsada por IA",
@@ -445,6 +445,17 @@
     "kb_pillars": "Pilares del Contenido",
     "kb_tips": "Tips de Producción",
     "kb_questions": "Preguntas de la Audiencia"
+  },
+  "videos": {
+    "title": "Vídeos",
+    "subtitle": "Gestiona y explora el contenido de tu canal",
+    "search_placeholder": "Buscar por título, comentario o autor...",
+    "all": "Todos",
+    "video": "Vídeos",
+    "short": "Shorts",
+    "view_comments": "Ver Comentarios",
+    "no_videos": "No se encontraron vídeos",
+    "stats": "{views} visualizaciones · {comments} comentarios"
   }
 }
 

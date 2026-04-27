@@ -19,7 +19,8 @@
     "open_menu": "Open menu",
     "responsive": "Responsive Design",
     "analytics": "Analytics",
-    "insights": "Video Ideas"
+    "insights": "Video Ideas",
+    "videos": "Videos"
   },
   "login": {
     "subtitle": "AI-Powered Community Intelligence",
@@ -443,6 +444,17 @@
     "kb_pillars": "Content Pillars",
     "kb_tips": "Production Tips",
     "kb_questions": "Audience Questions"
+  },
+  "videos": {
+    "title": "Videos",
+    "subtitle": "Manage and explore your channel's content",
+    "search_placeholder": "Search by title, comment or author...",
+    "all": "All",
+    "video": "Videos",
+    "short": "Shorts",
+    "view_comments": "View Comments",
+    "no_videos": "No videos found",
+    "stats": "{views} views · {comments} comments"
   }
 }
 

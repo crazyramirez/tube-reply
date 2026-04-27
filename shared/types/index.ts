@@ -196,6 +196,7 @@ export interface Video {
   commentCount: number | null
   lastSyncedAt: string | null
   defaultLanguage: string | null
+  duration: string | null
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
