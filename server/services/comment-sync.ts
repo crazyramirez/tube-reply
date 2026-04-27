@@ -100,6 +100,14 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
       } catch (scoreErr) {
         await logger.warn('comment-sync', 'Scoring/automation failed (non-critical)', { error: (scoreErr as Error).message })
       }
+
+      // AUTO-HEAL: Backfill missing author images from historical data
+      try {
+        const backfilled = await backfillMissingAvatars()
+        if (backfilled > 0) await logger.info('comment-sync', `Auto-healed ${backfilled} missing author avatars`)
+      } catch (healErr) {
+        await logger.warn('comment-sync', 'Avatar backfill failed (non-critical)', { error: (healErr as Error).message })
+      }
       return
     }
 
@@ -158,6 +166,14 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
       if (triggered > 0) await logger.info('comment-sync', `Automation ran on ${triggered} comments`)
     } catch (scoreErr) {
       await logger.warn('comment-sync', 'Scoring/automation failed (non-critical)', { error: (scoreErr as Error).message })
+    }
+
+    // AUTO-HEAL: Backfill missing author images from historical data
+    try {
+      const backfilled = await backfillMissingAvatars()
+      if (backfilled > 0) await logger.info('comment-sync', `Auto-healed ${backfilled} missing author avatars`)
+    } catch (healErr) {
+      await logger.warn('comment-sync', 'Avatar backfill failed (non-critical)', { error: (healErr as Error).message })
     }
   }
   catch (err) {
@@ -695,4 +711,37 @@ async function upsertComment(
   }
 
   return false
+}
+
+/**
+ * AUTO-HEAL: Finds authors who are missing a profile image URL in some comments
+ * but have it in others, and propagates the valid URL to all their comments.
+ */
+export async function backfillMissingAvatars(): Promise<number> {
+  const db = useDb()
+  
+  // This SQL query finds authors with at least one comment with a valid image
+  // and updates all their other comments that are missing it.
+  const result = await db.run(sql`
+    UPDATE comments 
+    SET author_profile_image_url = (
+      SELECT author_profile_image_url 
+      FROM comments c2 
+      WHERE c2.author_channel_id = comments.author_channel_id 
+        AND c2.author_profile_image_url IS NOT NULL 
+        AND c2.author_profile_image_url != '' 
+      LIMIT 1
+    )
+    WHERE (author_profile_image_url IS NULL OR author_profile_image_url = '')
+      AND author_channel_id IS NOT NULL
+      AND author_channel_id != ''
+      AND EXISTS (
+        SELECT 1 FROM comments c3 
+        WHERE c3.author_channel_id = comments.author_channel_id 
+          AND c3.author_profile_image_url IS NOT NULL 
+          AND c3.author_profile_image_url != ''
+      )
+  `)
+
+  return result.rowsAffected || 0
 }
