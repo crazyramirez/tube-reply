@@ -12,6 +12,7 @@ const { t } = useI18n();
 const status = ref((route.query.status as string) || (route.query.videoId || route.query.intent ? "all" : "inbox"));
 const page = ref(Number(route.query.page || 1));
 const videoId = ref((route.query.videoId as string) || "");
+const authorId = ref((route.query.authorId as string) || "");
 const intent = ref((route.query.intent as string) || "");
 const searchInput = ref((route.query.search as string) || "");
 const search = ref(searchInput.value);
@@ -49,6 +50,7 @@ const { data, refresh, pending } = useFetch<
     page: page.value,
     limit: 12,
     videoId: videoId.value,
+    authorId: authorId.value,
     intent: intent.value,
     search: search.value || undefined,
   })),
@@ -208,7 +210,7 @@ function toggleSelection(id: string) {
   }
 }
 
-watch([status, page, search], () => {
+watch([status, page, search, authorId, videoId], () => {
   selectedIds.value = [];
 });
 
@@ -354,8 +356,9 @@ watch([status, page], (newVals, oldVals) => {
 
 
     <!-- Active Filters -->
-    <div v-if="videoId" class="mb-6 animate-fade-in">
-      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 shadow-lg shadow-indigo-500/5">
+    <div v-if="videoId || authorId" class="mb-6 animate-fade-in flex flex-wrap gap-3">
+      <!-- Video Filter -->
+      <div v-if="videoId" class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 shadow-lg shadow-indigo-500/5">
         <UIcon name="i-heroicons-funnel" class="w-4 h-4 text-indigo-400" />
         <span class="text-xs font-bold text-indigo-300">
           Filtered by: <span class="text-white">{{ data?.items?.[0]?.videoTitle || videoId }}</span>
@@ -366,6 +369,21 @@ watch([status, page], (newVals, oldVals) => {
           title="Clear filter"
         >
           <UIcon name="i-heroicons-x-mark" class="w-4 h-4 text-indigo-400 group-hover:text-white" />
+        </button>
+      </div>
+
+      <!-- Author Filter -->
+      <div v-if="authorId" class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-violet-500/10 border border-violet-500/20 shadow-lg shadow-violet-500/5">
+        <UIcon name="i-heroicons-user" class="w-4 h-4 text-violet-400" />
+        <span class="text-xs font-bold text-violet-300">
+          Author: <span class="text-white">{{ data?.items?.[0]?.authorName || authorId }}</span>
+        </span>
+        <button 
+          @click="authorId = ''; router.replace({ query: { ...route.query, authorId: undefined } })"
+          class="ml-2 p-1 hover:bg-white/10 rounded-lg transition-colors group"
+          title="Clear filter"
+        >
+          <UIcon name="i-heroicons-x-mark" class="w-4 h-4 text-violet-400 group-hover:text-white" />
         </button>
       </div>
     </div>

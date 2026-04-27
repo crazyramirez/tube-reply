@@ -424,16 +424,19 @@ function replyRateColor(rate: number) {
           <div
             class="mt-auto w-full grid grid-cols-2 gap-2 pt-4 border-t border-white/[0.05]"
           >
-            <div>
-              <p class="text-xl font-black text-violet-400 leading-none">
+            <NuxtLink 
+              :to="`/comments?authorId=${fan.authorChannelId}&status=all`"
+              class="group/stat block hover:scale-110 transition-transform cursor-pointer"
+            >
+              <p class="text-xl font-black text-violet-400 leading-none group-hover/stat:text-violet-300">
                 {{ fan.commentCount }}
               </p>
               <p
-                class="text-[9px] text-slate-600 uppercase tracking-tighter mt-1 font-bold"
+                class="text-[9px] text-slate-600 uppercase tracking-tighter mt-1 font-bold group-hover/stat:text-slate-400"
               >
                 {{ $t("nav.comments") }}
               </p>
-            </div>
+            </NuxtLink>
             <div>
               <p class="text-xl font-black text-slate-400 leading-none">
                 {{ fan.totalLikes }}

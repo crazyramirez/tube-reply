@@ -12,6 +12,7 @@ export default defineEventHandler(async (event) => {
   const intentParam = query.intent as string | undefined
   const isInbox = statusParam === 'inbox'
   const videoId = query.videoId as string | undefined
+  const authorId = query.authorId as string | undefined
   const searchParam = (query.search as string | undefined)?.trim() || ''
   const page = Math.max(1, Number(query.page ?? 1))
   const limit = Math.min(50, Math.max(1, Number(query.limit ?? 20)))
@@ -48,6 +49,7 @@ export default defineEventHandler(async (event) => {
     searchCondition,
     ...(videoId ? [eq(comments.videoId, videoId)] : []),
     ...(intentParam ? [eq(comments.detectedIntent, intentParam)] : []),
+    ...(authorId ? [eq(comments.authorChannelId, authorId)] : []),
   ]
 
 
