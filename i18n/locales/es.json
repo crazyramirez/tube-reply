@@ -98,14 +98,14 @@
   },
   "comment_detail": {
     "terminal_label": "Terminal de Verificación",
-    "title": "Inteligencia del Comentario",
+    "title": "Comentario",
     "loading": "Cargando comentario…",
     "user_perspective": "Perspectiva del Usuario",
     "source_video": "Video Fuente",
     "view_on_youtube": "VER EN YOUTUBE",
     "conversation_flow": "Flujo de Conversación ({n})",
-    "current_state": "Estado Actual",
-    "reply_language": "Idioma de Respuesta",
+    "current_state": "Estado",
+    "reply_language": "Idioma",
     "additional_context": "Contexto Adicional (Opcional)",
     "context_placeholder": "Ej. 'Diles que tenemos un código de descuento', 'Pídeles su email'...",
     "ai_assistance": "Asistencia de Inteligencia",
@@ -376,7 +376,10 @@
     "neu": "Neu",
     "neg": "Neg",
     "week_of": "Semana del {d}",
-    "comments_count": "{n} comentarios"
+    "comments_count": "{n} comentarios",
+    "positive": "Positivo",
+    "curious": "Dudas/Preguntas",
+    "negative": "Críticas"
   },
   "insights": {
     "nav_label": "Inteligencia",

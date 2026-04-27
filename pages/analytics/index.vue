@@ -139,19 +139,25 @@ function replyRateColor(rate: number) {
         </p>
         <div class="flex flex-col gap-1 mt-2">
           <div class="flex justify-between items-center text-sm font-black">
-            <span class="text-emerald-400">Positivo</span>
+            <span class="text-emerald-400 text-[12px]">{{
+              $t("analytics.positive")
+            }}</span>
             <span class="text-white"
               >{{ overview?.sentiment.positive ?? 0 }}%</span
             >
           </div>
           <div class="flex justify-between items-center text-sm font-black">
-            <span class="text-blue-400">Dudas/Preguntas</span>
+            <span class="text-blue-400 text-[12px]">{{
+              $t("analytics.curious")
+            }}</span>
             <span class="text-white"
               >{{ overview?.sentiment.curious ?? 0 }}%</span
             >
           </div>
           <div class="flex justify-between items-center text-sm font-black">
-            <span class="text-red-400">Críticas</span>
+            <span class="text-red-400 text-[12px]">{{
+              $t("analytics.negative")
+            }}</span>
             <span class="text-white"
               >{{ overview?.sentiment.negative ?? 0 }}%</span
             >
@@ -404,7 +410,7 @@ function replyRateColor(rate: number) {
             />
 
             <span
-              class="text-sm font-bold text-white group-hover/fan:text-violet-400 transition-colors mb-1 line-clamp-1 w-full"
+              class="text-xs md:text-sm font-bold text-white group-hover/fan:text-violet-400 transition-colors mb-1 line-clamp-1 w-full"
             >
               {{ fan.authorName }}
             </span>
@@ -557,21 +563,21 @@ function replyRateColor(rate: number) {
                 <NuxtLink
                   v-if="v.pendingCount > 0"
                   :to="`/comments?videoId=${v.videoId}&status=pending`"
-                  class="px-2 py-1 rounded-md bg-amber-400/10 text-[12px] font-black text-amber-400 border border-amber-400/20 hover:bg-amber-400/20 transition-colors"
+                  class="px-2 py-1 rounded-md bg-amber-400/10 text-[10px] md:text-[12px] font-black text-amber-400 border border-amber-400/20 hover:bg-amber-400/20 transition-colors"
                 >
                   {{ v.pendingCount }} {{ $t("analytics.pending_label") }}
                 </NuxtLink>
                 <NuxtLink
                   v-if="v.negativeCount > 0"
                   :to="`/comments?videoId=${v.videoId}&intent=complaint`"
-                  class="px-2 py-1 rounded-md bg-red-400/10 text-[12px] font-black text-red-400 border border-red-400/20 hover:bg-red-400/20 transition-colors"
+                  class="px-2 py-1 rounded-md bg-red-400/10 text-[10px] md:text-[12px] font-black text-red-400 border border-red-400/20 hover:bg-red-400/20 transition-colors"
                 >
                   {{ v.negativeCount }} {{ $t("analytics.complaints_label") }}
                 </NuxtLink>
                 <NuxtLink
                   v-if="v.questionCount > 0"
                   :to="`/comments?videoId=${v.videoId}&intent=question`"
-                  class="px-2 py-1 rounded-md bg-blue-400/10 text-[12px] font-black text-blue-400 border border-blue-400/20 hover:bg-blue-400/20 transition-colors"
+                  class="px-2 py-1 rounded-md bg-blue-400/10 text-[10px] md:text-[12px] font-black text-blue-400 border border-blue-400/20 hover:bg-blue-400/20 transition-colors"
                 >
                   {{ v.questionCount }} {{ $t("analytics.questions_label") }}
                 </NuxtLink>
@@ -580,7 +586,7 @@ function replyRateColor(rate: number) {
               <!-- Internal Review Button -->
               <NuxtLink
                 :to="`/comments?videoId=${v.videoId}`"
-                class="w-full py-2.5 rounded-xl bg-white/5 border border-white/10 text-[11px] font-black text-indigo-400 uppercase tracking-widest text-center hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all"
+                class="w-full py-2.5 rounded-xl bg-white/5 border border-white/10 text-[10px] md:text-[12px] font-black text-indigo-400 uppercase tracking-widest text-center hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all"
               >
                 {{ $t("analytics.manage_comments") }}
               </NuxtLink>

@@ -27,7 +27,9 @@ interface AgentMessage {
 }
 
 const chats = ref<AgentChat[]>([]);
-const lastChatId = useCookie<number | null>("agent-last-chat", { default: () => null });
+const lastChatId = useCookie<number | null>("agent-last-chat", {
+  default: () => null,
+});
 const activeChatId = ref<number | null>(null);
 const messages = ref<AgentMessage[]>([]);
 const loadingMessages = ref(false);

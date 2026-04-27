@@ -795,7 +795,7 @@ async function confirmUnban() {
       <div class="lg:col-span-5 space-y-6">
         <!-- Unified Conversation Hub -->
         <div
-          class="glass-card animate-slide-up stagger-1 flex flex-col md:min-h-[700px]"
+          class="glass-card animate-slide-up stagger-1 flex flex-col md:min-h-[600px]"
         >
           <div
             class="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between bg-white/[0.01]"
@@ -1110,7 +1110,9 @@ async function confirmUnban() {
           v-if="commenterHistory && commenterHistory.total > 1"
           class="glass-card p-5 animate-fade-in"
         >
-          <div class="flex items-center justify-between mb-4">
+          <div
+            class="flex flex-col md:flex-row items-baseline justify-between mb-4"
+          >
             <div class="flex items-center gap-2">
               <UIcon
                 name="i-heroicons-user-circle"
@@ -1178,7 +1180,7 @@ async function confirmUnban() {
           <div class="grid grid-cols-2 gap-6">
             <div class="space-y-2">
               <label
-                class="text-[12px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1"
+                class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1"
                 >{{ $t("comment_detail.current_state") }}</label
               >
               <USelect
@@ -1186,14 +1188,14 @@ async function confirmUnban() {
                 :options="STATUS_OPTIONS"
                 value-attribute="value"
                 option-attribute="label"
-                size="md"
+                size="sm"
                 variant="none"
                 class="w-full bg-white/[0.03] border border-white/10 rounded-xl hover:border-indigo-500/50 transition-colors"
               />
             </div>
             <div class="space-y-2">
               <label
-                class="text-[12px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1"
+                class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1"
                 >{{ $t("comment_detail.reply_language") }}</label
               >
               <USelect
@@ -1201,7 +1203,7 @@ async function confirmUnban() {
                 :options="LANGUAGES"
                 value-attribute="value"
                 option-attribute="label"
-                size="md"
+                size="sm"
                 variant="none"
                 class="w-full bg-white/[0.03] border border-white/10 rounded-xl hover:border-indigo-500/50 transition-colors"
               />
@@ -1472,7 +1474,7 @@ async function confirmUnban() {
                   class="absolute -bottom-4 -right-4 w-24 h-24 text-emerald-500/[0.03]"
                 />
                 <p
-                  class="text-lg text-emerald-50/90 italic leading-relaxed relative z-10"
+                  class="text-md md:text-lg text-emerald-50/90 italic leading-relaxed relative z-10"
                 >
                   "{{
                     data.replies.filter((r) => r.isOwner).at(-1)?.text ||

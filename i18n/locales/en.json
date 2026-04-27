@@ -97,14 +97,14 @@
   },
   "comment_detail": {
     "terminal_label": "Verification Terminal",
-    "title": "Comment Intelligence",
+    "title": "Comment",
     "loading": "Loading comment…",
     "user_perspective": "User Perspective",
     "source_video": "Source Video",
     "view_on_youtube": "VIEW ON YOUTUBE",
     "conversation_flow": "Conversation Flow ({n})",
-    "current_state": "Current State",
-    "reply_language": "Reply Language",
+    "current_state": "State",
+    "reply_language": "Language",
     "additional_context": "Additional Context (Optional)",
     "context_placeholder": "E.g. 'Tell them we have a discount code', 'Ask for their email'...",
     "ai_assistance": "Intelligence Assistance",
@@ -374,7 +374,10 @@
     "neu": "Neu",
     "neg": "Neg",
     "week_of": "Week of {d}",
-    "comments_count": "{n} comments"
+    "comments_count": "{n} comments",
+    "positive": "Positive",
+    "curious": "Questions",
+    "negative": "Criticisms"
   },
   "insights": {
     "nav_label": "Intelligence",
