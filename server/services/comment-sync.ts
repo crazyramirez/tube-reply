@@ -87,6 +87,19 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
           .where(eq(syncLog.id, logId))
       }
       await logger.info('comment-sync', 'Optimized sync completed', { totalNew, totalQuota })
+
+      // Score unscored comments (backfills historical data too)
+      try {
+        const { scoreAllComments } = await import('./comment-scorer')
+        const scored = await scoreAllComments({ onlyUnscored: true })
+        if (scored > 0) await logger.info('comment-sync', `Scored ${scored} comments`)
+
+        const { runAutomationOnPending } = await import('./automation-engine')
+        const triggered = await runAutomationOnPending()
+        if (triggered > 0) await logger.info('comment-sync', `Automation ran on ${triggered} comments`)
+      } catch (scoreErr) {
+        await logger.warn('comment-sync', 'Scoring/automation failed (non-critical)', { error: (scoreErr as Error).message })
+      }
       return
     }
 
@@ -134,19 +147,17 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
 
     await logger.info('comment-sync', 'Full sync completed', { totalNew, totalQuota, videosProcessed })
 
-    // Score new comments after sync
-    if (totalNew > 0) {
-      try {
-        const { scoreAllComments } = await import('./comment-scorer')
-        const scored = await scoreAllComments({ onlyUnscored: true })
-        await logger.info('comment-sync', `Scored ${scored} new comments`)
+    // Score unscored comments (backfills historical data too)
+    try {
+      const { scoreAllComments } = await import('./comment-scorer')
+      const scored = await scoreAllComments({ onlyUnscored: true })
+      if (scored > 0) await logger.info('comment-sync', `Scored ${scored} comments`)
 
-        const { runAutomationOnPending } = await import('./automation-engine')
-        const triggered = await runAutomationOnPending()
-        if (triggered > 0) await logger.info('comment-sync', `Automation ran on ${triggered} comments`)
-      } catch (scoreErr) {
-        await logger.warn('comment-sync', 'Scoring/automation failed (non-critical)', { error: (scoreErr as Error).message })
-      }
+      const { runAutomationOnPending } = await import('./automation-engine')
+      const triggered = await runAutomationOnPending()
+      if (triggered > 0) await logger.info('comment-sync', `Automation ran on ${triggered} comments`)
+    } catch (scoreErr) {
+      await logger.warn('comment-sync', 'Scoring/automation failed (non-critical)', { error: (scoreErr as Error).message })
     }
   }
   catch (err) {
