@@ -922,6 +922,25 @@ const nextSyncDisplay = computed(() => {
           </div>
         </div>
 
+        <!-- Automation Rules Card -->
+        <NuxtLink
+          to="/settings/automation"
+          class="group block bg-white/[0.03] border border-white/[0.07] hover:border-violet-500/30 rounded-2xl overflow-hidden shadow-sm backdrop-blur-md transition-all"
+        >
+          <div class="px-6 py-4 border-b border-white/[0.06] bg-white/[0.01] flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <UIcon name="i-heroicons-bolt" class="w-5 h-5 text-violet-400 shrink-0" />
+              <span class="font-semibold text-slate-200">Automation Rules</span>
+            </div>
+            <UIcon name="i-heroicons-arrow-right" class="w-4 h-4 text-slate-600 group-hover:text-violet-400 transition-colors" />
+          </div>
+          <div class="px-6 py-4">
+            <p class="text-xs text-slate-500 leading-relaxed">
+              Create if/then rules to auto-dismiss spam, set priorities, add flags, or generate AI replies automatically on every sync.
+            </p>
+          </div>
+        </NuxtLink>
+
         <!-- Config info -->
         <div
           class="bg-white/[0.03] border border-white/[0.07] rounded-2xl overflow-hidden shadow-sm backdrop-blur-md"

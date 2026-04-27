@@ -8,8 +8,11 @@ const router = useRouter();
 const toast = useToast();
 const { t } = useI18n();
 
-const status = ref((route.query.status as string) || "inbox");
+const status = ref((route.query.status as string) || (route.query.videoId || route.query.intent ? "all" : "inbox"));
 const page = ref(Number(route.query.page || 1));
+const videoId = ref((route.query.videoId as string) || "");
+const intent = ref((route.query.intent as string) || "");
+
 
 const { data, refresh, pending } = useFetch<
   PaginatedResponse<CommentListItem>
@@ -19,13 +22,24 @@ const { data, refresh, pending } = useFetch<
     status: status.value,
     page: page.value,
     limit: 12,
+    videoId: videoId.value,
+    intent: intent.value,
   })),
 });
+
+
 
 function setStatus(s: string) {
   status.value = s;
   page.value = 1;
-  router.replace({ query: { status: s, page: 1 } });
+  router.replace({ 
+    query: { 
+      ...route.query,
+      status: s, 
+      page: 1 
+    } 
+  });
+
 }
 
 function setPage(p: number) {
@@ -73,12 +87,33 @@ const statusColor = (s: string) =>
         ? "gray"
         : "yellow";
 
+const priorityConfig: Record<string, { color: string; icon: string; label: string }> = {
+  urgent: { color: "text-red-400 bg-red-500/10 border-red-500/20", icon: "i-heroicons-fire", label: "URGENT" },
+  high:   { color: "text-orange-400 bg-orange-500/10 border-orange-500/20", icon: "i-heroicons-arrow-trending-up", label: "HIGH" },
+  normal: { color: "text-slate-500 bg-white/5 border-white/10", icon: "", label: "" },
+  low:    { color: "text-slate-600 bg-white/[0.02] border-white/5", icon: "", label: "" },
+};
+
+function priorityBadge(label: string | null) {
+  return priorityConfig[label ?? "normal"] ?? priorityConfig.normal;
+}
+
+function parseOpportunityFlags(flags: string | string[] | null): string[] {
+  if (!flags) return [];
+  if (Array.isArray(flags)) return flags;
+  try { return JSON.parse(flags); } catch { return []; }
+}
+
 const viewMode = useCookie<"grid" | "list">("comment-view-mode", {
-  default: () => "list",
+  default: () => "grid",
 });
 
+
 const statusTabs = computed(() => [
+  { label: t("status.all"), value: "all", icon: "i-heroicons-list-bullet" },
   { label: t("status.inbox"), value: "inbox", icon: "i-heroicons-inbox" },
+
+  { label: t("status.priority"), value: "priority", icon: "i-heroicons-fire" },
   {
     label: t("status.published"),
     value: "published",
@@ -245,6 +280,25 @@ watch([status, page], (newVals, oldVals) => {
       </div>
     </div>
 
+
+    <!-- Active Filters -->
+    <div v-if="videoId" class="mb-6 animate-fade-in">
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 shadow-lg shadow-indigo-500/5">
+        <UIcon name="i-heroicons-funnel" class="w-4 h-4 text-indigo-400" />
+        <span class="text-xs font-bold text-indigo-300">
+          Filtered by: <span class="text-white">{{ data?.items?.[0]?.videoTitle || videoId }}</span>
+        </span>
+        <button 
+          @click="videoId = ''; router.replace({ query: { ...route.query, videoId: undefined } })"
+          class="ml-2 p-1 hover:bg-white/10 rounded-lg transition-colors group"
+          title="Clear filter"
+        >
+          <UIcon name="i-heroicons-x-mark" class="w-4 h-4 text-indigo-400 group-hover:text-white" />
+        </button>
+      </div>
+    </div>
+
+
     <!-- Status tabs & Bulk Toggle -->
     <div class="flex items-center justify-between mb-8 gap-4">
       <div
@@ -379,7 +433,7 @@ watch([status, page], (newVals, oldVals) => {
             </div>
 
             <div
-              class="absolute top-2 left-2 sm:top-3 sm:left-3 flex gap-1 sm:gap-2"
+              class="absolute top-2 left-2 sm:top-3 sm:left-3 flex gap-1 sm:gap-2 flex-wrap"
             >
               <UBadge
                 :color="statusColor(c.status)"
@@ -389,6 +443,23 @@ watch([status, page], (newVals, oldVals) => {
               >
                 {{ $t('status.' + c.status).toUpperCase() }}
               </UBadge>
+              <!-- Priority badge (urgent/high only) -->
+              <span
+                v-if="c.priorityLabel === 'urgent' || c.priorityLabel === 'high'"
+                class="flex items-center gap-0.5 px-1 sm:px-1.5 py-0.5 rounded border text-[8px] sm:text-[9px] font-black uppercase backdrop-blur-md"
+                :class="priorityBadge(c.priorityLabel).color"
+              >
+                <UIcon :name="priorityBadge(c.priorityLabel).icon" class="w-2.5 h-2.5" />
+                {{ priorityBadge(c.priorityLabel).label }}
+              </span>
+              <!-- Opportunity flag -->
+              <span
+                v-if="parseOpportunityFlags(c.opportunityFlags).length > 0"
+                class="flex items-center gap-0.5 px-1 sm:px-1.5 py-0.5 rounded border text-[8px] sm:text-[9px] font-black uppercase backdrop-blur-md text-yellow-400 bg-yellow-500/10 border-yellow-500/20"
+              >
+                <UIcon name="i-heroicons-star" class="w-2.5 h-2.5" />
+                {{ parseOpportunityFlags(c.opportunityFlags)[0] }}
+              </span>
               <span
                 v-if="c.detectedLang"
                 class="bg-black/40 backdrop-blur-md px-1 sm:px-2 py-0.5 rounded text-[8px] sm:text-sm font-bold text-white border border-white/10 uppercase"
@@ -409,10 +480,17 @@ watch([status, page], (newVals, oldVals) => {
           <div class="p-3 sm:p-5 flex flex-col flex-1 gap-2 sm:gap-4">
             <div class="flex items-center gap-2 sm:gap-3">
               <div
-                class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-[8px] sm:text-xs"
+                class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-[8px] sm:text-xs overflow-hidden"
               >
-                {{ c.authorName?.[0] }}
+                <img
+                  v-if="c.authorProfileImageUrl"
+                  :src="c.authorProfileImageUrl"
+                  class="w-full h-full object-cover"
+                  referrerpolicy="no-referrer"
+                />
+                <span v-else>{{ c.authorName?.[0] }}</span>
               </div>
+
               <div class="flex flex-col min-w-0">
                 <span
                   class="font-bold text-[10px] sm:text-sm text-white truncate"
@@ -586,15 +664,20 @@ watch([status, page], (newVals, oldVals) => {
 
           <!-- Content -->
           <div class="flex-1 min-w-0 flex flex-col">
-            <div class="mb-1.5 order-2 sm:order-1">
+            <div class="mb-1.5 order-2 sm:order-1 flex items-center gap-2">
+              <div class="w-5 h-5 rounded-full overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center text-[10px] text-indigo-400 font-bold shrink-0">
+                <img v-if="c.authorProfileImageUrl" :src="c.authorProfileImageUrl" class="w-full h-full object-cover" referrerpolicy="no-referrer" />
+                <span v-else>{{ (c.lastAuthor || c.authorName)?.[0] }}</span>
+              </div>
               <span class="font-bold text-white text-sm truncate block">{{
                 c.lastAuthor || c.authorName
               }}</span>
             </div>
+
             <div
               class="flex items-center justify-between gap-4 mb-2 order-1 sm:order-2"
             >
-              <div class="flex items-center gap-2 min-w-0">
+              <div class="flex items-center gap-1.5 min-w-0 flex-wrap">
                 <UBadge
                   :color="statusColor(c.status)"
                   variant="soft"
@@ -603,6 +686,31 @@ watch([status, page], (newVals, oldVals) => {
                 >
                   {{ $t('status.' + c.status).toUpperCase() }}
                 </UBadge>
+                <!-- Priority badge -->
+                <span
+                  v-if="c.priorityLabel === 'urgent' || c.priorityLabel === 'high'"
+                  class="flex items-center gap-0.5 px-1 py-0 rounded border text-[8px] font-black uppercase"
+                  :class="priorityBadge(c.priorityLabel).color"
+                >
+                  <UIcon :name="priorityBadge(c.priorityLabel).icon" class="w-2.5 h-2.5" />
+                  {{ priorityBadge(c.priorityLabel).label }}
+                </span>
+                <!-- Opportunity -->
+                <span
+                  v-if="parseOpportunityFlags(c.opportunityFlags).length > 0"
+                  class="flex items-center gap-0.5 px-1 py-0 rounded border text-[8px] font-black uppercase text-yellow-400 bg-yellow-500/10 border-yellow-500/20"
+                >
+                  <UIcon name="i-heroicons-star" class="w-2.5 h-2.5" />
+                  {{ parseOpportunityFlags(c.opportunityFlags)[0] }}
+                </span>
+                <!-- Return commenter -->
+                <span
+                  v-if="c.isReturnCommenter"
+                  class="flex items-center gap-0.5 px-1 py-0 rounded border text-[8px] font-black uppercase text-violet-400 bg-violet-500/10 border-violet-500/20"
+                >
+                  <UIcon name="i-heroicons-user-circle" class="w-2.5 h-2.5" />
+                  FAN
+                </span>
                 <span
                   v-if="c.detectedLang"
                   class="text-[10px] font-bold text-slate-600"

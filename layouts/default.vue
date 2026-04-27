@@ -18,6 +18,16 @@ const navItems = [
     to: "/comments",
   },
   {
+    key: "analytics",
+    icon: "i-heroicons-chart-bar",
+    to: "/analytics",
+  },
+  {
+    key: "insights",
+    icon: "i-heroicons-light-bulb",
+    to: "/insights",
+  },
+  {
     key: "agent",
     icon: "i-heroicons-cpu-chip",
     to: "/agent",
@@ -83,7 +93,7 @@ watch(
       </button>
       <div class="flex items-center gap-2.5">
         <div
-          class="w-7 h-7 rounded-lg overflow-hidden bg-white/5 flex-shrink-0 ring-1 ring-white/10"
+          class="w-7 h-7 rounded-full overflow-hidden bg-white/5 flex-shrink-0 ring-1 ring-white/10"
         >
           <img
             v-if="brand?.logoUrl"
@@ -118,7 +128,7 @@ watch(
       <div class="px-5 py-5 border-b border-white/[0.06]">
         <div class="flex items-center gap-3">
           <div
-            class="w-10 h-10 rounded-xl overflow-hidden bg-white/5 flex-shrink-0 ring-1 ring-white/10"
+            class="w-10 h-10 rounded-full overflow-hidden bg-white/5 flex-shrink-0 ring-1 ring-white/10"
           >
             <img
               v-if="brand?.logoUrl"

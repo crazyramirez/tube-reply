@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { SuggestedReply, CommentDetailResponse } from "~/shared/types";
+import type { SuggestedReply, CommentDetailResponse, CommenterHistory } from "~/shared/types";
 
 definePageMeta({ middleware: "auth" });
 
@@ -99,6 +99,24 @@ const regenerating = ref(false);
 const { data, refresh, error } = await useFetch<CommentDetailResponse>(
   `/api/comments/${id}`,
 );
+
+const { data: commenterHistory } = useFetch<CommenterHistory>(
+  `/api/comments/${id}/commenter-history`,
+  { lazy: true },
+);
+
+const priorityConfig: Record<string, { color: string; icon: string; label: string }> = {
+  urgent: { color: "text-red-400 bg-red-500/10 border-red-500/20", icon: "i-heroicons-fire", label: "URGENT" },
+  high:   { color: "text-orange-400 bg-orange-500/10 border-orange-500/20", icon: "i-heroicons-arrow-trending-up", label: "HIGH" },
+  normal: { color: "", icon: "", label: "" },
+  low:    { color: "", icon: "", label: "" },
+};
+
+function parseOpportunityFlags(flags: string | string[] | null | undefined): string[] {
+  if (!flags) return [];
+  if (Array.isArray(flags)) return flags;
+  try { return JSON.parse(flags as string); } catch { return []; }
+}
 
 async function continueConversation() {
   regenerating.value = true;
@@ -826,10 +844,12 @@ async function confirmUnban() {
 
             <!-- Original Comment (The Start) -->
             <div class="flex flex-col gap-2 items-start">
-              <div class="flex items-center gap-2 ml-1">
+              <div class="flex items-center gap-2 ml-1 flex-wrap">
                 <UAvatar
-                  :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(data.comment.authorName)}&background=6366f1&color=fff`"
+                  :src="data.comment.authorProfileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.comment.authorName)}&background=6366f1&color=fff`"
                   size="xs"
+                  class="ring-1 ring-white/10"
+                />
                 />
                 <span class="text-[10px] font-bold text-slate-400">{{
                   data.comment.authorName
@@ -837,6 +857,32 @@ async function confirmUnban() {
                 <span class="text-[9px] text-slate-600 uppercase">{{
                   timeAgo(data.comment.publishedAt)
                 }}</span>
+                <!-- Priority badge -->
+                <span
+                  v-if="data.comment.priorityLabel === 'urgent' || data.comment.priorityLabel === 'high'"
+                  class="flex items-center gap-0.5 px-1.5 py-0.5 rounded border text-[8px] font-black uppercase"
+                  :class="priorityConfig[data.comment.priorityLabel]?.color"
+                >
+                  <UIcon :name="priorityConfig[data.comment.priorityLabel]?.icon" class="w-2.5 h-2.5" />
+                  {{ priorityConfig[data.comment.priorityLabel]?.label }}
+                </span>
+                <!-- Return commenter badge -->
+                <span
+                  v-if="data.comment.isReturnCommenter"
+                  class="flex items-center gap-0.5 px-1.5 py-0.5 rounded border text-[8px] font-black uppercase text-violet-400 bg-violet-500/10 border-violet-500/20"
+                >
+                  <UIcon name="i-heroicons-user-circle" class="w-2.5 h-2.5" />
+                  FAN
+                </span>
+                <!-- Opportunity flags -->
+                <span
+                  v-for="flag in parseOpportunityFlags(data.comment.opportunityFlags)"
+                  :key="flag"
+                  class="flex items-center gap-0.5 px-1.5 py-0.5 rounded border text-[8px] font-black uppercase text-yellow-400 bg-yellow-500/10 border-yellow-500/20"
+                >
+                  <UIcon name="i-heroicons-star" class="w-2.5 h-2.5" />
+                  {{ flag }}
+                </span>
               </div>
               <div
                 class="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl rounded-tl-none p-4 text-sm text-slate-200 leading-relaxed shadow-sm max-w-[85%]"
@@ -974,6 +1020,53 @@ async function confirmUnban() {
             <UIcon name="i-heroicons-archive-box" class="w-4 h-4" />
             {{ $t("comment_detail.dismiss") }}
           </button>
+        </div>
+
+        <!-- Commenter History Panel -->
+        <div
+          v-if="commenterHistory && commenterHistory.total > 1"
+          class="glass-card p-5 animate-fade-in"
+        >
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <UIcon name="i-heroicons-user-circle" class="w-4 h-4 text-violet-400" />
+              <span class="text-[10px] font-black text-violet-400 uppercase tracking-[0.2em]">
+                {{ $t("comment_detail.commenter_history") }}
+              </span>
+            </div>
+            <div class="flex items-center gap-3 text-[10px] font-bold text-slate-500">
+              <span class="flex items-center gap-1">
+                <UIcon name="i-heroicons-chat-bubble-left" class="w-3 h-3" />
+                {{ commenterHistory.total }} {{ $t("comment_detail.comments_total") }}
+              </span>
+              <span v-if="commenterHistory.totalLikes > 0" class="flex items-center gap-1">
+                <UIcon name="i-heroicons-hand-thumb-up" class="w-3 h-3" />
+                {{ commenterHistory.totalLikes }}
+              </span>
+            </div>
+          </div>
+          <div class="space-y-2">
+            <NuxtLink
+              v-for="item in commenterHistory.items"
+              :key="item.id"
+              :to="`/comments/${item.id}`"
+              class="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] hover:border-white/[0.09] transition-all group"
+            >
+              <UBadge
+                :color="item.status === 'published' ? 'green' : item.status === 'suggested' ? 'blue' : 'gray'"
+                variant="soft"
+                size="xs"
+                class="rounded mt-0.5 shrink-0 text-[8px] font-black"
+              >
+                {{ item.status.toUpperCase() }}
+              </UBadge>
+              <div class="min-w-0 flex-1">
+                <p class="text-[11px] text-slate-400 line-clamp-2 italic">"{{ item.text }}"</p>
+                <p class="text-[9px] text-slate-600 mt-0.5 truncate">{{ item.videoTitle }}</p>
+              </div>
+              <UIcon name="i-heroicons-arrow-right" class="w-3 h-3 text-slate-700 group-hover:text-indigo-400 shrink-0 mt-1 transition-colors" />
+            </NuxtLink>
+          </div>
         </div>
       </div>
 

@@ -13,6 +13,9 @@ const PROTECTED_PREFIXES = [
   '/api/agent/chats',
   '/api/agent/status',
   '/api/diagnostics',
+  '/api/automation',
+  '/api/analytics',
+  '/api/insights',
 ]
 
 export default defineEventHandler(async (event) => {

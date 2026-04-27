@@ -2,6 +2,8 @@
 
 export type CommentStatus = 'pending' | 'suggested' | 'dismissed' | 'published' | 'skipped'
 
+export type PriorityLabel = 'urgent' | 'high' | 'normal' | 'low'
+
 export interface Comment {
   id: string
   videoId: string
@@ -18,6 +20,12 @@ export interface Comment {
   fetchedAt: string | null
   processedAt: string | null
   isBanned?: boolean
+  // Intelligence scoring
+  priorityScore: number | null
+  priorityLabel: PriorityLabel | null
+  isReturnCommenter: boolean | null
+  opportunityFlags: string[] | null
+  detectedIntent: string | null
 }
 
 export interface CommentListItem extends Comment {
@@ -28,6 +36,93 @@ export interface CommentListItem extends Comment {
   lastText?: string
   lastAuthor?: string
   lastActivityAt?: string
+}
+
+// ─── Analytics ────────────────────────────────────────────────────────────────
+
+export interface SentimentDataPoint {
+  date: string
+  positive: number
+  neutral: number
+  negative: number
+  total: number
+}
+
+export interface TopicCluster {
+  topic: string
+  count: number
+  totalLikes: number
+  exampleComments: string[]
+}
+
+export interface SuperfanEntry {
+  authorName: string
+  authorChannelId: string | null
+  commentCount: number
+  totalLikes: number
+  firstSeenAt: string
+  lastSeenAt: string
+}
+
+export interface VideoCommentStats {
+  videoId: string
+  videoTitle: string
+  thumbnailUrl: string | null
+  pendingCount: number
+  publishedCount: number
+  negativeCount: number
+  questionCount: number
+  totalComments: number
+}
+
+export interface AnalyticsOverview {
+  replyRate: number
+  avgResponseTimeHours: number | null
+  returnCommenterRate: number
+  totalCommentsLast30Days: number
+  sentiment: { positive: number; neutral: number; negative: number }
+  languageDistribution: Record<string, number>
+}
+
+// ─── Video Ideas ──────────────────────────────────────────────────────────────
+
+export interface VideoIdeaCluster {
+  id: string
+  topic: string
+  suggestedTitle: string
+  demandCount: number
+  totalLikes: number
+  exampleQuestions: string[]
+  // Strategy & Production Blueprint
+  strategicObjective: string
+  viralHook: string
+  keyPillars: string[]
+  productionTips: string
+  expectedOutcome: string
+  addedToKb?: boolean
+  dismissed?: boolean
+}
+
+// ─── Automation Rules ─────────────────────────────────────────────────────────
+
+export type AutomationConditionField = 'contains_keyword' | 'intent_is' | 'score_above' | 'score_below' | 'language_is' | 'is_return_commenter' | 'has_opportunity_flag'
+export type AutomationAction = 'auto_dismiss' | 'set_priority' | 'add_flag' | 'auto_suggest' | 'notify'
+
+export interface AutomationCondition {
+  field: AutomationConditionField
+  value: string | number | boolean
+}
+
+export interface AutomationRule {
+  id: number
+  name: string
+  isActive: boolean
+  conditions: AutomationCondition[]
+  action: AutomationAction
+  actionParams: Record<string, string | number> | null
+  triggerCount: number
+  createdAt: string | null
+  updatedAt: string | null
 }
 
 // ─── Suggestion ──────────────────────────────────────────────────────────────
@@ -115,6 +210,20 @@ export interface DashboardComment {
   replyText?: string | null
 }
 
+export interface UrgentComment {
+  id: string
+  authorName: string
+  text: string
+  likeCount: number | null
+  priorityLabel: PriorityLabel | null
+  priorityScore: number | null
+  opportunityFlags: string | null
+  detectedIntent: string | null
+  publishedAt: string
+  status: string
+  videoTitle: string | null
+}
+
 export interface DashboardStats {
   comments: {
     pending: number
@@ -124,6 +233,8 @@ export interface DashboardStats {
   }
   recentComments: DashboardComment[]
   recentCommentsTotal: number
+  urgentComments: UrgentComment[]
+  urgentCount: number
 }
 
 export interface SyncLogEntry {
@@ -182,13 +293,36 @@ export interface YouTubeStatus {
   } | null
 }
 
+export interface CommentReply {
+  id: string
+  authorName: string
+  text: string
+  publishedAt: string
+  authorChannelId: string | null
+  isOwner?: boolean
+  isLocal?: boolean
+}
+
+export interface CommenterHistory {
+  authorName: string
+  total: number
+  totalLikes: number
+  items: Array<{
+    id: string
+    text: string
+    likeCount: number | null
+    publishedAt: string
+    status: string
+    videoTitle: string | null
+    videoId: string
+  }>
+}
+
 export interface CommentDetailResponse {
   comment: Comment
   video: Video | null
-  replies: Pick<
-    Comment,
-    "id" | "authorName" | "text" | "publishedAt" | "authorChannelId"
-  >[]
+  replies: CommentReply[]
   suggestions: SuggestedReply[]
   publishedReply: any | null
+  ownerThumbnail?: string | null
 }

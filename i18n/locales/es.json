@@ -17,7 +17,10 @@
     "settings": "Ajustes",
     "sign_out": "Cerrar sesión",
     "open_menu": "Abrir menú",
-    "responsive": "Diseño Responsivo"
+    "responsive": "Diseño Responsivo",
+    "analytics": "Analíticas",
+    "insights": "Ideas de Video"
+
   },
   "login": {
     "subtitle": "Asistente de Comentarios YouTube",
@@ -34,7 +37,10 @@
     "days_ago": "hace {d}d"
   },
   "status": {
+    "all": "Todos",
     "inbox": "Bandeja",
+
+    "priority": "Prioridad",
     "pending": "Pendiente",
     "suggested": "Sugerido",
     "published": "Publicado",
@@ -57,11 +63,15 @@
     "ai_suggested": "Sugeridos por IA",
     "awaiting_ai": "En Cola (Esperando IA)",
     "published_today": "Publicados Hoy",
-    "total_published": "Total Publicados"
+    "total_published": "Total Publicados",
+    "urgent_title": "Requiere Atención Ahora",
+    "see_all_urgent": "Ver Todos Prioritarios"
   },
   "comments": {
     "hub_label": "Centro de Inteligencia",
     "title": "Voz de la Comunidad",
+    "filtered_by": "Filtrado por Video",
+
     "list_view": "Vista Lista",
     "grid_view": "Vista Cuadrícula",
     "select_all": "Seleccionar Todo",
@@ -167,7 +177,9 @@
     "load_error_desc": "Hubo un problema al recuperar los detalles del comentario.",
     "detected_links": "Links Detectados",
     "click_to_open": "Haz clic en un enlace para abrir o en el texto para editar",
-    "go_back": "Volver a la lista"
+    "go_back": "Volver a la lista",
+    "commenter_history": "Historial del Comentarista",
+    "comments_total": "comentarios"
   },
   "knowledge_base": {
     "center_label": "Centro de Inteligencia",
@@ -330,5 +342,79 @@
     "new_version": "Nueva versión disponible",
     "reload_description": "Recarga para actualizar la aplicación.",
     "update_button": "Actualizar"
+  },
+  "analytics": {
+    "nav_label": "Analíticas",
+    "title": "Inteligencia de la Comunidad",
+    "reply_rate": "Tasa de Respuesta",
+    "reply_rate_desc": "de comentarios respondidos",
+    "last_30_days": "Últimos 30 Días",
+    "last_30_days_desc": "nuevos comentarios",
+    "return_rate": "Tasa de Retorno",
+    "return_rate_desc": "comentaristas recurrentes",
+    "sentiment_label": "Sentimiento",
+    "sentiment_desc": "positivo vs negativo",
+    "sentiment_trend": "Tendencia de Sentimiento (4 semanas)",
+    "audience_languages": "Idiomas de la Audiencia",
+    "top_topics": "Temas Más Consultados (90 días)",
+    "superfans_title": "Superfans de la Comunidad",
+    "recent_activity": "Actividad Reciente",
+    "video_performance": "Rendimiento por Video (vía comentarios)",
+    "view_all": "Ver todos los videos",
+    "no_trend": "Sin datos de tendencia todavía",
+    "no_languages": "Sin datos todavía",
+    "no_topics": "Sin datos de preguntas — se necesitan comentarios analizados",
+    "no_superfans": "Sin datos de comentaristas todavía",
+    "no_videos": "Sin datos de videos todavía",
+    "manage_comments": "Gestionar Comentarios",
+    "pending_label": "PENDIENTES",
+    "complaints_label": "QUEJAS",
+    "questions_label": "PREGUNTAS",
+    "video_ideas": "Ideas de Video",
+    "pos": "Pos",
+    "neu": "Neu",
+    "neg": "Neg",
+    "week_of": "Semana del {d}",
+    "comments_count": "{n} comentarios"
+  },
+  "insights": {
+    "nav_label": "Inteligencia",
+    "title": "Ideas de Vídeo",
+    "subtitle": "Preguntas que tu audiencia está haciendo — convertidas en oportunidades de contenido.",
+    "analyzing": "Analizando…",
+    "refresh": "Actualizar",
+    "no_ideas_title": "Sin ideas todavía",
+    "no_ideas_hint": "Se necesitan al menos 3 comentarios tipo pregunta de los últimos 90 días.",
+    "analyze_button": "Analizar Comentarios",
+    "asking_label": "Lo que están preguntando",
+    "add_to_kb": "Añadir a Base",
+    "added_to_kb": "Añadido a la Base de Conocimiento",
+    "failed_to_add": "Error al añadir a la Base",
+    "refreshed": "Ideas de vídeo actualizadas",
+    "failed_refresh": "Error en la generación",
+    "copy_success": "Hook copiado al portapapeles",
+    "copy_error": "Error al copiar",
+    "demand_high": "ALTA DEMANDA",
+    "demand_medium": "DEMANDA MEDIA",
+    "demand_growing": "EN CRECIMIENTO",
+    "signals": "{n} señales",
+    "refresh_hint": "Análisis manual bajo demanda para mayor control",
+    "force_analysis": "Ejecutar análisis ahora",
+    "opp_score": "SCORE OPP",
+    "total_likes": "LIKES TOTALES",
+    "viral_hook": "VIRAL HOOK · PRIMEROS 10 SEGUNDOS",
+    "copy": "COPIAR",
+    "copied": "COPIADO",
+    "strategic_objective": "OBJETIVO ESTRATÉGICO",
+    "content_blueprint": "BLUEPRINT DEL CONTENIDO",
+    "production_guide": "GUÍA DE PRODUCCIÓN",
+    "expected_kpi": "KPI ESPERADO",
+    "audience_voice": "VOZ DE LA AUDIENCIA",
+    "kb_objective": "OBJETIVO ESTRATÉGICO",
+    "kb_hook": "Hook Viral",
+    "kb_pillars": "Pilares del Contenido",
+    "kb_tips": "Tips de Producción",
+    "kb_questions": "Preguntas de la Audiencia"
   }
 }
+

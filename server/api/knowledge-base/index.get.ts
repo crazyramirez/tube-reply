@@ -15,7 +15,8 @@ export default defineEventHandler(async (event) => {
 
   const entries = await db.query.knowledgeBase.findMany({
     where: conditions.length > 0 ? and(...conditions) : undefined,
-    orderBy: [desc(knowledgeBase.priority), desc(knowledgeBase.createdAt)],
+    orderBy: [desc(knowledgeBase.createdAt), desc(knowledgeBase.priority)],
+
   })
 
   return { items: entries }

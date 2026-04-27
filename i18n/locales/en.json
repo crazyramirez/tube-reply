@@ -17,7 +17,9 @@
     "settings": "Settings",
     "sign_out": "Sign Out",
     "open_menu": "Open menu",
-    "responsive": "Responsive Design"
+    "responsive": "Responsive Design",
+    "analytics": "Analytics",
+    "insights": "Video Ideas"
   },
   "login": {
     "subtitle": "YouTube Comment Assistant",
@@ -34,7 +36,10 @@
     "days_ago": "{d}d ago"
   },
   "status": {
+    "all": "Total",
     "inbox": "Inbox",
+
+    "priority": "Priority",
     "pending": "Pending",
     "suggested": "Suggested",
     "published": "Published",
@@ -57,11 +62,15 @@
     "ai_suggested": "AI Suggested",
     "awaiting_ai": "In Queue (Awaiting AI)",
     "published_today": "Published Today",
-    "total_published": "Total Published"
+    "total_published": "Total Published",
+    "urgent_title": "Needs Attention Now",
+    "see_all_urgent": "See All Priority"
   },
   "comments": {
     "hub_label": "Intelligence Hub",
     "title": "Community Voice",
+    "filtered_by": "Filtered by Video",
+
     "list_view": "List View",
     "grid_view": "Grid View",
     "select_all": "Select All",
@@ -167,7 +176,9 @@
     "load_error_desc": "There was a problem retrieving the comment details.",
     "detected_links": "Detected Links",
     "click_to_open": "Click a link to open or text to edit",
-    "go_back": "Go back to list"
+    "go_back": "Go back to list",
+    "commenter_history": "Commenter History",
+    "comments_total": "comments"
   },
   "knowledge_base": {
     "center_label": "Intelligence Center",
@@ -329,5 +340,79 @@
     "new_version": "New version available",
     "reload_description": "Reload to update the app.",
     "update_button": "Update"
+  },
+  "analytics": {
+    "nav_label": "Analytics",
+    "title": "Community Intelligence",
+    "reply_rate": "Reply Rate",
+    "reply_rate_desc": "of comments answered",
+    "last_30_days": "Last 30 Days",
+    "last_30_days_desc": "new comments",
+    "return_rate": "Return Rate",
+    "return_rate_desc": "return commenters",
+    "sentiment_label": "Sentiment",
+    "sentiment_desc": "positive vs negative",
+    "sentiment_trend": "Sentiment Trend (4 weeks)",
+    "audience_languages": "Audience Languages",
+    "top_topics": "Top Question Topics (90 days)",
+    "superfans_title": "Community Superfans",
+    "recent_activity": "Recent Activity",
+    "video_performance": "Video Performance (from comments)",
+    "view_all": "View all videos",
+    "no_trend": "No trend data yet",
+    "no_languages": "No data yet",
+    "no_topics": "No question data yet — needs analyzed comments",
+    "no_superfans": "No commenter data yet",
+    "no_videos": "No video data yet",
+    "manage_comments": "Manage Comments",
+    "pending_label": "PENDING",
+    "complaints_label": "COMPLAINTS",
+    "questions_label": "QUESTIONS",
+    "video_ideas": "Video Ideas",
+    "pos": "Pos",
+    "neu": "Neu",
+    "neg": "Neg",
+    "week_of": "Week of {d}",
+    "comments_count": "{n} comments"
+  },
+  "insights": {
+    "nav_label": "Intelligence",
+    "title": "Video Ideas",
+    "subtitle": "Questions your audience is asking — turned into content opportunities.",
+    "analyzing": "Analyzing…",
+    "refresh": "Refresh",
+    "no_ideas_title": "No ideas yet",
+    "no_ideas_hint": "Need at least 3 question-type comments from the last 90 days.",
+    "analyze_button": "Analyze Comments",
+    "asking_label": "What they're asking",
+    "add_to_kb": "Add to KB",
+    "added_to_kb": "Added to Knowledge Base",
+    "failed_to_add": "Failed to add to KB",
+    "refreshed": "Video ideas refreshed",
+    "failed_refresh": "Generation failed",
+    "copy_success": "Hook copied to clipboard",
+    "copy_error": "Failed to copy",
+    "demand_high": "HIGH DEMAND",
+    "demand_medium": "MEDIUM DEMAND",
+    "demand_growing": "GROWING",
+    "signals": "{n} signals",
+    "refresh_hint": "Manual analysis on demand for better control",
+    "force_analysis": "Run analysis now",
+    "opp_score": "OPP SCORE",
+    "total_likes": "TOTAL LIKES",
+    "viral_hook": "VIRAL HOOK · FIRST 10 SECONDS",
+    "copy": "COPY",
+    "copied": "COPIED",
+    "strategic_objective": "STRATEGIC OBJECTIVE",
+    "content_blueprint": "CONTENT BLUEPRINT",
+    "production_guide": "PRODUCTION GUIDE",
+    "expected_kpi": "EXPECTED KPI",
+    "audience_voice": "AUDIENCE VOICE",
+    "kb_objective": "STRATEGIC OBJECTIVE",
+    "kb_hook": "Viral Hook",
+    "kb_pillars": "Content Pillars",
+    "kb_tips": "Production Tips",
+    "kb_questions": "Audience Questions"
   }
 }
+

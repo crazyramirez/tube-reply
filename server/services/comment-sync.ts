@@ -133,6 +133,21 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
     }
 
     await logger.info('comment-sync', 'Full sync completed', { totalNew, totalQuota, videosProcessed })
+
+    // Score new comments after sync
+    if (totalNew > 0) {
+      try {
+        const { scoreAllComments } = await import('./comment-scorer')
+        const scored = await scoreAllComments({ onlyUnscored: true })
+        await logger.info('comment-sync', `Scored ${scored} new comments`)
+
+        const { runAutomationOnPending } = await import('./automation-engine')
+        const triggered = await runAutomationOnPending()
+        if (triggered > 0) await logger.info('comment-sync', `Automation ran on ${triggered} comments`)
+      } catch (scoreErr) {
+        await logger.warn('comment-sync', 'Scoring/automation failed (non-critical)', { error: (scoreErr as Error).message })
+      }
+    }
   }
   catch (err) {
     await logger.error('comment-sync', 'Sync failed', err as Error)
@@ -202,8 +217,10 @@ async function syncChannelComments(
           parentId: null,
           authorName: top.snippet.authorDisplayName ?? 'Unknown',
           authorChannelId: (top.snippet.authorChannelId as unknown as { value?: string } | null)?.value ?? null,
+          authorProfileImageUrl: top.snippet.authorProfileImageUrl ?? null,
           text: top.snippet.textDisplay ?? '',
           textOriginal: top.snippet.textOriginal ?? null,
+
           likeCount: top.snippet.likeCount ?? 0,
           detectedLang: lang.lang,
           langConfidence: lang.confidence,
@@ -233,8 +250,10 @@ async function syncChannelComments(
             parentId: top.id,
             authorName: reply.snippet.authorDisplayName ?? 'Unknown',
             authorChannelId: authorId,
+            authorProfileImageUrl: reply.snippet.authorProfileImageUrl ?? null,
             text: reply.snippet.textDisplay ?? '',
             textOriginal: reply.snippet.textOriginal ?? null,
+
             likeCount: reply.snippet.likeCount ?? 0,
             detectedLang: replyLang.lang,
             langConfidence: replyLang.confidence,
@@ -329,7 +348,9 @@ async function ensureVideoExists(
       categoryId: v.snippet.categoryId ?? null,
       defaultLanguage: v.snippet.defaultLanguage ?? null,
       viewCount: Number(v.statistics?.viewCount ?? 0),
+      likeCount: Number(v.statistics?.likeCount ?? 0),
       commentCount: Number(v.statistics?.commentCount ?? 0),
+
       lastSyncedAt: new Date().toISOString(),
     })
   } catch (err) {
@@ -389,14 +410,18 @@ async function syncVideoList(
         categoryId: v.snippet.categoryId ?? null,
         defaultLanguage: v.snippet.defaultLanguage ?? null,
         viewCount: Number(v.statistics?.viewCount ?? 0),
+        likeCount: Number(v.statistics?.likeCount ?? 0),
         commentCount: Number(v.statistics?.commentCount ?? 0),
+
         lastSyncedAt: new Date().toISOString(),
       }).onConflictDoUpdate({
         target: videos.id,
         set: {
           title: v.snippet.title ?? '',
           viewCount: Number(v.statistics?.viewCount ?? 0),
+          likeCount: Number(v.statistics?.likeCount ?? 0),
           commentCount: Number(v.statistics?.commentCount ?? 0),
+
           lastSyncedAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         },
@@ -446,8 +471,10 @@ async function syncVideoComments(
         parentId: null,
         authorName: top.snippet.authorDisplayName ?? 'Unknown',
         authorChannelId: (top.snippet.authorChannelId as unknown as { value?: string } | null)?.value ?? null,
+        authorProfileImageUrl: top.snippet.authorProfileImageUrl ?? null,
         text: top.snippet.textDisplay ?? '',
         textOriginal: top.snippet.textOriginal ?? null,
+
         likeCount: top.snippet.likeCount ?? 0,
         detectedLang: lang.lang,
         langConfidence: lang.confidence,
@@ -471,8 +498,10 @@ async function syncVideoComments(
           parentId: top.id,
           authorName: reply.snippet.authorDisplayName ?? 'Unknown',
           authorChannelId: authorId,
+          authorProfileImageUrl: reply.snippet.authorProfileImageUrl ?? null,
           text: reply.snippet.textDisplay ?? '',
           textOriginal: reply.snippet.textOriginal ?? null,
+
           likeCount: reply.snippet.likeCount ?? 0,
           detectedLang: replyLang.lang,
           langConfidence: replyLang.confidence,
@@ -532,7 +561,9 @@ type CommentInsert = {
   parentId: string | null
   authorName: string
   authorChannelId: string | null
+  authorProfileImageUrl: string | null
   text: string
+
   textOriginal: string | null
   likeCount: number
   detectedLang: string
@@ -559,7 +590,9 @@ async function upsertComment(db: ReturnType<typeof useDb>, data: CommentInsert):
       parentId: data.parentId,
       authorName: data.authorName,
       authorChannelId: data.authorChannelId,
+      authorProfileImageUrl: data.authorProfileImageUrl,
       text: data.text,
+
       textOriginal: data.textOriginal,
       likeCount: data.likeCount,
       detectedLang: data.detectedLang,
@@ -591,15 +624,31 @@ async function upsertComment(db: ReturnType<typeof useDb>, data: CommentInsert):
   // Mark as published if owner replied externally and comment isn't already handled
   if (data.ownerAlreadyReplied && existing.status !== 'published') {
     await db.update(comments)
-      .set({ status: 'published', processedAt: new Date().toISOString() })
+      .set({ 
+        status: 'published', 
+        processedAt: new Date().toISOString(),
+        authorProfileImageUrl: data.authorProfileImageUrl // Backfill if missing
+      })
       .where(eq(comments.id, data.id))
   }
-  // Update if text changed (comment was edited)
+  // Update if text changed (comment was edited) or if we are backfilling the avatar
   else if (existing.updatedAt !== data.updatedAt) {
     await db.update(comments)
-      .set({ text: data.text, updatedAt: data.updatedAt, likeCount: data.likeCount })
+      .set({ 
+        text: data.text, 
+        updatedAt: data.updatedAt, 
+        likeCount: data.likeCount,
+        authorProfileImageUrl: data.authorProfileImageUrl 
+      })
       .where(eq(comments.id, data.id))
   }
+  // Always try to backfill the avatar if it's missing but we have it now
+  else if (data.authorProfileImageUrl) {
+     await db.update(comments)
+      .set({ authorProfileImageUrl: data.authorProfileImageUrl })
+      .where(eq(comments.id, data.id))
+  }
+
 
   return false
 }

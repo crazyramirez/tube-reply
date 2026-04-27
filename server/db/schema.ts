@@ -15,7 +15,9 @@ export const videos = sqliteTable('videos', {
   categoryId: text('category_id'),
   defaultLanguage: text('default_language'),
   viewCount: integer('view_count').default(0),
+  likeCount: integer('like_count').default(0),
   commentCount: integer('comment_count').default(0),
+
   lastSyncedAt: text('last_synced_at'),
   createdAt: text('created_at').default(sql`(datetime('now'))`),
   updatedAt: text('updated_at').default(sql`(datetime('now'))`),
@@ -31,7 +33,9 @@ export const comments = sqliteTable('comments', {
   parentId: text('parent_id'), // null = top-level thread
   authorName: text('author_name').notNull(),
   authorChannelId: text('author_channel_id'),
+  authorProfileImageUrl: text('author_profile_image_url'),
   text: text('text').notNull(),
+
   textOriginal: text('text_original'),
   likeCount: integer('like_count').default(0),
   detectedLang: text('detected_lang'), // BCP-47 e.g. 'es', 'en'
@@ -44,9 +48,17 @@ export const comments = sqliteTable('comments', {
   fetchedAt: text('fetched_at').default(sql`(datetime('now'))`),
   processedAt: text('processed_at'),
   // Denormalized fields for high-performance indexing
-  lastActivityAt: text('last_activity_at'), 
+  lastActivityAt: text('last_activity_at'),
   lastActivityText: text('last_activity_text'),
   lastActivityAuthor: text('last_activity_author'),
+  // Intelligence scoring
+  priorityScore: integer('priority_score').default(50),
+  priorityLabel: text('priority_label', {
+    enum: ['urgent', 'high', 'normal', 'low'],
+  }).default('normal'),
+  isReturnCommenter: integer('is_return_commenter', { mode: 'boolean' }).default(false),
+  opportunityFlags: text('opportunity_flags'), // JSON array: ['collab', 'sponsor', etc.]
+  detectedIntent: text('detected_intent'), // cached intent from scorer
 }, (t) => ({
   videoIdx: index('comments_video_idx').on(t.videoId),
   statusIdx: index('comments_status_idx').on(t.status),
@@ -55,6 +67,8 @@ export const comments = sqliteTable('comments', {
   parentIdx: index('comments_parent_idx').on(t.parentId, t.publishedAt),
   // Optimized index for the main list
   listPerfIdx: index('comments_list_perf_idx').on(t.status, t.lastActivityAt),
+  // Priority inbox index
+  priorityIdx: index('comments_priority_idx').on(t.status, t.priorityScore),
 }))
 
 // ─── Suggested Replies ────────────────────────────────────────────────────────
@@ -95,6 +109,11 @@ export const publishedReplies = sqliteTable('published_replies', {
   finalText: text('final_text').notNull(),
   publishedAt: text('published_at').default(sql`(datetime('now'))`),
   publishedBy: text('published_by').default('owner'),
+  // Reply performance tracking
+  likeCount: integer('like_count').default(0),
+  commenterRepliedBack: integer('commenter_replied_back', { mode: 'boolean' }).default(false),
+  threadGrowthAfter: integer('thread_growth_after').default(0),
+  replyMetricsSyncedAt: text('reply_metrics_synced_at'),
 }, (t) => ({
   commentIdx: index('published_comment_idx').on(t.commentId),
   ytReplyUniq: uniqueIndex('published_yt_reply_unique').on(t.youtubeReplyId),
@@ -252,3 +271,30 @@ export const agentMessages = sqliteTable('agent_messages', {
 }, (t) => ({
   chatIdx: index('agent_messages_chat_idx').on(t.chatId),
 }))
+
+// ─── Automation Rules ─────────────────────────────────────────────────────────
+
+export const automationRules = sqliteTable('automation_rules', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  isActive: integer('is_active', { mode: 'boolean' }).default(true),
+  // JSON: [{ field, operator, value }]
+  conditions: text('conditions').notNull(),
+  action: text('action', {
+    enum: ['auto_dismiss', 'set_priority', 'add_flag', 'auto_suggest', 'notify'],
+  }).notNull(),
+  actionParams: text('action_params'), // JSON: { label?, flag?, ... }
+  triggerCount: integer('trigger_count').default(0),
+  createdAt: text('created_at').default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').default(sql`(datetime('now'))`),
+})
+
+// ─── Video Idea Cache ─────────────────────────────────────────────────────────
+
+export const videoIdeasCache = sqliteTable('video_ideas_cache', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  clusters: text('clusters').notNull(), // JSON array of VideoIdeaCluster
+  generatedAt: text('generated_at').default(sql`(datetime('now'))`),
+  commentsAnalyzed: integer('comments_analyzed').default(0),
+  modelUsed: text('model_used'),
+})
