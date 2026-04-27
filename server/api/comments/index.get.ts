@@ -61,6 +61,7 @@ export default defineEventHandler(async (event) => {
       videoId: comments.videoId,
       authorName: comments.authorName,
       authorChannelId: comments.authorChannelId,
+      authorProfileImageUrl: comments.authorProfileImageUrl,
       text: comments.text,
       lastText: comments.lastActivityText,
       lastAuthor: comments.lastActivityAuthor,

@@ -573,18 +573,15 @@ watch([status, page], (newVals, oldVals) => {
 
           <div class="p-3 sm:p-5 flex flex-col flex-1 gap-2 sm:gap-4">
             <div class="flex items-center gap-2 sm:gap-3 group/author">
-              <div
-                class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-[8px] sm:text-xs overflow-hidden transition-all"
-              >
-                <img
-                  v-if="c.authorProfileImageUrl"
-                  :src="c.authorProfileImageUrl"
-                  class="w-full h-full object-cover"
-                  referrerpolicy="no-referrer"
-                  crossorigin="anonymous"
-                />
-                <span v-else>{{ c.authorName?.[0] }}</span>
-              </div>
+              <UAvatar
+                :src="c.authorProfileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.authorName || '')}&background=6366f1&color=fff`"
+                size="sm"
+                class="ring-1 ring-white/10 shrink-0 shadow-sm"
+                :img-attributes="{
+                  referrerpolicy: 'no-referrer',
+                  crossorigin: 'anonymous',
+                }"
+              />
 
               <div class="flex flex-col min-w-0">
                 <span
@@ -760,10 +757,15 @@ watch([status, page], (newVals, oldVals) => {
           <!-- Content -->
           <div class="flex-1 min-w-0 flex flex-col">
             <div class="mb-1.5 order-2 sm:order-1 flex items-center gap-2 group/author">
-              <div class="w-5 h-5 rounded-full overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center text-[10px] text-indigo-400 font-bold shrink-0 transition-all">
-                <img v-if="c.authorProfileImageUrl" :src="c.authorProfileImageUrl" class="w-full h-full object-cover" referrerpolicy="no-referrer" crossorigin="anonymous" />
-                <span v-else>{{ c.authorName?.[0] }}</span>
-              </div>
+              <UAvatar
+                :src="c.authorProfileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.authorName || '')}&background=6366f1&color=fff`"
+                size="xs"
+                class="ring-1 ring-white/10 shrink-0 shadow-sm"
+                :img-attributes="{
+                  referrerpolicy: 'no-referrer',
+                  crossorigin: 'anonymous',
+                }"
+              />
               <span class="font-bold text-white text-sm truncate block transition-colors">{{
                 c.authorName
               }}</span>

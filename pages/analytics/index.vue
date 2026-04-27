@@ -396,12 +396,9 @@ function replyRateColor(rate: number) {
             class="flex flex-col items-center group/fan"
           >
             <UAvatar
-              :src="
-                fan.authorProfileImageUrl ||
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(fan.authorName || 'User')}&background=6366f1&color=fff`
-              "
+              :src="fan.authorProfileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(fan.authorName || '')}&background=6366f1&color=fff`"
               size="xl"
-              class="mb-4 ring-1 ring-white/10 group-hover:scale-110 group-hover:ring-violet-500/50 transition-all duration-500"
+              class="mb-4 ring-1 ring-white/10 group-hover:scale-110 group-hover:ring-violet-500/50 transition-all duration-500 shadow-lg"
               :alt="fan.authorName"
               :img-attributes="{
                 referrerpolicy: 'no-referrer',
@@ -497,6 +494,7 @@ function replyRateColor(rate: number) {
               :src="v.thumbnailUrl"
               class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
               referrerpolicy="no-referrer"
+              crossorigin="anonymous"
             />
             <div
               class="absolute inset-0 bg-slate-900 flex items-center justify-center"

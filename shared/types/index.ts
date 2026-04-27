@@ -10,6 +10,7 @@ export interface Comment {
   parentId: string | null
   authorName: string
   authorChannelId: string | null
+  authorProfileImageUrl: string | null
   text: string
   likeCount: number
   detectedLang: string | null
