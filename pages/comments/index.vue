@@ -13,6 +13,12 @@ const page = ref(Number(route.query.page || 1));
 const videoId = ref((route.query.videoId as string) || "");
 const intent = ref((route.query.intent as string) || "");
 
+useHead({
+  meta: [
+    { name: 'referrer', content: 'no-referrer' }
+  ]
+});
+
 
 const { data, refresh, pending } = useFetch<
   PaginatedResponse<CommentListItem>
@@ -78,14 +84,21 @@ function timeAgo(iso: string): string {
   return t("time.days_ago", { d: Math.floor(hrs / 24) });
 }
 
-const statusColor = (s: string) =>
-  s === "published"
-    ? "green"
-    : s === "suggested"
-      ? "blue"
-      : s === "dismissed"
-        ? "gray"
-        : "yellow";
+const statusColor = (s: string) => {
+  switch (s) {
+    case "published":
+      return "green";
+    case "suggested":
+      return "orange";
+    case "dismissed":
+      return "red";
+    case "skipped":
+      return "blue";
+    case "pending":
+    default:
+      return "yellow";
+  }
+};
 
 
 function parseOpportunityFlags(flags: string | string[] | null): string[] {
@@ -389,6 +402,7 @@ watch([status, page], (newVals, oldVals) => {
               :alt="c.videoTitle ?? ''"
               class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               loading="lazy"
+              referrerpolicy="no-referrer"
             />
             <div v-else class="w-full h-full flex items-center justify-center">
               <UIcon
@@ -458,7 +472,39 @@ watch([status, page], (newVals, oldVals) => {
           </div>
 
           <div class="p-3 sm:p-5 flex flex-col flex-1 gap-2 sm:gap-4">
-            <div class="flex items-center gap-2 sm:gap-3">
+            <a
+              v-if="c.authorChannelId"
+              :href="`https://www.youtube.com/channel/${c.authorChannelId}`"
+              target="_blank"
+              rel="noreferrer"
+              class="flex items-center gap-2 sm:gap-3 group/author"
+              @click.stop
+            >
+              <div
+                class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-[8px] sm:text-xs overflow-hidden group-hover/author:ring-1 group-hover/author:ring-indigo-500/50 transition-all"
+              >
+                <img
+                  v-if="c.authorProfileImageUrl"
+                  :src="c.authorProfileImageUrl"
+                  class="w-full h-full object-cover"
+                  referrerpolicy="no-referrer"
+                  crossorigin="anonymous"
+                />
+                <span v-else>{{ c.authorName?.[0] }}</span>
+              </div>
+
+              <div class="flex flex-col min-w-0">
+                <span
+                  class="font-bold text-[10px] sm:text-sm text-white truncate group-hover/author:text-indigo-400 transition-colors"
+                  >{{ c.lastAuthor || c.authorName }}</span
+                >
+                <span
+                  class="mt-0.5 text-[8px] sm:text-[12px] text-slate-500 font-medium"
+                  >{{ timeAgo(c.lastActivityAt || c.publishedAt) }}</span
+                >
+              </div>
+            </a>
+            <div v-else class="flex items-center gap-2 sm:gap-3">
               <div
                 class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-[8px] sm:text-xs overflow-hidden"
               >
@@ -467,6 +513,7 @@ watch([status, page], (newVals, oldVals) => {
                   :src="c.authorProfileImageUrl"
                   class="w-full h-full object-cover"
                   referrerpolicy="no-referrer"
+                  crossorigin="anonymous"
                 />
                 <span v-else>{{ c.authorName?.[0] }}</span>
               </div>
@@ -603,6 +650,7 @@ watch([status, page], (newVals, oldVals) => {
               :alt="c.videoTitle ?? ''"
               class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
               loading="lazy"
+              referrerpolicy="no-referrer"
             />
             <div
               v-else
@@ -644,9 +692,25 @@ watch([status, page], (newVals, oldVals) => {
 
           <!-- Content -->
           <div class="flex-1 min-w-0 flex flex-col">
-            <div class="mb-1.5 order-2 sm:order-1 flex items-center gap-2">
+            <a
+              v-if="c.authorChannelId"
+              :href="`https://www.youtube.com/channel/${c.authorChannelId}`"
+              target="_blank"
+              rel="noreferrer"
+              class="mb-1.5 order-2 sm:order-1 flex items-center gap-2 group/author"
+              @click.stop
+            >
+              <div class="w-5 h-5 rounded-full overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center text-[10px] text-indigo-400 font-bold shrink-0 group-hover/author:ring-1 group-hover/author:ring-indigo-500/50 transition-all">
+                <img v-if="c.authorProfileImageUrl" :src="c.authorProfileImageUrl" class="w-full h-full object-cover" referrerpolicy="no-referrer" crossorigin="anonymous" />
+                <span v-else>{{ (c.lastAuthor || c.authorName)?.[0] }}</span>
+              </div>
+              <span class="font-bold text-white text-sm truncate block group-hover/author:text-indigo-400 transition-colors">{{
+                c.lastAuthor || c.authorName
+              }}</span>
+            </a>
+            <div v-else class="mb-1.5 order-2 sm:order-1 flex items-center gap-2">
               <div class="w-5 h-5 rounded-full overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center text-[10px] text-indigo-400 font-bold shrink-0">
-                <img v-if="c.authorProfileImageUrl" :src="c.authorProfileImageUrl" class="w-full h-full object-cover" referrerpolicy="no-referrer" />
+                <img v-if="c.authorProfileImageUrl" :src="c.authorProfileImageUrl" class="w-full h-full object-cover" referrerpolicy="no-referrer" crossorigin="anonymous" />
                 <span v-else>{{ (c.lastAuthor || c.authorName)?.[0] }}</span>
               </div>
               <span class="font-bold text-white text-sm truncate block">{{
@@ -809,7 +873,7 @@ watch([status, page], (newVals, oldVals) => {
             <div class="flex items-center gap-1 sm:gap-1.5">
               <UButton
                 v-if="status !== 'pending' && status !== 'inbox'"
-                color="gray"
+                color="yellow"
                 variant="soft"
                 size="sm"
                 icon="i-heroicons-clock"
@@ -822,7 +886,7 @@ watch([status, page], (newVals, oldVals) => {
               </UButton>
               <UButton
                 v-if="status !== 'published'"
-                color="emerald"
+                color="green"
                 variant="soft"
                 size="sm"
                 icon="i-heroicons-check-circle"
@@ -848,7 +912,7 @@ watch([status, page], (newVals, oldVals) => {
               </UButton>
               <UButton
                 v-if="status !== 'skipped'"
-                color="orange"
+                color="blue"
                 variant="soft"
                 size="sm"
                 icon="i-heroicons-forward"

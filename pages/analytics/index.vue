@@ -8,6 +8,10 @@ import type {
 
 definePageMeta({ middleware: "auth" });
 
+useHead({
+  meta: [{ name: "referrer", content: "no-referrer" }],
+});
+
 const { data: overview } = useFetch<AnalyticsOverview>(
   "/api/analytics/overview",
   { lazy: true },
@@ -82,7 +86,6 @@ function replyRateColor(rate: number) {
       </h1>
     </div>
 
-
     <!-- Overview Cards -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
       <div class="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-5">
@@ -97,7 +100,9 @@ function replyRateColor(rate: number) {
         >
           {{ overview?.replyRate ?? "—" }}<span class="text-xl">%</span>
         </p>
-        <p class="text-[11px] text-slate-600 mt-1">{{ $t("analytics.reply_rate_desc") }}</p>
+        <p class="text-[11px] text-slate-600 mt-1">
+          {{ $t("analytics.reply_rate_desc") }}
+        </p>
       </div>
       <div class="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-5">
         <p
@@ -108,7 +113,9 @@ function replyRateColor(rate: number) {
         <p class="text-4xl font-black text-white">
           {{ overview?.totalCommentsLast30Days ?? "—" }}
         </p>
-        <p class="text-[11px] text-slate-600 mt-1">{{ $t("analytics.last_30_days_desc") }}</p>
+        <p class="text-[11px] text-slate-600 mt-1">
+          {{ $t("analytics.last_30_days_desc") }}
+        </p>
       </div>
       <div class="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-5">
         <p
@@ -120,7 +127,9 @@ function replyRateColor(rate: number) {
           {{ overview?.returnCommenterRate ?? "—"
           }}<span class="text-xl">%</span>
         </p>
-        <p class="text-[11px] text-slate-600 mt-1">{{ $t("analytics.return_rate_desc") }}</p>
+        <p class="text-[11px] text-slate-600 mt-1">
+          {{ $t("analytics.return_rate_desc") }}
+        </p>
       </div>
       <div class="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-5">
         <p
@@ -131,22 +140,28 @@ function replyRateColor(rate: number) {
         <div class="flex flex-col gap-1 mt-2">
           <div class="flex justify-between items-center text-sm font-black">
             <span class="text-emerald-400">Positivo</span>
-            <span class="text-white">{{ overview?.sentiment.positive ?? 0 }}%</span>
+            <span class="text-white"
+              >{{ overview?.sentiment.positive ?? 0 }}%</span
+            >
           </div>
           <div class="flex justify-between items-center text-sm font-black">
             <span class="text-blue-400">Dudas/Preguntas</span>
-            <span class="text-white">{{ overview?.sentiment.curious ?? 0 }}%</span>
+            <span class="text-white"
+              >{{ overview?.sentiment.curious ?? 0 }}%</span
+            >
           </div>
           <div class="flex justify-between items-center text-sm font-black">
             <span class="text-red-400">Críticas</span>
-            <span class="text-white">{{ overview?.sentiment.negative ?? 0 }}%</span>
+            <span class="text-white"
+              >{{ overview?.sentiment.negative ?? 0 }}%</span
+            >
           </div>
         </div>
-        <p class="text-[11px] text-slate-600 mt-2">{{ $t("analytics.sentiment_desc") }}</p>
+        <p class="text-[11px] text-slate-600 mt-2">
+          {{ $t("analytics.sentiment_desc") }}
+        </p>
       </div>
-
     </div>
-
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
       <!-- Sentiment Trend -->
@@ -161,19 +176,24 @@ function replyRateColor(rate: number) {
           <div class="flex gap-4">
             <div class="flex items-center gap-1.5">
               <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
-              <span class="text-[11px] font-black text-slate-500 uppercase">{{ $t("analytics.pos") }}</span>
+              <span class="text-[11px] font-black text-slate-500 uppercase">{{
+                $t("analytics.pos")
+              }}</span>
             </div>
             <div class="flex items-center gap-1.5">
               <div class="w-2 h-2 rounded-full bg-slate-500"></div>
-              <span class="text-[11px] font-black text-slate-500 uppercase">{{ $t("analytics.neu") }}</span>
+              <span class="text-[11px] font-black text-slate-500 uppercase">{{
+                $t("analytics.neu")
+              }}</span>
             </div>
             <div class="flex items-center gap-1.5">
               <div class="w-2 h-2 rounded-full bg-red-400"></div>
-              <span class="text-[11px] font-black text-slate-500 uppercase">{{ $t("analytics.neg") }}</span>
+              <span class="text-[11px] font-black text-slate-500 uppercase">{{
+                $t("analytics.neg")
+              }}</span>
             </div>
           </div>
         </div>
-
 
         <div v-if="sentiment?.length" class="space-y-5">
           <div
@@ -183,35 +203,49 @@ function replyRateColor(rate: number) {
           >
             <div class="flex items-center justify-between">
               <span class="text-xs font-black text-slate-400">
-                {{ $t("analytics.week_of", { d: new Date(week.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) }) }}
+                {{
+                  $t("analytics.week_of", {
+                    d: new Date(week.date).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                    }),
+                  })
+                }}
               </span>
               <span class="text-xs font-bold text-slate-600">
                 {{ $t("analytics.comments_count", { n: week.total }) }}
               </span>
             </div>
 
-            
-            <div class="w-full h-6 rounded-lg overflow-hidden flex bg-white/[0.02] border border-white/[0.05]">
+            <div
+              class="w-full h-6 rounded-lg overflow-hidden flex bg-white/[0.02] border border-white/[0.05]"
+            >
               <div
                 v-if="sentimentBar(week).pos > 0"
                 class="bg-emerald-500/60 h-full transition-all border-r border-black/20 flex items-center justify-center text-xs font-black text-emerald-100"
                 :style="{ width: sentimentBar(week).pos + '%' }"
               >
-                <span v-if="sentimentBar(week).pos > 15">{{ sentimentBar(week).pos }}%</span>
+                <span v-if="sentimentBar(week).pos > 15"
+                  >{{ sentimentBar(week).pos }}%</span
+                >
               </div>
               <div
                 v-if="sentimentBar(week).cur > 0"
                 class="bg-blue-500/50 h-full transition-all border-r border-black/20 flex items-center justify-center text-xs font-black text-blue-100"
                 :style="{ width: sentimentBar(week).cur + '%' }"
               >
-                <span v-if="sentimentBar(week).cur > 15">{{ sentimentBar(week).cur }}%</span>
+                <span v-if="sentimentBar(week).cur > 15"
+                  >{{ sentimentBar(week).cur }}%</span
+                >
               </div>
               <div
                 v-if="sentimentBar(week).neu > 0"
                 class="bg-slate-500/20 h-full transition-all border-r border-black/20 flex items-center justify-center text-xs font-black text-slate-400"
                 :style="{ width: sentimentBar(week).neu + '%' }"
               >
-                <span v-if="sentimentBar(week).neu > 15">{{ sentimentBar(week).neu }}%</span>
+                <span v-if="sentimentBar(week).neu > 15"
+                  >{{ sentimentBar(week).neu }}%</span
+                >
               </div>
 
               <div
@@ -219,18 +253,17 @@ function replyRateColor(rate: number) {
                 class="bg-red-500/50 h-full transition-all flex items-center justify-center text-xs font-black text-red-100"
                 :style="{ width: sentimentBar(week).neg + '%' }"
               >
-                <span v-if="sentimentBar(week).neg > 15">{{ sentimentBar(week).neg }}%</span>
+                <span v-if="sentimentBar(week).neg > 15"
+                  >{{ sentimentBar(week).neg }}%</span
+                >
               </div>
-
             </div>
           </div>
         </div>
         <div v-else class="py-12 text-center text-slate-600 text-sm">
           {{ $t("analytics.no_trend") }}
         </div>
-
       </div>
-
 
       <!-- Language Distribution -->
       <div class="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-5">
@@ -253,7 +286,6 @@ function replyRateColor(rate: number) {
             <div
               class="flex-1 h-2.5 rounded-full bg-white/[0.05] overflow-hidden"
             >
-
               <div
                 class="h-full rounded-full bg-indigo-500/60"
                 :style="{
@@ -275,7 +307,6 @@ function replyRateColor(rate: number) {
         <div v-else class="py-8 text-center text-slate-600 text-sm">
           {{ $t("analytics.no_languages") }}
         </div>
-
       </div>
     </div>
 
@@ -305,7 +336,7 @@ function replyRateColor(rate: number) {
           :title="t.exampleComments[0]"
         >
           <span class="text-xs font-bold text-slate-300">{{ t.topic }}</span>
-          <span class="text-[10px] font-black text-indigo-400"
+          <span class="text-[12px] font-black text-indigo-400"
             >×{{ t.count }}</span
           >
           <span
@@ -321,7 +352,6 @@ function replyRateColor(rate: number) {
       <div v-else class="py-6 text-center text-slate-600 text-sm">
         {{ $t("analytics.no_topics") }}
       </div>
-
     </div>
 
     <!-- Superfan Leaderboard -->
@@ -335,7 +365,6 @@ function replyRateColor(rate: number) {
       <h2 class="text-2xl font-black text-white tracking-tight mb-6">
         {{ $t("analytics.superfans_title") }}
       </h2>
-
 
       <div
         v-if="audience?.superfans?.length"
@@ -353,28 +382,36 @@ function replyRateColor(rate: number) {
             #{{ idx + 1 }}
           </div>
 
-
-          <!-- Avatar -->
-          <UAvatar
-            :src="fan.authorProfileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(fan.authorName || 'User')}&background=6366f1&color=fff`"
-            size="xl"
-            class="mb-4 ring-1 ring-white/10 group-hover:scale-110 transition-transform duration-500"
-            :alt="fan.authorName"
-            :img-attributes="{ referrerpolicy: 'no-referrer' }"
-          />
-
-          <!-- Name & Link -->
+          <!-- Avatar & Name Link -->
           <a
             :href="`https://www.youtube.com/channel/${fan.authorChannelId}`"
             target="_blank"
-            class="text-sm font-bold text-white hover:text-violet-400 transition-colors mb-1 line-clamp-1 w-full"
+            rel="noreferrer"
+            class="flex flex-col items-center group/fan"
           >
-            {{ fan.authorName }}
+            <UAvatar
+              :src="
+                fan.authorProfileImageUrl ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(fan.authorName || 'User')}&background=6366f1&color=fff`
+              "
+              size="xl"
+              class="mb-4 ring-1 ring-white/10 group-hover:scale-110 group-hover:ring-violet-500/50 transition-all duration-500"
+              :alt="fan.authorName"
+              :img-attributes="{
+                referrerpolicy: 'no-referrer',
+                crossorigin: 'anonymous',
+              }"
+            />
+
+            <span
+              class="text-sm font-bold text-white group-hover/fan:text-violet-400 transition-colors mb-1 line-clamp-1 w-full"
+            >
+              {{ fan.authorName }}
+            </span>
           </a>
           <p class="text-[11px] text-slate-600 mb-4">
             {{ $t("comment_detail.analyzed_threads", { n: fan.commentCount }) }}
           </p>
-
 
           <!-- Stats -->
           <div
@@ -401,7 +438,6 @@ function replyRateColor(rate: number) {
               </p>
             </div>
           </div>
-
         </div>
       </div>
       <div
@@ -411,7 +447,6 @@ function replyRateColor(rate: number) {
         <UIcon name="i-heroicons-user" class="w-8 h-8 text-slate-700 mb-2" />
         <p class="text-slate-600 text-sm">{{ $t("analytics.no_superfans") }}</p>
       </div>
-
     </div>
 
     <!-- Video Performance -->
@@ -436,7 +471,6 @@ function replyRateColor(rate: number) {
         </NuxtLink>
       </div>
 
-
       <div
         v-if="lastVideos.length"
         class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
@@ -447,8 +481,8 @@ function replyRateColor(rate: number) {
           class="group relative flex flex-col bg-white/[0.03] border border-white/[0.07] rounded-2xl overflow-hidden hover:bg-white/[0.05] hover:border-indigo-500/30 transition-all duration-300"
         >
           <!-- Thumbnail Container (Links to YouTube) -->
-          <a 
-            :href="`https://youtube.com/watch?v=${v.videoId}`" 
+          <a
+            :href="`https://youtube.com/watch?v=${v.videoId}`"
             target="_blank"
             class="relative aspect-video overflow-hidden block"
           >
@@ -456,6 +490,7 @@ function replyRateColor(rate: number) {
               v-if="v.thumbnailUrl"
               :src="v.thumbnailUrl"
               class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+              referrerpolicy="no-referrer"
             />
             <div
               class="absolute inset-0 bg-slate-900 flex items-center justify-center"
@@ -465,24 +500,38 @@ function replyRateColor(rate: number) {
             </div>
 
             <!-- YouTube Play Overlay (Shows on hover) -->
-            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <div class="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center text-white shadow-xl scale-90 group-hover:scale-100 transition-transform">
+            <div
+              class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+            >
+              <div
+                class="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center text-white shadow-xl scale-90 group-hover:scale-100 transition-transform"
+              >
                 <UIcon name="i-heroicons-play-solid" class="w-6 h-6" />
               </div>
             </div>
-
 
             <!-- Overlay Stats (Views/Likes) -->
             <div
               class="absolute bottom-2 left-2 right-2 flex items-center justify-between"
             >
               <div class="flex gap-1.5 sm:gap-2">
-                <div class="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-black/80 text-[11px] sm:text-[13px] font-black text-white backdrop-blur-md border border-white/10 flex items-center gap-1.5 sm:gap-2 shadow-xl">
-                  <UIcon name="i-heroicons-eye" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" />
+                <div
+                  class="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-black/80 text-[11px] sm:text-[13px] font-black text-white backdrop-blur-md border border-white/10 flex items-center gap-1.5 sm:gap-2 shadow-xl"
+                >
+                  <UIcon
+                    name="i-heroicons-eye"
+                    class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400"
+                  />
                   {{ v.viewCount?.toLocaleString() || 0 }}
                 </div>
-                <div v-if="v.likeCount" class="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-black/80 text-[11px] sm:text-[13px] font-black text-white backdrop-blur-md border border-white/10 flex items-center gap-1.5 sm:gap-2 shadow-xl">
-                  <UIcon name="i-heroicons-hand-thumb-up" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-400" />
+                <div
+                  v-if="v.likeCount"
+                  class="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-black/80 text-[11px] sm:text-[13px] font-black text-white backdrop-blur-md border border-white/10 flex items-center gap-1.5 sm:gap-2 shadow-xl"
+                >
+                  <UIcon
+                    name="i-heroicons-hand-thumb-up"
+                    class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-400"
+                  />
                   {{ v.likeCount?.toLocaleString() }}
                 </div>
               </div>
@@ -493,7 +542,6 @@ function replyRateColor(rate: number) {
                 {{ v.totalComments }}
               </div>
             </div>
-
           </a>
 
           <!-- Content -->
@@ -509,27 +557,25 @@ function replyRateColor(rate: number) {
                 <NuxtLink
                   v-if="v.pendingCount > 0"
                   :to="`/comments?videoId=${v.videoId}&status=pending`"
-                  class="px-2 py-1 rounded-md bg-amber-400/10 text-[10px] font-black text-amber-400 border border-amber-400/20 hover:bg-amber-400/20 transition-colors"
+                  class="px-2 py-1 rounded-md bg-amber-400/10 text-[12px] font-black text-amber-400 border border-amber-400/20 hover:bg-amber-400/20 transition-colors"
                 >
                   {{ v.pendingCount }} {{ $t("analytics.pending_label") }}
                 </NuxtLink>
                 <NuxtLink
                   v-if="v.negativeCount > 0"
                   :to="`/comments?videoId=${v.videoId}&intent=complaint`"
-                  class="px-2 py-1 rounded-md bg-red-400/10 text-[10px] font-black text-red-400 border border-red-400/20 hover:bg-red-400/20 transition-colors"
+                  class="px-2 py-1 rounded-md bg-red-400/10 text-[12px] font-black text-red-400 border border-red-400/20 hover:bg-red-400/20 transition-colors"
                 >
                   {{ v.negativeCount }} {{ $t("analytics.complaints_label") }}
                 </NuxtLink>
                 <NuxtLink
                   v-if="v.questionCount > 0"
                   :to="`/comments?videoId=${v.videoId}&intent=question`"
-                  class="px-2 py-1 rounded-md bg-blue-400/10 text-[10px] font-black text-blue-400 border border-blue-400/20 hover:bg-blue-400/20 transition-colors"
+                  class="px-2 py-1 rounded-md bg-blue-400/10 text-[12px] font-black text-blue-400 border border-blue-400/20 hover:bg-blue-400/20 transition-colors"
                 >
                   {{ v.questionCount }} {{ $t("analytics.questions_label") }}
                 </NuxtLink>
               </div>
-
-
 
               <!-- Internal Review Button -->
               <NuxtLink
@@ -538,12 +584,10 @@ function replyRateColor(rate: number) {
               >
                 {{ $t("analytics.manage_comments") }}
               </NuxtLink>
-
             </div>
           </div>
         </div>
       </div>
-
 
       <div
         v-else
@@ -555,7 +599,6 @@ function replyRateColor(rate: number) {
         />
         <p class="text-slate-600 text-sm">{{ $t("analytics.no_videos") }}</p>
       </div>
-
     </div>
   </div>
 </template>

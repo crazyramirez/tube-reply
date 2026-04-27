@@ -5,6 +5,12 @@ definePageMeta({ middleware: "auth" });
 
 const { t } = useI18n();
 
+useHead({
+  meta: [
+    { name: 'referrer', content: 'no-referrer' }
+  ]
+});
+
 const { data: stats, refresh } = await useFetch<DashboardStats>(
   "/api/dashboard/stats",
 );
@@ -319,6 +325,7 @@ const statCards = computed(() => [
             :alt="comment.videoTitle ?? ''"
             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
             loading="lazy"
+            referrerpolicy="no-referrer"
           />
           <div v-else class="w-full h-full flex items-center justify-center">
             <UIcon
@@ -352,13 +359,39 @@ const statCards = computed(() => [
 
         <!-- Content -->
         <div class="p-3 sm:p-5 flex flex-col flex-1 gap-2 sm:gap-4">
-          <div class="flex items-center gap-2 sm:gap-3">
+          <a
+            v-if="comment.authorChannelId"
+            :href="`https://www.youtube.com/channel/${comment.authorChannelId}`"
+            target="_blank"
+            rel="noreferrer"
+            class="flex items-center gap-2 sm:gap-3 group/author"
+            @click.stop
+          >
+            <UAvatar
+              :src="comment.authorProfileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.authorName || 'User')}&background=6366f1&color=fff`"
+              size="sm"
+              class="ring-1 ring-white/10 group-hover/author:ring-indigo-500/50 transition-all"
+              :alt="comment.authorName"
+              :img-attributes="{ referrerpolicy: 'no-referrer', crossorigin: 'anonymous' }"
+            />
+            <div class="flex flex-col min-w-0">
+              <span
+                class="font-bold text-[10px] sm:text-sm text-white truncate group-hover/author:text-indigo-400 transition-colors"
+                >{{ comment.authorName }}</span
+              >
+              <span
+                class="mt-0.5 text-[8px] sm:text-[12px] text-slate-500 font-medium"
+                >{{ timeAgo(comment.publishedAt) }}</span
+              >
+            </div>
+          </a>
+          <div v-else class="flex items-center gap-2 sm:gap-3">
             <UAvatar
               :src="comment.authorProfileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.authorName || 'User')}&background=6366f1&color=fff`"
               size="sm"
               class="ring-1 ring-white/10"
               :alt="comment.authorName"
-              :img-attributes="{ referrerpolicy: 'no-referrer' }"
+              :img-attributes="{ referrerpolicy: 'no-referrer', crossorigin: 'anonymous' }"
             />
             <div class="flex flex-col min-w-0">
               <span

@@ -100,5 +100,6 @@ export default defineEventHandler(async (event) => {
     })),
     publishedReply: published[published.length - 1] ?? null,
     ownerThumbnail,
+    ownerChannelId,
   }
 })

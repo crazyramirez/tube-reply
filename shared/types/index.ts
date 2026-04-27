@@ -328,4 +328,5 @@ export interface CommentDetailResponse {
   suggestions: SuggestedReply[]
   publishedReply: any | null
   ownerThumbnail?: string | null
+  ownerChannelId?: string | null
 }

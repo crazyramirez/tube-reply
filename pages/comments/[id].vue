@@ -12,6 +12,10 @@ const router = useRouter();
 const id = route.params.id as string;
 const { t, locale } = useI18n();
 
+useHead({
+  meta: [{ name: "referrer", content: "no-referrer" }],
+});
+
 const languageNames: Record<string, string> = {
   en: "English",
   es: "Spanish",
@@ -416,13 +420,25 @@ const confidence = computed(() => activeSuggestion.value?.confidenceScore ?? 0);
 const confidenceLabel = computed(
   () => `${Math.round(confidence.value * 100)}%`,
 );
+const statusColor = (s: string) => {
+  switch (s) {
+    case "pending":
+      return "yellow";
+    case "suggested":
+      return "orange";
+    case "dismissed":
+      return "red";
+    case "published":
+      return "green";
+    case "skipped":
+      return "blue";
+    default:
+      return "gray";
+  }
+};
+
 const confidenceColor = computed(() => {
-  if (selectedStatus.value === "published") return "green";
-  return confidence.value >= 0.7
-    ? "green"
-    : confidence.value >= 0.4
-      ? "yellow"
-      : "red";
+  return statusColor(selectedStatus.value);
 });
 const confidenceBarClass = computed(() =>
   confidence.value >= 0.7
@@ -711,7 +727,7 @@ async function confirmUnban() {
         </button>
         <div class="flex flex-col min-w-0">
           <div
-            class="flex items-center gap-2 text-[10px] font-bold text-indigo-400 uppercase tracking-[0.3em]"
+            class="flex items-center gap-2 text-[12px] font-bold text-indigo-400 uppercase tracking-[0.3em]"
           >
             <UIcon name="i-heroicons-shield-check" class="w-3 h-3 shrink-0" />
             <span class="truncate">{{
@@ -820,6 +836,8 @@ async function confirmUnban() {
                   <img
                     :src="highResThumbnail(data.video.thumbnailUrl)"
                     class="w-full h-full object-cover opacity-60 group-hover/video:opacity-100 transition-opacity"
+                    referrerpolicy="no-referrer"
+                    crossorigin="anonymous"
                   />
                   <div
                     class="absolute inset-0 flex items-center justify-center"
@@ -832,7 +850,7 @@ async function confirmUnban() {
                 </div>
                 <div class="min-w-0">
                   <p
-                    class="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1"
+                    class="text-[12px] font-black text-indigo-400 uppercase tracking-widest mb-1"
                   >
                     {{ $t("comment_detail.source_video") }}
                   </p>
@@ -848,18 +866,44 @@ async function confirmUnban() {
             <!-- Original Comment (The Start) -->
             <div class="flex flex-col gap-2 items-start">
               <div class="flex items-center gap-2 ml-1 flex-wrap">
-                <UAvatar
-                  :src="
-                    data.comment.authorProfileImageUrl ||
-                    `https://ui-avatars.com/api/?name=${encodeURIComponent(data.comment.authorName)}&background=6366f1&color=fff`
-                  "
-                  size="xs"
-                  class="ring-1 ring-white/10"
-                  :img-attributes="{ referrerpolicy: 'no-referrer' }"
-                />
-                <span class="text-[10px] font-bold text-slate-400">{{
-                  data.comment.authorName
-                }}</span>
+                <a
+                  v-if="data.comment.authorChannelId"
+                  :href="`https://www.youtube.com/channel/${data.comment.authorChannelId}`"
+                  target="_blank"
+                  rel="noreferrer"
+                  class="flex items-center gap-2 group/author"
+                >
+                  <UAvatar
+                    :src="
+                      data.comment.authorProfileImageUrl ||
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(data.comment.authorName)}&background=6366f1&color=fff`
+                    "
+                    size="sm"
+                    class="ring-1 ring-white/10 group-hover/author:ring-indigo-500/50 transition-all"
+                    :img-attributes="{
+                      referrerpolicy: 'no-referrer',
+                      crossorigin: 'anonymous',
+                    }"
+                  />
+                  <span
+                    class="text-[12px] font-bold text-slate-400 group-hover/author:text-indigo-400 transition-colors"
+                    >{{ data.comment.authorName }}</span
+                  >
+                </a>
+                <template v-else>
+                  <UAvatar
+                    :src="
+                      data.comment.authorProfileImageUrl ||
+                      `https://ui-avatars.com/api/?name=${encodeURIComponent(data.comment.authorName)}&background=6366f1&color=fff`
+                    "
+                    size="sm"
+                    class="ring-1 ring-white/10"
+                    :img-attributes="{ referrerpolicy: 'no-referrer' }"
+                  />
+                  <span class="text-[12px] font-bold text-slate-400">{{
+                    data.comment.authorName
+                  }}</span>
+                </template>
                 <span class="text-[9px] text-slate-600 uppercase">{{
                   timeAgo(data.comment.publishedAt)
                 }}</span>
@@ -900,38 +944,77 @@ async function confirmUnban() {
                   class="flex items-center gap-2 mx-1"
                   :class="reply.isOwner ? 'flex-row-reverse' : 'flex-row'"
                 >
-                  <div
-                    v-if="reply.isOwner"
-                    class="w-6 h-6 rounded-full overflow-hidden bg-white/5 flex-shrink-0 ring-1 ring-white/10 shadow-lg"
-                  >
-                    <img
-                      :src="
-                        data.ownerThumbnail || '/img/placeholder-avatar.png'
-                      "
-                      class="w-full h-full object-cover"
-                      alt="Owner"
-                      referrerpolicy="no-referrer"
-                    />
-                  </div>
-                  <UAvatar
-                    v-else
-                    :src="reply.authorProfileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(reply.authorName)}&background=475569&color=fff`"
-                    size="xs"
-                    :ui="{ rounded: 'rounded-lg' }"
-                    :img-attributes="{ referrerpolicy: 'no-referrer' }"
-                  />
-                  <span
-                    class="text-[10px] font-bold"
-                    :class="
-                      reply.isOwner ? 'text-emerald-400' : 'text-slate-400'
-                    "
-                  >
-                    {{
+                  <a
+                    v-if="
                       reply.isOwner
-                        ? $t("comment_detail.you")
-                        : reply.authorName
-                    }}
-                  </span>
+                        ? data.ownerChannelId
+                        : reply.authorChannelId
+                    "
+                    :href="`https://www.youtube.com/channel/${reply.isOwner ? data.ownerChannelId : reply.authorChannelId}`"
+                    target="_blank"
+                    rel="noreferrer"
+                    class="flex items-center gap-2 group/reply-author"
+                  >
+                    <UAvatar
+                      :src="
+                        reply.isOwner
+                          ? data.ownerThumbnail || '/img/placeholder-avatar.png'
+                          : reply.authorProfileImageUrl ||
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(reply.authorName)}&background=475569&color=fff`
+                      "
+                      size="sm"
+                      :ui="{ rounded: 'rounded-full' }"
+                      class="ring-1 ring-white/10 group-hover/reply-author:ring-indigo-500/50 transition-all shadow-lg"
+                      :alt="reply.isOwner ? 'You' : reply.authorName"
+                      :img-attributes="{
+                        referrerpolicy: 'no-referrer',
+                        crossorigin: 'anonymous',
+                      }"
+                    />
+                    <span
+                      class="text-[12px] font-bold group-hover/reply-author:text-indigo-400 transition-colors"
+                      :class="
+                        reply.isOwner ? 'text-emerald-400' : 'text-slate-400'
+                      "
+                    >
+                      {{
+                        reply.isOwner
+                          ? $t("comment_detail.you")
+                          : reply.authorName
+                      }}
+                    </span>
+                  </a>
+
+                  <template v-else>
+                    <UAvatar
+                      :src="
+                        reply.isOwner
+                          ? data.ownerThumbnail || '/img/placeholder-avatar.png'
+                          : reply.authorProfileImageUrl ||
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(reply.authorName)}&background=475569&color=fff`
+                      "
+                      size="sm"
+                      :ui="{ rounded: 'rounded-lg' }"
+                      class="ring-1 ring-white/10"
+                      :alt="reply.isOwner ? 'You' : reply.authorName"
+                      :img-attributes="{
+                        referrerpolicy: 'no-referrer',
+                        crossorigin: 'anonymous',
+                      }"
+                    />
+                    <span
+                      class="text-[12px] font-bold"
+                      :class="
+                        reply.isOwner ? 'text-emerald-400' : 'text-slate-400'
+                      "
+                    >
+                      {{
+                        reply.isOwner
+                          ? $t("comment_detail.you")
+                          : reply.authorName
+                      }}
+                    </span>
+                  </template>
                   <span class="text-[9px] text-slate-600 uppercase">{{
                     timeAgo(reply.publishedAt)
                   }}</span>
@@ -967,7 +1050,7 @@ async function confirmUnban() {
             </button>
             <div v-else class="text-center py-2">
               <span
-                class="text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]"
+                class="text-[12px] font-black text-slate-600 uppercase tracking-[0.3em]"
                 >{{ $t("comment_detail.active_session") }}</span
               >
             </div>
@@ -993,7 +1076,7 @@ async function confirmUnban() {
           </button>
           <button
             v-else
-            class="px-4 py-2 rounded-xl border border-emerald-500/10 bg-emerald-500/5 text-emerald-500/60 hover:text-emerald-500 hover:bg-emerald-500/10 text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 cursor-pointer"
+            class="px-4 py-2 rounded-xl border border-emerald-500/10 bg-emerald-500/5 text-emerald-500/60 hover:text-emerald-500 hover:bg-emerald-500/10 text-[12px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 cursor-pointer"
             @click="showUnbanModal = true"
           >
             <UIcon name="i-heroicons-check-circle" class="w-3.5 h-3.5" />
@@ -1035,13 +1118,13 @@ async function confirmUnban() {
                 class="w-4 h-4 text-violet-400"
               />
               <span
-                class="text-[10px] font-black text-violet-400 uppercase tracking-[0.2em]"
+                class="text-[12px] font-black text-violet-400 uppercase tracking-[0.2em]"
               >
                 {{ $t("comment_detail.commenter_history") }}
               </span>
             </div>
             <div
-              class="flex items-center gap-3 text-[10px] font-bold text-slate-500"
+              class="flex items-center gap-3 text-[12px] font-bold text-slate-500"
             >
               <span class="flex items-center gap-1">
                 <UIcon name="i-heroicons-chat-bubble-left" class="w-3 h-3" />
@@ -1065,13 +1148,7 @@ async function confirmUnban() {
               class="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] hover:border-white/[0.09] transition-all group"
             >
               <UBadge
-                :color="
-                  item.status === 'published'
-                    ? 'green'
-                    : item.status === 'suggested'
-                      ? 'blue'
-                      : 'gray'
-                "
+                :color="statusColor(item.status)"
                 variant="soft"
                 size="xs"
                 class="rounded mt-0.5 shrink-0 text-[8px] font-black"
@@ -1102,7 +1179,7 @@ async function confirmUnban() {
           <div class="grid grid-cols-2 gap-6">
             <div class="space-y-2">
               <label
-                class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1"
+                class="text-[12px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1"
                 >{{ $t("comment_detail.current_state") }}</label
               >
               <USelect
@@ -1117,7 +1194,7 @@ async function confirmUnban() {
             </div>
             <div class="space-y-2">
               <label
-                class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1"
+                class="text-[12px] font-black text-slate-500 uppercase tracking-[0.2em] ml-1"
                 >{{ $t("comment_detail.reply_language") }}</label
               >
               <USelect
@@ -1185,7 +1262,7 @@ async function confirmUnban() {
                 ></textarea>
 
                 <div
-                  class="absolute bottom-4 left-6 flex items-center gap-4 text-[10px] font-bold text-slate-600 uppercase tracking-widest"
+                  class="absolute bottom-4 left-6 flex items-center gap-4 text-[12px] font-bold text-slate-600 uppercase tracking-widest"
                 >
                   {{ editedText?.length || 0 }}
                   {{ $t("comment_detail.characters") }}
@@ -1235,13 +1312,13 @@ async function confirmUnban() {
                         class="w-4 h-4 text-indigo-400"
                       />
                       <span
-                        class="font-black text-[10px] text-slate-500 uppercase tracking-widest"
+                        class="font-black text-[12px] text-slate-500 uppercase tracking-widest"
                         >{{ $t("comment_detail.ai_assistance") }}</span
                       >
                     </div>
                     <button
                       v-if="!showAiInstructions"
-                      class="group flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-widest"
+                      class="group flex items-center gap-1 text-[12px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-widest"
                       @click="showAiInstructions = true"
                     >
                       <UIcon
@@ -1264,7 +1341,7 @@ async function confirmUnban() {
                     ></textarea>
                     <div class="flex justify-end gap-3">
                       <button
-                        class="px-4 py-2 text-[10px] font-bold text-slate-500 hover:text-slate-300 transition-colors uppercase tracking-widest"
+                        class="px-4 py-2 text-[12px] font-bold text-slate-500 hover:text-slate-300 transition-colors uppercase tracking-widest"
                         @click="showAiInstructions = false"
                       >
                         {{ $t("comment_detail.cancel") }}
@@ -1289,7 +1366,7 @@ async function confirmUnban() {
                       variant="ghost"
                       size="sm"
                       block
-                      class="opacity-40 hover:opacity-100 transition-opacity font-black uppercase tracking-[0.3em] text-[10px] py-4"
+                      class="opacity-40 hover:opacity-100 transition-opacity font-black uppercase tracking-[0.3em] text-[12px] py-4"
                       :loading="generating"
                       icon="i-heroicons-sparkles"
                       @click="generateSuggestion"
@@ -1344,11 +1421,12 @@ async function confirmUnban() {
                 <img
                   :src="highResThumbnail(link.thumbnail_url)"
                   class="w-16 aspect-video object-cover rounded shadow-lg"
+                  referrerpolicy="no-referrer"
                 />
                 <a
                   :href="link.url"
                   target="_blank"
-                  class="text-[10px] font-bold text-slate-300 hover:text-indigo-400 line-clamp-1 transition-colors"
+                  class="text-[12px] font-bold text-slate-300 hover:text-indigo-400 line-clamp-1 transition-colors"
                   >{{ link.video_title }}</a
                 >
               </div>
@@ -1460,7 +1538,7 @@ async function confirmUnban() {
           </div>
           <div class="flex flex-col">
             <span
-              class="text-[10px] font-bold text-emerald-500 uppercase tracking-widest"
+              class="text-[12px] font-bold text-emerald-500 uppercase tracking-widest"
               >{{ $t("comment_detail.final_confirmation") }}</span
             >
             <h2 class="font-black text-xl text-white tracking-tight">
