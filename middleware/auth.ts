@@ -7,6 +7,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // If we already know we're authenticated in the local state, proceed instantly.
   if (!authenticated.value) {
     const isOk = await checkSession()
-    if (!isOk) return navigateTo('/login')
+    if (!isOk) return navigateTo('/login', { replace: true })
   }
 })

@@ -81,3 +81,6 @@ export async function getUserLanguage(): Promise<string> {
   const code = await getSetting('language', 'es')
   return LANGUAGE_MAP[code] || "Spanish"
 }
+export async function getUserLanguageCode(): Promise<string> {
+  return await getSetting('language', 'es')
+}

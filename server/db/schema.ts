@@ -71,6 +71,8 @@ export const comments = sqliteTable('comments', {
   isReturnCommenter: integer('is_return_commenter', { mode: 'boolean' }).default(false),
   opportunityFlags: text('opportunity_flags'), // JSON array: ['collab', 'sponsor', etc.]
   detectedIntent: text('detected_intent'), // cached intent from scorer
+  translatedText: text('translated_text'), // cached translation in user's language
+  translationLang: text('translation_lang'), // the language code of the cached translation
 }, (t) => ({
   videoIdx: index('comments_video_idx').on(t.videoId),
   statusIdx: index('comments_status_idx').on(t.status),

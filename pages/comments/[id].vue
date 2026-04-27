@@ -13,6 +13,17 @@ const router = useRouter();
 const id = route.params.id as string;
 const { t, locale } = useI18n();
 
+function handleBack() {
+  const backState = window.history.state?.back;
+  // If we have history and it's not the login page, go back natively
+  if (backState && !backState.includes('/login') && backState !== '/') {
+    router.back();
+  } else {
+    // Default safe fallback
+    router.push('/comments');
+  }
+}
+
 useHead({
   meta: [{ name: "referrer", content: "no-referrer" }],
 });
@@ -760,7 +771,7 @@ async function confirmUnban() {
     <div class="flex items-center justify-between mb-6 sm:mb-8 animate-fade-in">
       <div class="flex items-center gap-3 sm:gap-4">
         <button
-          @click="router.back()"
+          @click="handleBack"
           class="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all duration-300 group cursor-pointer shrink-0"
         >
           <UIcon
@@ -983,8 +994,20 @@ async function confirmUnban() {
               </div>
               <div
                 class="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl rounded-tl-none p-4 text-sm text-slate-200 leading-relaxed shadow-sm max-w-[85%]"
-                v-html="renderCommentHtml(data.comment.text)"
-              />
+              >
+                <div v-html="renderCommentHtml(data.comment.text)"></div>
+                
+                <!-- Translation -->
+                <div v-if="data.comment.translatedText" class="mt-3 pt-3 border-t border-white/5 opacity-80">
+                  <div class="flex items-center gap-1.5 mb-1.5">
+                    <UIcon name="i-heroicons-language" class="w-3 h-3 text-indigo-400" />
+                    <span class="text-[9px] font-black uppercase tracking-widest text-indigo-400">TRADUCCIÓN</span>
+                  </div>
+                  <p class="text-xs italic text-slate-300 leading-relaxed">
+                    {{ data.comment.translatedText }}
+                  </p>
+                </div>
+              </div>
             </div>
 
             <!-- Replies (The Thread) -->
@@ -1087,8 +1110,20 @@ async function confirmUnban() {
                       ? 'bg-emerald-500/10 border border-emerald-500/20 rounded-2xl rounded-tr-none text-emerald-50'
                       : 'bg-white/[0.04] border border-white/[0.08] rounded-2xl rounded-tl-none text-slate-200'
                   "
-                  v-html="renderCommentHtml(reply.text)"
-                />
+                >
+                  <div v-html="renderCommentHtml(reply.text)"></div>
+                  
+                  <!-- Translation for replies -->
+                  <div v-if="reply.translatedText" class="mt-3 pt-3 border-t border-white/5 opacity-80">
+                    <div class="flex items-center gap-1.5 mb-1.5">
+                      <UIcon name="i-heroicons-language" class="w-3 h-3 text-indigo-400" />
+                      <span class="text-[9px] font-black uppercase tracking-widest text-indigo-400">TRADUCCIÓN</span>
+                    </div>
+                    <p class="text-xs italic text-slate-300 leading-relaxed">
+                      {{ reply.translatedText }}
+                    </p>
+                  </div>
+                </div>
               </div>
             </template>
           </div>

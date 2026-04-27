@@ -7,6 +7,7 @@ const loading = ref(false);
 
 const { login } = useAuth();
 const { t } = useI18n();
+
 const { data: brand } = await useFetch<{
   logoUrl: string;
   name: string | null;

@@ -1,7 +1,6 @@
-import { getAiProvider, getUserLanguage } from '../../utils/settings'
+import { getUserLanguage } from '../../utils/settings'
 import { logger } from '../../utils/logger'
-import * as gemini from '../../utils/gemini'
-import * as openai from '../../utils/openai'
+import { translateText } from '../../utils/translate'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
@@ -12,26 +11,13 @@ export default defineEventHandler(async (event) => {
     return { translation: '' }
   }
 
-  try {
-    const provider = await getAiProvider()
-    const prompt = `Translate the following YouTube comment reply to ${targetLang}. 
-Maintain the tone, style, and any technical terms. 
-Return ONLY the translation, no preamble, no explanations.
-
-REPLY TO TRANSLATE:
-"${text}"`
-
-    const aiRes = provider === 'openai'
-      ? await openai.openaiGenerate(prompt)
-      : await gemini.generateWithRetry(prompt)
-    
-    const translation = aiRes.text.trim().replace(/^"|"$/g, '')
-    return { translation }
-  } catch (err) {
-    console.error('[translate-api] Translation failed:', err)
+  const translation = await translateText(text, targetLang)
+  if (!translation) {
     throw createError({
       statusCode: 500,
       statusMessage: 'Translation failed'
     })
   }
+  
+  return { translation }
 })

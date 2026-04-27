@@ -27,6 +27,7 @@ export interface Comment {
   isReturnCommenter: boolean | null
   opportunityFlags: string[] | null
   detectedIntent: string | null
+  translatedText?: string | null
 }
 
 export interface CommentListItem extends Comment {
@@ -306,6 +307,7 @@ export interface CommentReply {
   isOwner?: boolean
   isLocal?: boolean
   detectedLang?: string | null
+  translatedText?: string | null
 }
 
 export interface CommenterHistory {

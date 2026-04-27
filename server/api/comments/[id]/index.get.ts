@@ -1,6 +1,8 @@
 import { eq, and, isNotNull } from 'drizzle-orm'
 import { useDb } from '../../../utils/db'
 import { comments, videos, suggestedReplies, publishedReplies, bannedAuthors, oauthTokens, authors } from '../../../db/schema'
+import { getUserLanguage, getUserLanguageCode } from '../../../utils/settings'
+import { translateText } from '../../../utils/translate'
 
 export default defineEventHandler(async (event) => {
   const db = useDb()
@@ -21,6 +23,8 @@ export default defineEventHandler(async (event) => {
       detectedLang: comments.detectedLang,
       priorityScore: comments.priorityScore,
       priorityLabel: comments.priorityLabel,
+      cachedTranslation: comments.translatedText,
+      cachedTranslationLang: comments.translationLang,
     })
     .from(comments)
     .leftJoin(authors, eq(comments.authorChannelId, authors.channelId))
@@ -28,6 +32,21 @@ export default defineEventHandler(async (event) => {
     .limit(1)
 
   if (!comment) throw createError({ statusCode: 404, statusMessage: 'Comment not found' })
+
+  const userLangCode = await getUserLanguageCode()
+  const userLangName = await getUserLanguage()
+
+  // Translate main comment if needed (with caching)
+  let translatedText = comment.cachedTranslation
+  if (comment.detectedLang && comment.detectedLang !== userLangCode) {
+    if (!translatedText || comment.cachedTranslationLang !== userLangCode) {
+      translatedText = await translateText(comment.text, userLangName)
+      // Cache it
+      await db.update(comments)
+        .set({ translatedText, translationLang: userLangCode })
+        .where(eq(comments.id, id))
+    }
+  }
 
   const video = await db.query.videos.findFirst({
     where: eq(videos.id, comment.videoId),
@@ -52,6 +71,8 @@ export default defineEventHandler(async (event) => {
       text: comments.text,
       publishedAt: comments.publishedAt,
       detectedLang: comments.detectedLang,
+      cachedTranslation: comments.translatedText,
+      cachedTranslationLang: comments.translationLang,
     })
     .from(comments)
     .leftJoin(authors, eq(comments.authorChannelId, authors.channelId))
@@ -83,11 +104,9 @@ export default defineEventHandler(async (event) => {
   // 1. Add YouTube replies
   enrichedReplies.forEach(r => threadMap.set(r.id, r))
 
-  // 2. Add local published replies (will overwrite if same ID, or add if local-only)
+  // 2. Add local published replies
   published.forEach(p => {
     const id = p.youtubeReplyId || `local-${p.id}`
-    // If we already have this ID from YouTube, we keep the YouTube version 
-    // but if it's local only or YouTube version is missing, we add it.
     if (!threadMap.has(p.youtubeReplyId || '')) {
        threadMap.set(id, {
         id,
@@ -103,6 +122,29 @@ export default defineEventHandler(async (event) => {
   const threadReplies = Array.from(threadMap.values())
     .sort((a, b) => new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime())
 
+  // Translate thread replies in parallel (with caching)
+  const threadWithTranslations = await Promise.all(threadReplies.map(async (r) => {
+    if (r.isOwner) return r // Don't translate our own replies
+    if (r.detectedLang && r.detectedLang === userLangCode) return r // Already in user language
+    
+    // Check cache
+    if (r.cachedTranslation && r.cachedTranslationLang === userLangCode) {
+      return { ...r, translatedText: r.cachedTranslation }
+    }
+
+    // If not in cache or wrong lang, translate
+    const translation = await translateText(r.text, userLangName)
+    
+    // Cache it
+    if (translation) {
+      await db.update(comments)
+        .set({ translatedText: translation, translationLang: userLangCode })
+        .where(eq(comments.id, r.id))
+    }
+
+    return { ...r, translatedText: translation }
+  }))
+
   // Check if author is banned
   let isBanned = false
   if (comment.authorChannelId) {
@@ -116,10 +158,11 @@ export default defineEventHandler(async (event) => {
     comment: {
       ...comment,
       isBanned,
+      translatedText,
       status: (hasOwnerReplied && (comment.status === 'suggested' || comment.status === 'skipped')) ? 'published' : comment.status
     },
     video,
-    replies: threadReplies,
+    replies: threadWithTranslations,
     suggestions: suggestions.map(s => ({
       ...s,
       contextUsed: s.contextUsed ? JSON.parse(s.contextUsed) : null,
