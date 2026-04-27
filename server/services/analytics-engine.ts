@@ -257,9 +257,9 @@ export async function getAudienceStats() {
   // 2. Fetch full stats for these specific authors, JOINING with the authors table for profile info
   const superfans = await db
     .select({
-      authorName: authors.name,
+      authorName: sql<string>`COALESCE(${authors.name}, MAX(${comments.authorName}))`,
       authorChannelId: comments.authorChannelId,
-      authorProfileImageUrl: authors.profileImageUrl,
+      authorProfileImageUrl: sql<string>`COALESCE(${authors.profileImageUrl}, MAX(${comments.authorProfileImageUrl}))`,
       commentCount: sql<number>`SUM(CASE WHEN ${comments.parentId} IS NULL THEN 1 ELSE 0 END)`,
       totalLikes: sum(comments.likeCount),
       firstSeenAt: sql<string>`MIN(${comments.publishedAt})`,

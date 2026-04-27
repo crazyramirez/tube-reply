@@ -61,7 +61,7 @@ export default defineEventHandler(async (event) => {
       videoId: comments.videoId,
       authorName: comments.authorName,
       authorChannelId: comments.authorChannelId,
-      authorProfileImageUrl: authors.profileImageUrl,
+      authorProfileImageUrl: sql<string>`COALESCE(${authors.profileImageUrl}, ${comments.authorProfileImageUrl})`,
       text: comments.text,
       lastText: comments.lastActivityText,
       lastAuthor: comments.lastActivityAuthor,
