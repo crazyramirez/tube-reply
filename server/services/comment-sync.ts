@@ -68,7 +68,7 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
     // This is much more efficient than iterating through 3000+ videos
     if (scope === 'recent' || (syncType === 'scheduled' && scope !== 'all')) {
       await logger.info('comment-sync', 'Starting optimized channel-wide sync')
-      const { found, newCount, quotaUsed } = await syncChannelComments(yt, db, ownerChannelId)
+      const { found, newCount, quotaUsed, videosInvolved } = await syncChannelComments(yt, db, ownerChannelId)
       totalFound = found
       totalNew = newCount
       totalQuota += quotaUsed
@@ -78,7 +78,7 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
         await db.update(syncLog)
           .set({
             status: 'completed',
-            videosProcessed: 1, // Global sync counts as 1 virtual process
+            videosProcessed: videosInvolved || 1, // Store the number of videos that had activity
             commentsFound: totalFound,
             newComments: totalNew,
             quotaUsed: totalQuota,
@@ -178,6 +178,7 @@ async function syncChannelComments(
   let pageToken: string | undefined
   let stopCondition = false
   let consecutiveExisting = 0
+  const videosInvolved = new Set<string>()
   const MAX_CONSECUTIVE_EXISTING = 5 // Stop after finding 5 existing comments in a row (time ordered)
 
   try {
@@ -201,6 +202,7 @@ async function syncChannelComments(
 
         // Ensure video exists in our DB (foreign key requirement)
         await ensureVideoExists(yt, db, videoId)
+        videosInvolved.add(videoId)
 
         found++
         const lang = detectLanguage(top.snippet.textDisplay ?? '')
@@ -312,7 +314,7 @@ async function syncChannelComments(
     await logger.warn('comment-sync', `Global sync error: ${message}`)
   }
 
-  return { found, newCount, quotaUsed }
+  return { found, newCount, quotaUsed, videosInvolved: videosInvolved.size }
 }
 
 async function ensureVideoExists(
