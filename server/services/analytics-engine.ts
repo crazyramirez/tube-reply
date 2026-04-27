@@ -1,4 +1,4 @@
-import { eq, and, desc, count, countDistinct, sum, avg, isNull, gte, sql, ne } from 'drizzle-orm'
+import { eq, and, desc, count, countDistinct, sum, avg, isNull, gte, sql, ne, inArray } from 'drizzle-orm'
 
 import { useDb } from '../utils/db'
 import { comments, publishedReplies, videos } from '../db/schema'
@@ -235,36 +235,41 @@ Rules:
 export async function getAudienceStats() {
   const db = useDb()
 
-  // Top commenters by frequency
-  const superfans = await db
-    .select({
-      authorName: sql<string>`MAX(${comments.authorName})`,
-      authorChannelId: comments.authorChannelId,
-      // Correlated subquery to find a valid image for this author from ANY of their comments
-      authorProfileImageUrl: sql<string>`(
-        SELECT author_profile_image_url 
-        FROM comments c2 
-        WHERE c2.author_channel_id = ${comments.authorChannelId} 
-          AND c2.author_profile_image_url IS NOT NULL 
-          AND c2.author_profile_image_url != '' 
-        LIMIT 1
-      )`,
-
-      commentCount: sql<number>`SUM(CASE WHEN ${comments.parentId} IS NULL THEN 1 ELSE 0 END)`,
-      totalLikes: sum(comments.likeCount),
-
-      firstSeenAt: sql<string>`MIN(${comments.publishedAt})`,
-      lastSeenAt: sql<string>`MAX(${comments.publishedAt})`,
-    })
+  // 1. First, find the most active author channel IDs
+  const activeIds = await db
+    .select({ authorChannelId: comments.authorChannelId })
     .from(comments)
     .where(and(
+      isNull(comments.parentId), 
       sql`${comments.authorChannelId} IS NOT NULL`, 
       ne(comments.authorChannelId, '')
     ))
     .groupBy(comments.authorChannelId)
-    .having(sql`SUM(CASE WHEN ${comments.parentId} IS NULL THEN 1 ELSE 0 END) > 0`)
-    .orderBy(desc(sql`SUM(CASE WHEN ${comments.parentId} IS NULL THEN 1 ELSE 0 END)`))
+    .orderBy(desc(count(comments.id)))
     .limit(10)
+
+  if (activeIds.length === 0) {
+    return { superfans: [], languageDistribution: [] }
+  }
+
+  const ids = activeIds.map(f => f.authorChannelId!)
+
+  // 2. Fetch full stats for these specific authors, looking across ALL their comments for the image
+  const superfans = await db
+    .select({
+      authorName: sql<string>`MAX(${comments.authorName})`,
+      authorChannelId: comments.authorChannelId,
+      authorProfileImageUrl: sql<string>`MAX(${comments.authorProfileImageUrl})`,
+      commentCount: sql<number>`SUM(CASE WHEN ${comments.parentId} IS NULL THEN 1 ELSE 0 END)`,
+      totalLikes: sum(comments.likeCount),
+      firstSeenAt: sql<string>`MIN(${comments.publishedAt})`,
+      lastSeenAt: sql<string>`MAX(${comments.publishedAt})`,
+    })
+    .from(comments)
+    .where(inArray(comments.authorChannelId, ids))
+    .groupBy(comments.authorChannelId)
+    .orderBy(desc(sql`SUM(CASE WHEN ${comments.parentId} IS NULL THEN 1 ELSE 0 END)`))
+
 
   // Language distribution
   const langDist = await db
