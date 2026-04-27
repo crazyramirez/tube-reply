@@ -52,20 +52,19 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
     logId = logEntry.id
     const yt = await getAuthenticatedYouTube()
 
-    // Refresh cached channel metadata (1 quota unit, done once per sync)
+    // Refresh cached channel metadata (1 quota unit)
     await refreshChannelMetadata().catch(() => {})
+    totalQuota += 1
 
-    // Sync video list if needed (on manual or if DB is empty)
+    // Sync video list if needed
     const existingVideos = await db.query.videos.findMany({ columns: { id: true } })
     if (syncType === 'manual' || existingVideos.length === 0) {
-      await syncVideoList(yt, db)
-      totalQuota += 2
+      const q = await syncVideoList(yt, db)
+      totalQuota += q
     }
 
     const ownerChannelId = token.channelId
 
-    // Optimization: for scheduled/recent syncs, use the channel-wide comment threads list
-    // This is much more efficient than iterating through 3000+ videos
     if (scope === 'recent' || (syncType === 'scheduled' && scope !== 'all')) {
       await logger.info('comment-sync', 'Starting optimized channel-wide sync')
       const { found, newCount, quotaUsed, videosInvolved } = await syncChannelComments(yt, db, ownerChannelId)
@@ -231,7 +230,7 @@ async function syncChannelComments(
         ...(pageToken ? { pageToken } : {}),
       })
       quotaUsed++
-
+      
       const items = res.data.items ?? []
       if (items.length === 0) break
 
@@ -241,7 +240,8 @@ async function syncChannelComments(
         if (!top?.id || !top.snippet || !videoId) continue
 
         // Ensure video exists in our DB (foreign key requirement)
-        await ensureVideoExists(yt, db, videoId)
+        const vQuota = await ensureVideoExists(yt, db, videoId)
+        quotaUsed += vQuota
         videosInvolved.add(videoId)
 
         found++
@@ -365,13 +365,13 @@ async function ensureVideoExists(
   yt: Awaited<ReturnType<typeof getAuthenticatedYouTube>>,
   db: ReturnType<typeof useDb>,
   videoId: string
-) {
+): Promise<number> {
   const existing = await db.query.videos.findFirst({
     where: eq(videos.id, videoId),
     columns: { id: true }
   })
   
-  if (existing) return
+  if (existing) return 0
 
   try {
     const res = await yt.videos.list({
@@ -380,7 +380,7 @@ async function ensureVideoExists(
     })
     
     const v = res.data.items?.[0]
-    if (!v || !v.id || !v.snippet) return
+    if (!v || !v.id || !v.snippet) return 1 // Call happened even if empty
 
     await db.insert(videos).values({
       id: v.id,
@@ -408,11 +408,14 @@ async function ensureVideoExists(
 async function syncVideoList(
   yt: Awaited<ReturnType<typeof getAuthenticatedYouTube>>,
   db: ReturnType<typeof useDb>,
-) {
+): Promise<number> {
+  let quotaUsed = 0
   // Get the uploads playlist ID for the channel
   const channelRes = await yt.channels.list({ part: ['contentDetails'], mine: true })
+  quotaUsed++
+  
   const uploadsId = channelRes.data.items?.[0]?.contentDetails?.relatedPlaylists?.uploads
-  if (!uploadsId) return
+  if (!uploadsId) return quotaUsed
 
   let pageToken: string | undefined
   const videoIds: string[] = []
@@ -424,6 +427,7 @@ async function syncVideoList(
       maxResults: 50,
       ...(pageToken ? { pageToken } : {}),
     })
+    quotaUsed++
 
     for (const item of res.data.items ?? []) {
       const vid = item.snippet?.resourceId?.videoId
@@ -440,6 +444,7 @@ async function syncVideoList(
       part: ['snippet', 'statistics', 'contentDetails'],
       id: batch,
     })
+    quotaUsed++
 
     for (const v of detailsRes.data.items ?? []) {
       if (!v.id || !v.snippet) continue
@@ -474,6 +479,7 @@ async function syncVideoList(
       })
     }
   }
+  return quotaUsed
 }
 
 async function syncVideoComments(

@@ -49,7 +49,7 @@ export default defineEventHandler(async (_event) => {
             completedAt: lastSync.completedAt,
             videosProcessed: lastSync.videosProcessed,
             commentsFound: lastSync.commentsFound,
-            newComments: lastSync.newComments,
+            newComments: lastSync.newComments ?? 0,
             quotaUsed: lastSync.quotaUsed,
             errorMessage: lastSync.errorMessage,
             nextSyncAt,

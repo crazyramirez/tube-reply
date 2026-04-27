@@ -1,4 +1,4 @@
-import { eq, and, count, isNull, desc, or, inArray, sql } from 'drizzle-orm'
+import { eq, and, count, isNull, desc, or, sql } from 'drizzle-orm'
 import { useDb } from '../../utils/db'
 import { comments, videos, publishedReplies } from '../../db/schema'
 
@@ -15,7 +15,6 @@ export default defineEventHandler(async (event) => {
     or(eq(comments.status, 'pending'), eq(comments.status, 'suggested')),
   )
 
-
   const [
     [{ pending }],
     [{ suggested }],
@@ -23,6 +22,7 @@ export default defineEventHandler(async (event) => {
     [{ totalPublished }],
     recentComments,
     [{ recentCommentsTotal }],
+    recentVideos,
   ] = await Promise.all([
     db.select({ pending: count(comments.id) }).from(comments)
       .where(and(eq(comments.status, 'pending'), isNull(comments.parentId))),
@@ -60,6 +60,18 @@ export default defineEventHandler(async (event) => {
       .from(comments)
       .where(needsAttentionWhere),
 
+    db.select({
+      id: videos.id,
+      title: videos.title,
+      publishedAt: videos.publishedAt,
+      thumbnailUrl: videos.thumbnailUrl,
+      viewCount: videos.viewCount,
+      likeCount: videos.likeCount,
+      commentCount: videos.commentCount,
+    })
+      .from(videos)
+      .orderBy(desc(videos.publishedAt))
+      .limit(4),
   ])
 
   return {
@@ -71,5 +83,6 @@ export default defineEventHandler(async (event) => {
     },
     recentComments,
     recentCommentsTotal,
+    recentVideos,
   }
 })

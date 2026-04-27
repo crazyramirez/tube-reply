@@ -107,9 +107,11 @@ const quotaUsed = computed(() => ytStatus.value?.dailyQuotaUsed ?? 0);
 const MAX_QUOTA_PER_DAY = computed(
   () => settings.value?.maxQuotaPerDay ?? 10000,
 );
-const quotaPct = computed(() =>
-  Math.min(100, Math.round((quotaUsed.value / MAX_QUOTA_PER_DAY.value) * 100)),
-);
+const quotaPct = computed(() => {
+  const pct = (quotaUsed.value / MAX_QUOTA_PER_DAY.value) * 100;
+  if (pct > 0 && pct < 1) return pct.toFixed(2);
+  return Math.min(100, Math.round(pct)).toString();
+});
 
 const quotaBarClass = computed(() => {
   if (quotaPct.value > 90) return "bg-red-500 shadow-red-500/50";
@@ -151,7 +153,7 @@ function stopPolling() {
 async function connectYouTube() {
   connecting.value = true;
   try {
-    const { url } = await $fetch<{ url: string }>("/api/youtube/auth-url");
+    const { url } = await $fetch<{ url: string }>("/api/youtube/connect");
     window.location.href = url;
   } catch (e) {
     toast.add({ title: t("settings.connect_failed"), color: "red" });
@@ -591,7 +593,7 @@ onUnmounted(() => {
                                     ? new Date(
                                         ytStatus.lastSync.completedAt,
                                       ).toLocaleTimeString()
-                                    : "-"
+                                    : "..."
                                 }}
                               </span>
                             </div>
@@ -601,12 +603,12 @@ onUnmounted(() => {
                                 v-for="stat in [
                                   {
                                     label: 'settings.found',
-                                    val: ytStatus.lastSync?.commentsFound,
+                                    val: ytStatus.lastSync?.commentsFound ?? 0,
                                     color: 'text-white',
                                   },
                                   {
                                     label: 'settings.new',
-                                    val: `+${ytStatus.lastSync?.newComments}`,
+                                    val: ytStatus.lastSync?.newComments ?? 0,
                                     color: 'text-emerald-400',
                                   },
                                 ]"
@@ -617,7 +619,13 @@ onUnmounted(() => {
                                   class="text-lg font-black"
                                   :class="stat.color"
                                 >
-                                  {{ stat.val ?? 0 }}
+                                  <span
+                                    v-if="
+                                      stat.label === 'settings.new' &&
+                                      stat.val > 0
+                                    "
+                                    >+</span
+                                  >{{ stat.val }}
                                 </p>
                                 <p
                                   class="text-[10px] font-bold text-slate-500 uppercase tracking-wider"

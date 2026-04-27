@@ -63,6 +63,9 @@
     "awaiting_ai": "In Queue (Awaiting AI)",
     "published_today": "Published Today",
     "total_published": "Total Published",
+    "latest_videos": "Latest Videos",
+    "view_all_videos": "VIEW ALL",
+    "no_videos": "No videos found"
   },
   "comments": {
     "hub_label": "Intelligence Hub",
@@ -288,7 +291,7 @@
     "force": "Force",
     "disconnect_success": "YouTube disconnected",
     "disconnect_failed": "Disconnect failed",
-    "sync_started": "Sync started in background",
+    "sync_started": "Synchronizing in background",
     "sync_failed": "Sync failed",
     "connect_failed": "Failed to get authorization URL",
     "language_title": "Language",

@@ -64,6 +64,9 @@
     "awaiting_ai": "En Cola (Esperando IA)",
     "published_today": "Publicados Hoy",
     "total_published": "Total Publicados",
+    "latest_videos": "Últimos Videos",
+    "view_all_videos": "VER VIDEOS",
+    "no_videos": "No hay vídeos recientes"
   },
   "comments": {
     "hub_label": "Centro de Inteligencia",
@@ -290,7 +293,7 @@
     "force": "Forzar",
     "disconnect_success": "YouTube desconectado",
     "disconnect_failed": "Error al desconectar",
-    "sync_started": "Sincronización iniciada en segundo plano",
+    "sync_started": "Sincronizando en segundo plano",
     "sync_failed": "Error al sincronizar",
     "connect_failed": "Error al obtener URL de autorización",
     "language_title": "Idioma",

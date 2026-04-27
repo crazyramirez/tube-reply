@@ -192,6 +192,7 @@ export interface Video {
   thumbnailUrl: string | null
   publishedAt: string
   viewCount: number | null
+  likeCount: number | null
   commentCount: number | null
   lastSyncedAt: string | null
   defaultLanguage: string | null
@@ -237,6 +238,7 @@ export interface DashboardStats {
   }
   recentComments: DashboardComment[]
   recentCommentsTotal: number
+  recentVideos: Video[]
   urgentComments: UrgentComment[]
   urgentCount: number
 }
