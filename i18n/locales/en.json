@@ -89,7 +89,11 @@
     "bulk_failed": "Bulk update failed",
     "restored": "Comment restored to pending",
     "cancel": "Cancel",
-    "your_response": "Your Response"
+    "your_response": "Your Response",
+    "search_placeholder": "Search comments, videos, authors…",
+    "search_no_results": "No results for \"{q}\"",
+    "search_clear": "Clear search",
+    "search_results": "{n} results"
   },
   "comment_detail": {
     "terminal_label": "Verification Terminal",

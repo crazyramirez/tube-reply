@@ -2,11 +2,175 @@ import {
   GoogleGenerativeAI,
   HarmCategory,
   HarmBlockThreshold,
+  SchemaType,
   type Content,
+  type Tool,
+  type FunctionCall,
 } from '@google/generative-ai'
-import { desc, eq, and, isNull } from 'drizzle-orm'
+import { desc, eq, and, or, isNull, like } from 'drizzle-orm'
 import { useDb } from '../utils/db'
 import { videos, comments, knowledgeBase, oauthTokens, agentMessages } from '../db/schema'
+
+// ─── DB search tools ─────────────────────────────────────────────────────────
+
+interface CommentSearchResult {
+  id: string
+  authorName: string
+  text: string
+  publishedAt: string
+  likeCount: number | null
+  videoTitle: string
+}
+
+async function searchCommentsByText(query: string, limit = 8): Promise<CommentSearchResult[]> {
+  const db = useDb()
+  const cap = Math.min(Math.max(1, limit), 20)
+  const words = query.split(/\s+/).filter(w => w.length >= 3)
+  if (!words.length) return []
+
+  const andConds = words.map(w => like(comments.text, `%${w}%`))
+
+  const run = (cond: ReturnType<typeof and>) =>
+    db.select({
+      id: comments.id,
+      authorName: comments.authorName,
+      text: comments.text,
+      publishedAt: comments.publishedAt,
+      likeCount: comments.likeCount,
+      videoTitle: videos.title,
+    })
+      .from(comments)
+      .innerJoin(videos, eq(comments.videoId, videos.id))
+      .where(cond)
+      .orderBy(desc(comments.likeCount), desc(comments.publishedAt))
+      .limit(cap)
+
+  let rows = await run(and(...andConds) as ReturnType<typeof and>)
+  if (!rows.length && words.length > 1) {
+    rows = await run(or(...andConds) as ReturnType<typeof and>)
+  }
+  return rows
+}
+
+async function searchCommentsByAuthor(authorName: string, limit = 8): Promise<CommentSearchResult[]> {
+  const db = useDb()
+  const cap = Math.min(Math.max(1, limit), 20)
+  return db.select({
+    id: comments.id,
+    authorName: comments.authorName,
+    text: comments.text,
+    publishedAt: comments.publishedAt,
+    likeCount: comments.likeCount,
+    videoTitle: videos.title,
+  })
+    .from(comments)
+    .innerJoin(videos, eq(comments.videoId, videos.id))
+    .where(like(comments.authorName, `%${authorName}%`))
+    .orderBy(desc(comments.publishedAt))
+    .limit(cap)
+}
+
+async function getVideoComments(videoKeyword: string, limit = 10): Promise<CommentSearchResult[]> {
+  const db = useDb()
+  const cap = Math.min(Math.max(1, limit), 30)
+  return db.select({
+    id: comments.id,
+    authorName: comments.authorName,
+    text: comments.text,
+    publishedAt: comments.publishedAt,
+    likeCount: comments.likeCount,
+    videoTitle: videos.title,
+  })
+    .from(comments)
+    .innerJoin(videos, eq(comments.videoId, videos.id))
+    .where(like(videos.title, `%${videoKeyword}%`))
+    .orderBy(desc(comments.likeCount), desc(comments.publishedAt))
+    .limit(cap)
+}
+
+async function executeTool(name: string, args: Record<string, unknown>): Promise<unknown> {
+  if (name === 'search_comments') {
+    const rows = await searchCommentsByText(String(args.query ?? ''), Number(args.limit ?? 8))
+    return rows.length
+      ? rows.map(r => ({
+          id: r.id,
+          author: r.authorName,
+          comment: r.text,
+          video: r.videoTitle,
+          date: r.publishedAt,
+          likes: r.likeCount ?? 0,
+        }))
+      : { message: 'No comments found matching that query.' }
+  }
+  if (name === 'search_comments_by_author') {
+    const rows = await searchCommentsByAuthor(String(args.author_name ?? ''), Number(args.limit ?? 8))
+    return rows.length
+      ? rows.map(r => ({
+          id: r.id,
+          author: r.authorName,
+          comment: r.text,
+          video: r.videoTitle,
+          date: r.publishedAt,
+          likes: r.likeCount ?? 0,
+        }))
+      : { message: 'No comments found for that author.' }
+  }
+  if (name === 'get_video_comments') {
+    const rows = await getVideoComments(String(args.video_keyword ?? ''), Number(args.limit ?? 10))
+    return rows.length
+      ? rows.map(r => ({
+          id: r.id,
+          author: r.authorName,
+          comment: r.text,
+          video: r.videoTitle,
+          date: r.publishedAt,
+          likes: r.likeCount ?? 0,
+        }))
+      : { message: 'No comments found for that video.' }
+  }
+  return { error: `Unknown tool: ${name}` }
+}
+
+const agentTools: Tool[] = [{
+  functionDeclarations: [
+    {
+      name: 'search_comments',
+      description: 'Search the comments database for specific comments by keyword or phrase. Use when the user asks who said something, wants to find a specific comment, or asks about what viewers said about a topic.',
+      parameters: {
+        type: SchemaType.OBJECT,
+        properties: {
+          query: { type: SchemaType.STRING, description: 'Keywords or phrase to search for in comment text' },
+          limit: { type: SchemaType.NUMBER, description: 'Max results to return (default 8, max 20)' },
+        },
+        required: ['query'],
+      },
+    },
+    {
+      name: 'search_comments_by_author',
+      description: 'Find all comments made by a specific person (commenter/viewer) by their name.',
+      parameters: {
+        type: SchemaType.OBJECT,
+        properties: {
+          author_name: { type: SchemaType.STRING, description: 'Name of the commenter to search for' },
+          limit: { type: SchemaType.NUMBER, description: 'Max results to return (default 8, max 20)' },
+        },
+        required: ['author_name'],
+      },
+    },
+    {
+      name: 'get_video_comments',
+      description: 'Get comments for a specific video by searching the video title. Useful when the user wants to know what people said about a particular video.',
+      parameters: {
+        type: SchemaType.OBJECT,
+        properties: {
+          video_keyword: { type: SchemaType.STRING, description: 'Part of the video title to search for' },
+          limit: { type: SchemaType.NUMBER, description: 'Max results to return (default 10, max 30)' },
+        },
+        required: ['video_keyword'],
+      },
+    },
+  ],
+}]
 
 interface VideoStat {
   id: string
@@ -154,7 +318,20 @@ function buildSystemPrompt(ctx: ChannelContext): string {
     ? Math.round((ctx.publishedReplies / ctx.totalComments) * 100)
     : 0
 
-  return `You are an elite YouTube growth strategist for "${channelName}" (${subscribers} subscribers, ${ctx.videoCount ?? '?'} videos total).
+  return `You are an elite YouTube growth strategist AND comment analyst for "${channelName}" (${subscribers} subscribers, ${ctx.videoCount ?? '?'} videos total).
+
+## TOOLS AVAILABLE
+You have direct database access via function calls. Use them whenever the user asks about specific comments, who said something, or what viewers wrote. Do NOT say "I don't have access to individual comments" — you do. Call the tool first, then answer based on the real results.
+
+- **search_comments(query, limit)** — search comments by keyword/phrase
+- **search_comments_by_author(author_name, limit)** — find all comments by a specific person
+- **get_video_comments(video_keyword, limit)** — get top comments for a specific video
+
+When a user asks "who said X?", "find comments about Y", "what did people say about Z" — call search_comments immediately with the relevant keywords extracted from their question.
+
+**CRITICAL — Link format for found comments:** After retrieving comments from a tool, always render each one with a clickable link using this exact markdown format at the end of each comment entry:
+[Ver comentario →](/comments/COMMENT_ID) — replace COMMENT_ID with the actual id field from the result.
+If the user writes in English, use [View comment →](/comments/COMMENT_ID) instead.
 
 ## PRIMARY MISSION
 Every single response must serve ONE goal: **maximize this channel** — grow subscribers, increase views, improve engagement, and help the owner make better content decisions. Never give generic advice. Always tie recommendations to the real data below.
@@ -230,8 +407,9 @@ export async function runAgentChat(
 
   const client = new GoogleGenerativeAI(config.geminiApiKey)
   const model = client.getGenerativeModel({
-    model: config.geminiModel ?? 'gemini-2.0-flash',
+    model: config.geminiModel ?? 'gemini-3-flash-preview',
     systemInstruction: systemPrompt,
+    tools: agentTools,
     generationConfig: {
       temperature: 0.65,
       maxOutputTokens: 4096,
@@ -249,9 +427,26 @@ export async function runAgentChat(
   }))
 
   const chat = model.startChat({ history: geminiHistory })
-  const result = await chat.sendMessage(userMessage)
-  const response = result.response
+  let result = await chat.sendMessage(userMessage)
 
+  // Tool call loop — let the model call DB tools until it produces a text response
+  let iterations = 0
+  while (iterations++ < 5) {
+    const fcs: FunctionCall[] = result.response.functionCalls() ?? []
+    if (!fcs.length) break
+
+    const toolResponses = await Promise.all(
+      fcs.map(async (fc) => ({
+        functionResponse: {
+          name: fc.name,
+          response: { result: await executeTool(fc.name, fc.args as Record<string, unknown>) },
+        },
+      })),
+    )
+    result = await chat.sendMessage(toolResponses)
+  }
+
+  const response = result.response
   return {
     text: response.text(),
     promptTokens: response.usageMetadata?.promptTokenCount ?? 0,

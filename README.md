@@ -160,7 +160,7 @@ cp .env.example .env
 | `YOUTUBE_CLIENT_SECRET`           | OAuth2 client secret                                     |
 | `YOUTUBE_REDIRECT_URI`            | Must match authorized redirect in Google Cloud Console   |
 | `GEMINI_API_KEY`                  | Google AI Studio API key                                 |
-| `GEMINI_MODEL`                    | Gemini model ID (e.g. `gemini-3.0-flash-preview`)        |
+| `GEMINI_MODEL`                    | Gemini model ID (e.g. `gemini-3-flash-preview`)          |
 | `OPENAI_API_KEY`                  | OpenAI API key                                           |
 | `OPENAI_MODEL`                    | OpenAI model ID (e.g. `gpt-4o-mini`)                     |
 | `AI_PROVIDER`                     | Default provider: `gemini` or `openai`                   |

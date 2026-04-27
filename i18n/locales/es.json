@@ -90,7 +90,11 @@
     "bulk_failed": "Error en actualización masiva",
     "restored": "Comentario restaurado a pendiente",
     "cancel": "Cancelar",
-    "your_response": "Tu Respuesta"
+    "your_response": "Tu Respuesta",
+    "search_placeholder": "Buscar comentarios, videos, autores…",
+    "search_no_results": "Sin resultados para \"{q}\"",
+    "search_clear": "Limpiar búsqueda",
+    "search_results": "{n} resultados"
   },
   "comment_detail": {
     "terminal_label": "Terminal de Verificación",

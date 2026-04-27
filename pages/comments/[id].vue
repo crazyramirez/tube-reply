@@ -4,6 +4,7 @@ import type {
   CommentDetailResponse,
   CommenterHistory,
 } from "~/shared/types";
+import { renderCommentHtml } from "~/composables/useCommentHtml";
 
 definePageMeta({ middleware: "auth" });
 
@@ -929,9 +930,8 @@ async function confirmUnban() {
               </div>
               <div
                 class="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl rounded-tl-none p-4 text-sm text-slate-200 leading-relaxed shadow-sm max-w-[85%]"
-              >
-                {{ data.comment.text }}
-              </div>
+                v-html="renderCommentHtml(data.comment.text)"
+              />
             </div>
 
             <!-- Replies (The Thread) -->
@@ -1026,9 +1026,8 @@ async function confirmUnban() {
                       ? 'bg-emerald-500/10 border border-emerald-500/20 rounded-2xl rounded-tr-none text-emerald-50'
                       : 'bg-white/[0.04] border border-white/[0.08] rounded-2xl rounded-tl-none text-slate-200'
                   "
-                >
-                  {{ reply.text }}
-                </div>
+                  v-html="renderCommentHtml(reply.text)"
+                />
               </div>
             </template>
           </div>
@@ -1157,7 +1156,7 @@ async function confirmUnban() {
               </UBadge>
               <div class="min-w-0 flex-1">
                 <p class="text-[11px] text-slate-400 line-clamp-2 italic">
-                  "{{ item.text }}"
+                  "<span v-html="renderCommentHtml(item.text)"></span>"
                 </p>
                 <p class="text-[9px] text-slate-600 mt-0.5 truncate">
                   {{ item.videoTitle }}
@@ -1434,63 +1433,107 @@ async function confirmUnban() {
           </div>
         </div>
 
-        <!-- 3. Empty state / Success Summary -->
+        <!-- 3. Intel Deployed Viewer (Success State) -->
         <div
           v-else-if="data.comment?.status === 'published' && !regenerating"
-          class="glass-card p-10 text-center animate-fade-in border-emerald-500/20 bg-emerald-500/[0.02] shadow-[0_0_50px_rgba(16,185,129,0.05)]"
+          class="space-y-6 animate-fade-in"
         >
-          <div class="relative w-24 h-24 mx-auto mb-6">
+          <div
+            class="glass-card overflow-hidden border-emerald-500/20 bg-emerald-500/[0.01] shadow-[0_0_50px_rgba(16,185,129,0.05)]"
+          >
             <div
-              class="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full"
-            ></div>
-            <div
-              class="relative w-24 h-24 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center"
+              class="px-6 py-4 border-b border-white/[0.06] flex items-center justify-between bg-emerald-500/[0.02]"
             >
-              <UIcon
-                name="i-heroicons-check-badge"
-                class="w-12 h-12 text-emerald-500"
-              />
+              <div class="flex items-center gap-2">
+                <UIcon
+                  name="i-heroicons-check-badge"
+                  class="w-4 h-4 text-emerald-400"
+                />
+                <span
+                  class="font-black text-sm text-emerald-400 tracking-tighter uppercase"
+                  >{{ $t("comment_detail.intel_deployed") }}</span
+                >
+              </div>
+              <div class="flex items-center gap-2">
+                <div
+                  class="px-2 py-0.5 rounded text-[8px] font-black bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 uppercase tracking-widest"
+                >
+                  LIVE ON YOUTUBE
+                </div>
+              </div>
+            </div>
+
+            <div class="p-6">
+              <div
+                class="bg-black/40 border border-white/10 rounded-2xl p-6 text-left relative overflow-hidden shadow-inner"
+              >
+                <UIcon
+                  name="i-heroicons-chat-bubble-left-right"
+                  class="absolute -bottom-4 -right-4 w-24 h-24 text-emerald-500/[0.03]"
+                />
+                <p
+                  class="text-lg text-emerald-50/90 italic leading-relaxed relative z-10"
+                >
+                  "{{
+                    data.replies.filter((r) => r.isOwner).at(-1)?.text ||
+                    data.comment.text
+                  }}"
+                </p>
+              </div>
+
+              <!-- Success Translation Preview -->
+              <div
+                v-if="showTranslationVerification"
+                class="mt-6 p-5 rounded-2xl bg-emerald-500/[0.03] border border-emerald-500/10 text-left animate-fade-in"
+              >
+                <div class="flex items-center gap-2 mb-3 opacity-50">
+                  <UIcon
+                    name="i-heroicons-language"
+                    class="w-3.5 h-3.5 text-emerald-500"
+                  />
+                  <span
+                    class="text-[9px] font-black text-emerald-500 uppercase tracking-widest"
+                    >{{ $t("comment_detail.verification_translation") }}</span
+                  >
+                </div>
+                <p class="text-sm text-emerald-100/60 italic leading-relaxed">
+                  "{{ activeSuggestion?.verificationTranslation }}"
+                </p>
+              </div>
             </div>
           </div>
-          <h3 class="text-2xl font-black text-white tracking-tight mb-2">
-            {{ $t("comment_detail.intel_deployed") }}
-          </h3>
-          <p class="text-slate-500 text-sm max-w-sm mx-auto mb-8">
-            {{ $t("comments.your_response") }}
-          </p>
 
+          <!-- Contextual Intelligence Bits (References) - Show even when published -->
           <div
-            v-if="data.replies?.find((r) => r.isOwner)"
-            class="bg-black/40 border border-white/10 rounded-2xl p-6 text-left relative overflow-hidden max-w-lg mx-auto shadow-inner mb-6"
+            v-if="activeSuggestion && effectiveVideoLinks.length"
+            class="space-y-4 pt-4 animate-fade-in"
           >
-            <UIcon
-              name="i-heroicons-chat-bubble-left-right"
-              class="absolute -bottom-4 -right-4 w-24 h-24 text-white/[0.02]"
-            />
-            <p
-              class="text-base text-emerald-50/80 italic leading-relaxed relative z-10"
-            >
-              "{{
-                data.replies.filter((r) => r.isOwner).at(-1)?.text ||
-                data.comment.text
-              }}"
-            </p>
-          </div>
-
-          <!-- Success Translation Preview -->
-          <div
-            v-if="showTranslationVerification"
-            class="bg-emerald-500/[0.03] border border-emerald-500/10 rounded-2xl p-5 text-left max-w-lg mx-auto mb-8 animate-fade-in"
-          >
-            <div class="flex items-center gap-2 mb-2 opacity-50">
-              <UIcon name="i-heroicons-language" class="w-3.5 h-3.5" />
-              <span class="text-[9px] font-black uppercase tracking-widest">{{
-                $t("comment_detail.verification_translation")
-              }}</span>
+            <div class="flex items-center gap-2 ml-1">
+              <UIcon name="i-heroicons-link" class="w-4 h-4 text-emerald-500" />
+              <span
+                class="text-[9px] text-slate-500 font-black uppercase tracking-widest"
+                >{{ $t("comment_detail.referenced_intel") }}</span
+              >
             </div>
-            <p class="text-sm text-emerald-100/60 italic leading-relaxed">
-              "{{ activeSuggestion.verificationTranslation }}"
-            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div
+                v-for="link in effectiveVideoLinks"
+                :key="link.video_id"
+                class="glass-card p-3 flex items-center gap-3 border-emerald-500/10 bg-emerald-500/[0.01] hover:border-emerald-500/30 transition-colors"
+              >
+                <img
+                  :src="highResThumbnail(link.thumbnail_url)"
+                  class="w-16 aspect-video object-cover rounded shadow-lg"
+                  referrerpolicy="no-referrer"
+                />
+                <a
+                  :href="link.url"
+                  target="_blank"
+                  class="text-[12px] font-bold text-slate-300 hover:text-emerald-400 line-clamp-1 transition-colors"
+                  >{{ link.video_title }}</a
+                >
+              </div>
+            </div>
           </div>
         </div>
 

@@ -3,6 +3,7 @@ definePageMeta({ middleware: "auth" });
 
 const { t } = useI18n();
 const toast = useToast();
+const router = useRouter();
 
 // ─── Agent status (Gemini key gate) ─────────────────────────────────────────
 
@@ -26,6 +27,7 @@ interface AgentMessage {
 }
 
 const chats = ref<AgentChat[]>([]);
+const lastChatId = useCookie<number | null>("agent-last-chat", { default: () => null });
 const activeChatId = ref<number | null>(null);
 const messages = ref<AgentMessage[]>([]);
 const loadingMessages = ref(false);
@@ -59,6 +61,29 @@ watch(chatsData, (newVal) => {
   if (newVal) chats.value = newVal.chats;
 });
 
+// Auto-restore last chat only on client — SSR has no auth cookies for $fetch
+onMounted(async () => {
+  if (lastChatId.value && chats.value.find((c) => c.id === lastChatId.value)) {
+    try {
+      await selectChat(lastChatId.value);
+    } catch {
+      lastChatId.value = null;
+    }
+  }
+});
+
+// Intercept clicks on internal /comments/* links rendered inside chat bubbles
+// so navigation stays SPA (no full page load → no SSR auth re-check)
+function handleBubbleClick(e: MouseEvent) {
+  const anchor = (e.target as HTMLElement).closest("a");
+  if (!anchor) return;
+  const href = anchor.getAttribute("href");
+  if (href?.startsWith("/")) {
+    e.preventDefault();
+    router.push(href);
+  }
+}
+
 async function fetchChats() {
   await refreshChats();
 }
@@ -80,6 +105,7 @@ async function fetchMessages(chatId: number) {
 
 async function selectChat(id: number) {
   activeChatId.value = id;
+  lastChatId.value = id;
   mobileChatView.value = true;
   await fetchMessages(id);
   nextTick(() => scrollToBottom());
@@ -144,7 +170,11 @@ function scrollToBottom(smooth = true) {
 
 async function sendMessage(text?: string) {
   const msg = (text ?? input.value).trim();
-  if (!msg || sending.value || !activeChatId.value) return;
+  if (!msg || sending.value) return;
+  if (!activeChatId.value) {
+    await createChat();
+    if (!activeChatId.value) return;
+  }
   input.value = "";
   sending.value = true;
 
@@ -241,6 +271,10 @@ function renderMarkdown(text: string): string {
     .replace(
       /(<li[\s\S]*?<\/li>\n?)+/g,
       (match) => `<ul class="space-y-1.5 my-2">${match}</ul>`,
+    )
+    .replace(
+      /\[([^\]]+)\]\((\/comments\/[^\s)]+)\)/g,
+      '<a href="$2" class="inline-flex items-center gap-1 mt-1 px-2.5 py-1 rounded-lg bg-indigo-500/15 border border-indigo-500/25 text-indigo-300 hover:text-white hover:bg-indigo-500/25 text-xs font-semibold transition-all duration-150">$1</a>',
     )
     .replace(/\n\n/g, '<br class="block my-2">')
     .replace(/\n/g, "<br>");
@@ -908,6 +942,7 @@ watch(messages, () => {
                       v-else
                       class="msg-bubble-assistant"
                       v-html="renderMarkdown(msg.content)"
+                      @click="handleBubbleClick"
                     ></div>
 
                     <!-- Token metadata for assistant -->
@@ -958,12 +993,8 @@ watch(messages, () => {
               <textarea
                 v-model="input"
                 rows="1"
-                :placeholder="
-                  activeChatId
-                    ? $t('agent.input_placeholder')
-                    : $t('agent.no_chats_hint')
-                "
-                :disabled="!activeChatId || sending"
+                :placeholder="$t('agent.input_placeholder')"
+                :disabled="sending"
                 class="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-600 focus:outline-none resize-none leading-relaxed py-1.5 max-h-36 overflow-y-auto custom-scrollbar disabled:opacity-50"
                 style="field-sizing: content; min-height: 1.5rem"
                 @keydown="handleKeydown"
@@ -975,7 +1006,7 @@ watch(messages, () => {
               />
               <button
                 class="send-btn"
-                :disabled="!input.trim() || !activeChatId || sending"
+                :disabled="!input.trim() || sending"
                 @click="sendMessage()"
               >
                 <UIcon

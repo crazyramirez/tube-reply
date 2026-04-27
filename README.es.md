@@ -4,7 +4,7 @@
 
 # Tube Reply
 
-*🌍 [Read this in English](./README.md)*
+_🌍 [Read this in English](./README.md)_
 
 Herramienta de gestión de comentarios y Asistente de YouTube impulsado por IA. Sincroniza comentarios de tu canal, genera sugerencias de respuesta, e incluye un Agente de IA dedicado para realizar consultas y asistir al creador en la estrategia del canal — todo desde un único panel privado.
 
@@ -31,16 +31,16 @@ Herramienta de gestión de comentarios y Asistente de YouTube impulsado por IA. 
 
 ## Stack Tecnológico
 
-| Capa       | Tecnología                            |
-| ---------- | ------------------------------------- |
-| Framework  | Nuxt 3                                |
-| UI         | Vue 3 + @nuxt/ui + Tailwind CSS       |
-| Base de Datos| **SQLite** (better-sqlite3) + Drizzle |
-| IA         | Google Gemini & OpenAI                |
-| YouTube    | Google APIs OAuth2 (`googleapis`)     |
-| Auth       | Cookie de sesión + hash de contraseña bcrypt |
-| Encriptación| AES-256-GCM (almacenamiento de tokens) |
-| PWA        | @vite-pwa/nuxt                        |
+| Capa          | Tecnología                                   |
+| ------------- | -------------------------------------------- |
+| Framework     | Nuxt 3                                       |
+| UI            | Vue 3 + @nuxt/ui + Tailwind CSS              |
+| Base de Datos | **SQLite** (better-sqlite3) + Drizzle        |
+| IA            | Google Gemini & OpenAI                       |
+| YouTube       | Google APIs OAuth2 (`googleapis`)            |
+| Auth          | Cookie de sesión + hash de contraseña bcrypt |
+| Encriptación  | AES-256-GCM (almacenamiento de tokens)       |
+| PWA           | @vite-pwa/nuxt                               |
 
 ---
 
@@ -60,13 +60,13 @@ Tube Reply está altamente optimizada en rendimiento y rentabilidad. Utiliza mod
 
 ### Comparativa de Modelos y Precios (por 1M tokens)
 
-| Característica | GPT-4o mini | Gemini 3.0 Flash Preview |
-| :--- | :--- | :--- |
-| **Precio de Entrada** | $0.15 | $0.50 |
-| **Entrada en Caché** | $0.075 | $0.05 |
-| **Precio de Salida** | $0.60 | $3.00 |
-| **Ventana de Contexto** | 128K tokens | 1M+ tokens |
-| **Especialidad** | Precisión y Lógica | Contexto Masivo y Grounding con Google |
+| Característica          | GPT-4o mini        | Gemini 3.0 Flash Preview               |
+| :---------------------- | :----------------- | :------------------------------------- |
+| **Precio de Entrada**   | $0.15              | $0.50                                  |
+| **Entrada en Caché**    | $0.075             | $0.05                                  |
+| **Precio de Salida**    | $0.60              | $3.00                                  |
+| **Ventana de Contexto** | 128K tokens        | 1M+ tokens                             |
+| **Especialidad**        | Precisión y Lógica | Contexto Masivo y Grounding con Google |
 
 > [!NOTE]
 > **Gemini 3 Flash** también soporta "Grounding with Google Search" para obtener información en tiempo real y ofrece integración profunda con Google Maps.
@@ -79,21 +79,24 @@ En un escenario típico con **200 vídeos en tu base de datos** y una **Base de 
 - **Salida Promedio**: ~150 - 250 tokens (la respuesta en sí).
 
 **Coste Estimado (GPT-4o mini):**
+
 - **100 respuestas**: ~$0.05 USD
 - **1,000 respuestas**: ~$0.50 USD
 
 **Coste Estimado (Gemini 3.0 Flash Preview):**
+
 - **100 respuestas**: ~$0.19 USD
 - **1,000 respuestas**: ~$1.85 USD
 
 ### Funciones de Inteligencia
-- **Contexto Basado en DDBB (RAG)**: La aplicación utiliza su **base de datos SQLite** interna para proporcionar contexto en tiempo real. Si un usuario pregunta *"¿Dónde está el vídeo sobre X?"*, la IA utiliza **Function Calling** para buscar en la DDBB títulos y miniaturas de vídeos relevantes, ofreciendo una respuesta fundamentada con enlaces válidos.
+
+- **Contexto Basado en DDBB (RAG)**: La aplicación utiliza su **base de datos SQLite** interna para proporcionar contexto en tiempo real. Si un usuario pregunta _"¿Dónde está el vídeo sobre X?"_, la IA utiliza **Function Calling** para buscar en la DDBB títulos y miniaturas de vídeos relevantes, ofreciendo una respuesta fundamentada con enlaces válidos.
 - **Protección contra Alucinaciones**: Cada enlace generado por la IA se comprueba con la base de datos. Cualquier ID de vídeo "alucinado" (inexistente) se elimina automáticamente antes de guardar la sugerencia.
 - **Auto-Sumarización**: En la primera petición sobre un vídeo, el sistema genera automáticamente un resumen conciso mediante IA sobre el contenido del vídeo, que se utilizará como contexto permanente para todos los comentarios futuros en dicho vídeo.
 - **Moderación de Usuarios**:
-    - **Baneo en un clic**: Utiliza la API de YouTube para rechazar el comentario y bloquear al autor en el canal.
-    - **Rastreo Local**: Los autores baneados se guardan en la base de datos. Todos sus comentarios (actuales y futuros) se marcan automáticamente como "Descartados".
-    - **Desbanear**: Restaura a los autores localmente con un clic. (Se requiere eliminación manual en YouTube Studio para una restauración completa en la plataforma).
+  - **Baneo en un clic**: Utiliza la API de YouTube para rechazar el comentario y bloquear al autor en el canal.
+  - **Rastreo Local**: Los autores baneados se guardan en la base de datos. Todos sus comentarios (actuales y futuros) se marcan automáticamente como "Descartados".
+  - **Desbanear**: Restaura a los autores localmente con un clic. (Se requiere eliminación manual en YouTube Studio para una restauración completa en la plataforma).
 - **Sugerencias Automáticas con IA**: Cuando se activa en los Ajustes, el sistema dispara automáticamente el motor de sugerencias justo después de terminar un proceso de sincronización (ya sea manual o programado).
   - **Procesamiento Secuencial**: Para respetar los límites de velocidad (RPM) de los proveedores de IA, los comentarios se procesan uno a uno con un retraso integrado.
   - **Selección Inteligente**: Solo procesa comentarios de nivel superior en estado "Pendiente" que aún no tengan una sugerencia generada, evitando llamadas redundantes e innecesarias.
@@ -119,7 +122,6 @@ Tube Reply cuenta con un motor de sincronización altamente optimizado diseñado
   - **Ejemplo**: Si tienes 1,000 vídeos, una sincronización profunda consume 1,000 unidades.
 - **Coste de Respuesta**: Publicar una respuesta a un comentario consume **50 unidades** por acción.
 - **Protección de Cuota**: La app rastrea el consumo diario y detiene automáticamente la sincronización si se acerca al límite diario (configurable en el `.env`).
-
 
 ---
 
@@ -149,27 +151,27 @@ Copia `.env.example` a `.env` y rellena todos los valores:
 cp .env.example .env
 ```
 
-| Variable                          | Descripción                                              |
-| --------------------------------- | -------------------------------------------------------- |
-| `ADMIN_PASSWORD_HASH`             | Hash bcrypt — generar con `npm run hash-password`        |
-| `SESSION_DURATION_HOURS`          | Tiempo de vida de la sesión (por defecto: `24`)          |
-| `DATABASE_URL`                    | Ruta al archivo SQLite (por defecto: `./data/youtube.db`)|
-| `YOUTUBE_CLIENT_ID`               | Client ID de OAuth2 de Google Cloud Console              |
-| `YOUTUBE_CLIENT_SECRET`           | Client secret de OAuth2                                  |
-| `YOUTUBE_REDIRECT_URI`            | Debe coincidir con el redirect URI autorizado en GCP     |
-| `GEMINI_API_KEY`                  | Clave API de Google AI Studio                            |
-| `GEMINI_MODEL`                    | ID del modelo Gemini (ej. `gemini-3.0-flash-preview`)      |
-| `OPENAI_API_KEY`                  | Clave API de OpenAI                                      |
-| `OPENAI_MODEL`                    | ID del modelo OpenAI (ej. `gpt-4o-mini`)                 |
-| `AI_PROVIDER`                     | Proveedor por defecto: `gemini` u `openai`               |
-| `TOKEN_ENCRYPTION_KEY`            | 64 caracteres hex (32 bytes) para encriptar tokens con AES-256-GCM |
-| `SYNC_INTERVAL_MINUTES`           | Intervalo de auto-sincronización (por defecto: `30`)     |
-| `AUTO_SYNC_ON_START`             | Sincronizar al iniciar el servidor (por defecto: `true`) |
-| `MAX_QUOTA_PER_DAY`               | Límite máximo de cuota de la API de YouTube (por defecto: `8500`) |
-| `RATE_LIMIT_LOGIN_MAX`            | Intentos de inicio de sesión máximos por ventana (por defecto: `5`) |
+| Variable                          | Descripción                                                              |
+| --------------------------------- | ------------------------------------------------------------------------ |
+| `ADMIN_PASSWORD_HASH`             | Hash bcrypt — generar con `npm run hash-password`                        |
+| `SESSION_DURATION_HOURS`          | Tiempo de vida de la sesión (por defecto: `24`)                          |
+| `DATABASE_URL`                    | Ruta al archivo SQLite (por defecto: `./data/youtube.db`)                |
+| `YOUTUBE_CLIENT_ID`               | Client ID de OAuth2 de Google Cloud Console                              |
+| `YOUTUBE_CLIENT_SECRET`           | Client secret de OAuth2                                                  |
+| `YOUTUBE_REDIRECT_URI`            | Debe coincidir con el redirect URI autorizado en GCP                     |
+| `GEMINI_API_KEY`                  | Clave API de Google AI Studio                                            |
+| `GEMINI_MODEL`                    | ID del modelo Gemini (ej. `gemini-3-flash-preview`)                      |
+| `OPENAI_API_KEY`                  | Clave API de OpenAI                                                      |
+| `OPENAI_MODEL`                    | ID del modelo OpenAI (ej. `gpt-4o-mini`)                                 |
+| `AI_PROVIDER`                     | Proveedor por defecto: `gemini` u `openai`                               |
+| `TOKEN_ENCRYPTION_KEY`            | 64 caracteres hex (32 bytes) para encriptar tokens con AES-256-GCM       |
+| `SYNC_INTERVAL_MINUTES`           | Intervalo de auto-sincronización (por defecto: `30`)                     |
+| `AUTO_SYNC_ON_START`              | Sincronizar al iniciar el servidor (por defecto: `true`)                 |
+| `MAX_QUOTA_PER_DAY`               | Límite máximo de cuota de la API de YouTube (por defecto: `8500`)        |
+| `RATE_LIMIT_LOGIN_MAX`            | Intentos de inicio de sesión máximos por ventana (por defecto: `5`)      |
 | `RATE_LIMIT_LOGIN_WINDOW_MINUTES` | Ventana de tiempo para límite de peticiones de login (por defecto: `15`) |
-| `LOCKOUT_DURATION_MINUTES`        | Duración del bloqueo tras fallos de login (por defecto: `30`) |
-| `LOG_RETENTION_DAYS`              | Días para mantener logs de errores/actividad (por defecto: `30`) |
+| `LOCKOUT_DURATION_MINUTES`        | Duración del bloqueo tras fallos de login (por defecto: `30`)            |
+| `LOG_RETENTION_DAYS`              | Días para mantener logs de errores/actividad (por defecto: `30`)         |
 
 **Generar secretos:**
 

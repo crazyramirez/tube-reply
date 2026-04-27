@@ -12,6 +12,7 @@ export default defineEventHandler(async (event) => {
   const intentParam = query.intent as string | undefined
   const isInbox = statusParam === 'inbox'
   const videoId = query.videoId as string | undefined
+  const searchParam = (query.search as string | undefined)?.trim() || ''
   const page = Math.max(1, Number(query.page ?? 1))
   const limit = Math.min(50, Math.max(1, Number(query.limit ?? 20)))
   const offset = (page - 1) * limit
@@ -22,10 +23,29 @@ export default defineEventHandler(async (event) => {
       ? inArray(comments.status, INBOX_STATUSES)
       : eq(comments.status, statusParam as 'pending' | 'suggested' | 'dismissed' | 'published' | 'skipped')
 
+  const searchCondition = searchParam
+    ? sql`(
+        LOWER(${comments.text}) LIKE LOWER(${'%' + searchParam + '%'})
+        OR LOWER(COALESCE(${comments.lastActivityText}, '')) LIKE LOWER(${'%' + searchParam + '%'})
+        OR LOWER(COALESCE(${comments.authorName}, '')) LIKE LOWER(${'%' + searchParam + '%'})
+        OR LOWER(COALESCE(${videos.title}, '')) LIKE LOWER(${'%' + searchParam + '%'})
+        OR EXISTS (
+          SELECT 1 FROM published_replies pr
+          WHERE pr.comment_id = ${comments.id}
+          AND LOWER(COALESCE(pr.final_text, '')) LIKE LOWER(${'%' + searchParam + '%'})
+        )
+        OR EXISTS (
+          SELECT 1 FROM suggested_replies sr
+          WHERE sr.comment_id = ${comments.id}
+          AND LOWER(COALESCE(sr.response_text, sr.edited_text, '')) LIKE LOWER(${'%' + searchParam + '%'})
+        )
+      )`
+    : sql`1=1`
 
   const whereConditions = [
     isNull(comments.parentId),
     statusCondition,
+    searchCondition,
     ...(videoId ? [eq(comments.videoId, videoId)] : []),
     ...(intentParam ? [eq(comments.detectedIntent, intentParam)] : []),
   ]
@@ -82,6 +102,7 @@ export default defineEventHandler(async (event) => {
   const [{ value: total }] = await db
     .select({ value: count(comments.id) })
     .from(comments)
+    .leftJoin(videos, eq(comments.videoId, videos.id))
     .where(and(...whereConditions))
 
   return {

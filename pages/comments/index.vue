@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { PaginatedResponse, CommentListItem } from "~/shared/types";
+import { renderCommentHtml } from "~/composables/useCommentHtml";
 
 definePageMeta({ middleware: "auth", keepalive: true });
 
@@ -12,6 +13,25 @@ const status = ref((route.query.status as string) || (route.query.videoId || rou
 const page = ref(Number(route.query.page || 1));
 const videoId = ref((route.query.videoId as string) || "");
 const intent = ref((route.query.intent as string) || "");
+const searchInput = ref((route.query.search as string) || "");
+const search = ref(searchInput.value);
+
+// Debounce the search so we only fire the API after the user stops typing
+let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+watch(searchInput, (val) => {
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => {
+    search.value = val.trim();
+    page.value = 1;
+    router.replace({ query: { ...route.query, search: val.trim() || undefined, page: 1 } });
+  }, 350);
+});
+
+function clearSearch() {
+  searchInput.value = "";
+  search.value = "";
+  router.replace({ query: { ...route.query, search: undefined, page: 1 } });
+}
 
 useHead({
   meta: [
@@ -30,6 +50,7 @@ const { data, refresh, pending } = useFetch<
     limit: 12,
     videoId: videoId.value,
     intent: intent.value,
+    search: search.value || undefined,
   })),
 });
 
@@ -153,7 +174,7 @@ function toggleSelection(id: string) {
   }
 }
 
-watch([status, page], () => {
+watch([status, page, search], () => {
   selectedIds.value = [];
 });
 
@@ -301,7 +322,65 @@ watch([status, page], (newVals, oldVals) => {
     </div>
 
 
-    <!-- Status tabs & Bulk Toggle -->
+    <!-- Search Bar -->
+    <div class="mb-6">
+      <div class="relative group">
+        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+          <UIcon
+            name="i-heroicons-magnifying-glass"
+            class="w-4 h-4 transition-colors"
+            :class="searchInput ? 'text-indigo-400' : 'text-slate-600'"
+          />
+        </div>
+        <input
+          v-model="searchInput"
+          type="search"
+          :placeholder="$t('comments.search_placeholder')"
+          class="w-full pl-10 pr-10 py-3 bg-white/[0.03] border border-white/[0.07] rounded-2xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.05] focus:ring-1 focus:ring-indigo-500/20 transition-all duration-200"
+        />
+        <!-- Clear button -->
+        <Transition
+          enter-active-class="transition duration-150 ease-out"
+          enter-from-class="opacity-0 scale-75"
+          enter-to-class="opacity-100 scale-100"
+          leave-active-class="transition duration-100 ease-in"
+          leave-from-class="opacity-100 scale-100"
+          leave-to-class="opacity-0 scale-75"
+        >
+          <button
+            v-if="searchInput"
+            @click="clearSearch"
+            class="absolute inset-y-0 right-0 pr-4 flex items-center group/clear"
+            :title="$t('comments.search_clear')"
+          >
+            <div class="p-1 rounded-lg hover:bg-white/10 transition-colors">
+              <UIcon name="i-heroicons-x-mark" class="w-3.5 h-3.5 text-slate-500 group-hover/clear:text-white transition-colors" />
+            </div>
+          </button>
+        </Transition>
+      </div>
+      <!-- Results count when searching -->
+      <Transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0 -translate-y-1"
+        enter-to-class="opacity-100 translate-y-0"
+        leave-active-class="transition duration-150 ease-in"
+        leave-from-class="opacity-100 translate-y-0"
+        leave-to-class="opacity-0 -translate-y-1"
+      >
+        <div v-if="search && !pending && data?.pagination" class="mt-2 flex items-center gap-2">
+          <span class="text-xs text-slate-500">
+            <span class="font-bold text-indigo-400">{{ $t('comments.search_results', { n: data.pagination.total }) }}</span>
+            {{ $t('comments.search_clear') && '' }}
+            <span class="text-slate-600">· "{{ search }}"</span>
+          </span>
+          <button
+            @click="clearSearch"
+            class="text-[10px] font-bold text-indigo-500 hover:text-indigo-300 uppercase tracking-widest transition-colors"
+          >{{ $t('comments.search_clear') }}</button>
+        </div>
+      </Transition>
+    </div>
     <div class="flex items-center justify-between mb-8 gap-4">
       <div
         class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide flex-1"
@@ -365,6 +444,27 @@ watch([status, page], (newVals, oldVals) => {
           class="h-24 rounded-2xl bg-white/[0.03] border border-white/[0.06] animate-pulse"
         />
       </div>
+    </div>
+
+    <!-- Empty (search) -->
+    <div
+      v-else-if="!pending && !data?.items?.length && search"
+      class="bg-white/[0.02] border border-white/[0.06] border-dashed rounded-2xl py-20 text-center"
+    >
+      <UIcon
+        name="i-heroicons-magnifying-glass"
+        class="w-12 h-12 mx-auto mb-3 text-slate-700"
+      />
+      <p class="text-slate-500 text-sm mb-3">
+        {{ $t('comments.search_no_results', { q: search }) }}
+      </p>
+      <button
+        @click="clearSearch"
+        class="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl"
+      >
+        <UIcon name="i-heroicons-x-mark" class="w-3.5 h-3.5" />
+        {{ $t('comments.search_clear') }}
+      </button>
     </div>
 
     <!-- Empty -->
@@ -472,16 +572,9 @@ watch([status, page], (newVals, oldVals) => {
           </div>
 
           <div class="p-3 sm:p-5 flex flex-col flex-1 gap-2 sm:gap-4">
-            <a
-              v-if="c.authorChannelId"
-              :href="`https://www.youtube.com/channel/${c.authorChannelId}`"
-              target="_blank"
-              rel="noreferrer"
-              class="flex items-center gap-2 sm:gap-3 group/author"
-              @click.stop
-            >
+            <div class="flex items-center gap-2 sm:gap-3 group/author">
               <div
-                class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-[8px] sm:text-xs overflow-hidden group-hover/author:ring-1 group-hover/author:ring-indigo-500/50 transition-all"
+                class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-[8px] sm:text-xs overflow-hidden transition-all"
               >
                 <img
                   v-if="c.authorProfileImageUrl"
@@ -495,49 +588,23 @@ watch([status, page], (newVals, oldVals) => {
 
               <div class="flex flex-col min-w-0">
                 <span
-                  class="font-bold text-[10px] sm:text-sm text-white truncate group-hover/author:text-indigo-400 transition-colors"
-                  >{{ c.lastAuthor || c.authorName }}</span
+                  class="font-bold text-[10px] sm:text-sm text-white truncate transition-colors"
+                  >{{ c.authorName }}</span
                 >
                 <span
                   class="mt-0.5 text-[8px] sm:text-[12px] text-slate-500 font-medium"
-                  >{{ timeAgo(c.lastActivityAt || c.publishedAt) }}</span
-                >
-              </div>
-            </a>
-            <div v-else class="flex items-center gap-2 sm:gap-3">
-              <div
-                class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-[8px] sm:text-xs overflow-hidden"
-              >
-                <img
-                  v-if="c.authorProfileImageUrl"
-                  :src="c.authorProfileImageUrl"
-                  class="w-full h-full object-cover"
-                  referrerpolicy="no-referrer"
-                  crossorigin="anonymous"
-                />
-                <span v-else>{{ c.authorName?.[0] }}</span>
-              </div>
-
-              <div class="flex flex-col min-w-0">
-                <span
-                  class="font-bold text-[10px] sm:text-sm text-white truncate"
-                  >{{ c.lastAuthor || c.authorName }}</span
-                >
-                <span
-                  class="mt-0.5 text-[8px] sm:text-[12px] text-slate-500 font-medium"
-                  >{{ timeAgo(c.lastActivityAt || c.publishedAt) }}</span
+                  >{{ timeAgo(c.publishedAt) }}</span
                 >
               </div>
             </div>
+
 
             <div
               class="bg-white/5 border border-white/5 rounded-lg sm:rounded-xl p-2 sm:p-4 flex-1"
             >
               <p
                 class="text-[10px] sm:text-sm text-slate-300 leading-relaxed line-clamp-2 sm:line-clamp-3 italic"
-              >
-                "{{ c.lastText || c.text }}"
-              </p>
+              >"<span v-html="renderCommentHtml(c.lastText || c.text)"></span>"</p>
             </div>
 
             <!-- Published reply preview -->
@@ -692,31 +759,16 @@ watch([status, page], (newVals, oldVals) => {
 
           <!-- Content -->
           <div class="flex-1 min-w-0 flex flex-col">
-            <a
-              v-if="c.authorChannelId"
-              :href="`https://www.youtube.com/channel/${c.authorChannelId}`"
-              target="_blank"
-              rel="noreferrer"
-              class="mb-1.5 order-2 sm:order-1 flex items-center gap-2 group/author"
-              @click.stop
-            >
-              <div class="w-5 h-5 rounded-full overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center text-[10px] text-indigo-400 font-bold shrink-0 group-hover/author:ring-1 group-hover/author:ring-indigo-500/50 transition-all">
+            <div class="mb-1.5 order-2 sm:order-1 flex items-center gap-2 group/author">
+              <div class="w-5 h-5 rounded-full overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center text-[10px] text-indigo-400 font-bold shrink-0 transition-all">
                 <img v-if="c.authorProfileImageUrl" :src="c.authorProfileImageUrl" class="w-full h-full object-cover" referrerpolicy="no-referrer" crossorigin="anonymous" />
-                <span v-else>{{ (c.lastAuthor || c.authorName)?.[0] }}</span>
+                <span v-else>{{ c.authorName?.[0] }}</span>
               </div>
-              <span class="font-bold text-white text-sm truncate block group-hover/author:text-indigo-400 transition-colors">{{
-                c.lastAuthor || c.authorName
-              }}</span>
-            </a>
-            <div v-else class="mb-1.5 order-2 sm:order-1 flex items-center gap-2">
-              <div class="w-5 h-5 rounded-full overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center text-[10px] text-indigo-400 font-bold shrink-0">
-                <img v-if="c.authorProfileImageUrl" :src="c.authorProfileImageUrl" class="w-full h-full object-cover" referrerpolicy="no-referrer" crossorigin="anonymous" />
-                <span v-else>{{ (c.lastAuthor || c.authorName)?.[0] }}</span>
-              </div>
-              <span class="font-bold text-white text-sm truncate block">{{
-                c.lastAuthor || c.authorName
+              <span class="font-bold text-white text-sm truncate block transition-colors">{{
+                c.authorName
               }}</span>
             </div>
+
 
             <div
               class="flex items-center justify-between gap-4 mb-2 order-1 sm:order-2"
@@ -766,9 +818,7 @@ watch([status, page], (newVals, oldVals) => {
             </div>
             <p
               class="text-xs sm:text-sm text-slate-400 line-clamp-2 italic order-3"
-            >
-              "{{ c.lastText || c.text }}"
-            </p>
+            >"<span v-html="renderCommentHtml(c.lastText || c.text)"></span>"</p>
             <div
               v-if="c.replyText"
               class="mt-1 pl-3 border-l-2 border-emerald-500/30 order-4"
