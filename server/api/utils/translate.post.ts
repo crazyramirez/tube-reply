@@ -1,10 +1,12 @@
-import { getAiProvider } from '../../utils/settings'
+import { getAiProvider, getUserLanguage } from '../../utils/settings'
+import { logger } from '../../utils/logger'
 import * as gemini from '../../utils/gemini'
 import * as openai from '../../utils/openai'
 
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const { text, targetLang = 'Spanish' } = body
+  await logger.info('translate-api', `TargetLang: ${targetLang}`, { textLength: text?.length })
 
   if (!text || typeof text !== 'string' || !text.trim()) {
     return { translation: '' }

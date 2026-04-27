@@ -6,9 +6,7 @@ definePageMeta({ middleware: "auth" });
 const { t } = useI18n();
 
 useHead({
-  meta: [
-    { name: 'referrer', content: 'no-referrer' }
-  ]
+  meta: [{ name: "referrer", content: "no-referrer" }],
 });
 
 const { data: stats, refresh } = await useFetch<DashboardStats>(
@@ -113,6 +111,25 @@ const statusColor = (s: string) =>
       : s === "dismissed"
         ? "gray"
         : "yellow";
+
+const failedThumbnails = ref<Record<string, boolean>>({});
+
+function handleThumbnailError(
+  commentId: string,
+  videoId: string,
+  event: Event,
+) {
+  const img = event.target as HTMLImageElement;
+  const max = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+  const mq = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+  if (!img.src.includes("img.youtube.com/vi/")) {
+    img.src = max;
+  } else if (img.src.includes("maxresdefault")) {
+    img.src = mq;
+  } else {
+    failedThumbnails.value[commentId] = true;
+  }
+}
 
 const statCards = computed(() => [
   {
@@ -265,7 +282,6 @@ const statCards = computed(() => [
       </div>
     </div>
 
-
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-2">
         <div
@@ -320,12 +336,13 @@ const statCards = computed(() => [
         <!-- Video Preview -->
         <div class="relative aspect-video bg-slate-900 overflow-hidden">
           <img
-            v-if="comment.videoThumbnail"
+            v-if="comment.videoThumbnail && !failedThumbnails[comment.id]"
             :src="comment.videoThumbnail ?? undefined"
             :alt="comment.videoTitle ?? ''"
             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
             loading="lazy"
             referrerpolicy="no-referrer"
+            @error="handleThumbnailError(comment.id, comment.videoId, $event)"
           />
           <div v-else class="w-full h-full flex items-center justify-center">
             <UIcon
@@ -344,7 +361,7 @@ const statCards = computed(() => [
               size="xs"
               class="font-black tracking-tighter rounded-md text-[8px] sm:text-[10px] px-1 sm:px-1.5"
             >
-              {{ $t('status.' + comment.status).toUpperCase() }}
+              {{ $t("status." + comment.status).toUpperCase() }}
             </UBadge>
           </div>
 
@@ -361,22 +378,26 @@ const statCards = computed(() => [
         <div class="p-3 sm:p-5 flex flex-col flex-1 gap-2 sm:gap-4">
           <a
             v-if="comment.authorChannelId"
-            :href="`https://www.youtube.com/channel/${comment.authorChannelId}`"
-            target="_blank"
             rel="noreferrer"
             class="flex items-center gap-2 sm:gap-3 group/author"
             @click.stop
           >
             <UAvatar
-              :src="comment.authorProfileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.authorName || 'User')}&background=6366f1&color=fff`"
+              :src="
+                comment.authorProfileImageUrl ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.authorName || 'User')}&background=6366f1&color=fff`
+              "
               size="sm"
               class="ring-1 ring-white/10 group-hover/author:ring-indigo-500/50 transition-all"
               :alt="comment.authorName"
-              :img-attributes="{ referrerpolicy: 'no-referrer', crossorigin: 'anonymous' }"
+              :img-attributes="{
+                referrerpolicy: 'no-referrer',
+                crossorigin: 'anonymous',
+              }"
             />
             <div class="flex flex-col min-w-0">
               <span
-                class="font-bold text-[10px] sm:text-sm text-white truncate group-hover/author:text-indigo-400 transition-colors"
+                class="font-bold text-[10px] sm:text-sm text-white truncate"
                 >{{ comment.authorName }}</span
               >
               <span
@@ -387,11 +408,17 @@ const statCards = computed(() => [
           </a>
           <div v-else class="flex items-center gap-2 sm:gap-3">
             <UAvatar
-              :src="comment.authorProfileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.authorName || 'User')}&background=6366f1&color=fff`"
+              :src="
+                comment.authorProfileImageUrl ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.authorName || 'User')}&background=6366f1&color=fff`
+              "
               size="sm"
               class="ring-1 ring-white/10"
               :alt="comment.authorName"
-              :img-attributes="{ referrerpolicy: 'no-referrer', crossorigin: 'anonymous' }"
+              :img-attributes="{
+                referrerpolicy: 'no-referrer',
+                crossorigin: 'anonymous',
+              }"
             />
             <div class="flex flex-col min-w-0">
               <span

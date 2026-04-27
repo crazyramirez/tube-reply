@@ -2,7 +2,7 @@ import { eq, or, and, sql, desc } from 'drizzle-orm'
 import { useDb } from '../utils/db'
 import * as gemini from '../utils/gemini'
 import * as openai from '../utils/openai'
-import { getAiProvider } from '../utils/settings'
+import { getAiProvider, getUserLanguage } from '../utils/settings'
 import { generateVideoSummary } from './video-summary'
 import { buildContext, buildPrompt, isYouTubeShort } from './context-builder'
 import { logger } from '../utils/logger'
@@ -30,11 +30,17 @@ export async function generateSuggestion(
   commentId: string,
   langOverride: string | null = null,
   additionalContext: string | null = null,
-  userLang: string = "Spanish",
+  userLang?: string,
 ): Promise<{ suggestionId: number }> {
   const db = useDb()
 
-
+  const finalUserLang = userLang || await getUserLanguage()
+  await logger.info('suggestion-engine', `Language Debug`, { 
+    commentId, 
+    userLangParam: userLang || 'unset', 
+    dbLang: await getUserLanguage(), 
+    final: finalUserLang 
+  })
 
   const comment = await db.query.comments.findFirst({
     where: eq(comments.id, commentId),
@@ -45,7 +51,7 @@ export async function generateSuggestion(
   await generateVideoSummary(comment.videoId)
 
   const ctx = await buildContext(commentId, langOverride, additionalContext)
-  const prompt = buildPrompt(ctx, userLang)
+  const prompt = buildPrompt(ctx, finalUserLang)
 
   // ─── Multilingual Stopword List ───────────────────────────────────────────────
   // Covers: ES, EN, FR, PT/BR, IT, RO, RU (Cyrillic), AR

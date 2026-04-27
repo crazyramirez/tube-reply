@@ -37,6 +37,30 @@ const languageNames: Record<string, string> = {
   da: "Danish",
   fi: "Finnish",
   ca: "Catalan",
+  cs: "Czech",
+};
+
+const langFlag: Record<string, string> = {
+  es: "🇪🇸",
+  en: "🇬🇧",
+  pt: "🇧🇷",
+  fr: "🇫🇷",
+  de: "🇩🇪",
+  it: "🇮🇹",
+  ja: "🇯🇵",
+  zh: "🇨🇳",
+  ar: "🇸🇦",
+  ko: "🇰🇷",
+  ru: "🇷🇺",
+  nl: "🇳🇱",
+  pl: "🇵🇱",
+  tr: "🇹🇷",
+  sv: "🇸🇪",
+  no: "🇳🇴",
+  da: "🇩🇰",
+  fi: "🇫🇮",
+  ca: "🇨🇦",
+  cs: "🇨🇿",
 };
 
 const userLangName = computed(() => languageNames[locale.value] || "Spanish");
@@ -206,6 +230,7 @@ const LANGUAGES = [
   { label: "🇩🇰 Danish (da)", value: "da" },
   { label: "🇫🇮 Finnish (fi)", value: "fi" },
   { label: "🇨🇦 Catalan (ca)", value: "ca" },
+  { label: "🇨🇿 Czech (cs)", value: "cs" },
 ];
 
 const STATUS_OPTIONS = computed(() => [
@@ -398,9 +423,26 @@ async function publishReply() {
   }
 }
 
+const failedThumbnails = ref<Record<string, boolean>>({});
+
 function highResThumbnail(url: string | null | undefined): string | undefined {
   if (!url) return undefined;
+  const match = url.match(/\/vi\/([^\/\?]+)/);
+  if (match) return `https://img.youtube.com/vi/${match[1]}/maxresdefault.jpg`;
   return url.replace("mqdefault.jpg", "maxresdefault.jpg");
+}
+
+function handleThumbnailError(key: string, videoId: string, event: Event) {
+  const img = event.target as HTMLImageElement;
+  const max = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+  const mq = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+  if (!img.src.includes('img.youtube.com/vi/')) {
+    img.src = max;
+  } else if (img.src.includes('maxresdefault')) {
+    img.src = mq;
+  } else {
+    failedThumbnails.value[key] = true;
+  }
 }
 
 const finalText = computed(
@@ -482,7 +524,7 @@ const effectiveVideoLinks = computed(() => {
   );
 
   return detectedIds.map((id) => {
-    if (metaMap.has(id)) return metaMap.get(id);
+    if (metaMap.has(id)) return metaMap.get(id)!;
     return {
       video_id: id,
       video_title: `ID: ${id}`,
@@ -810,6 +852,7 @@ async function confirmUnban() {
                   n: data.replies?.length + 1,
                 })
               }}</span>
+              <span class="text-[8px] text-slate-600 ml-2">({{ userLangName }})</span>
             </div>
             <UBadge
               :color="confidenceColor"
@@ -835,10 +878,12 @@ async function confirmUnban() {
                   class="relative w-24 aspect-video rounded-lg overflow-hidden flex-shrink-0"
                 >
                   <img
+                    v-if="!failedThumbnails['video-' + data.video.id]"
                     :src="highResThumbnail(data.video.thumbnailUrl)"
                     class="w-full h-full object-cover opacity-60 group-hover/video:opacity-100 transition-opacity"
                     referrerpolicy="no-referrer"
                     crossorigin="anonymous"
+                    @error="handleThumbnailError('video-' + data.video.id, data.video.id, $event)"
                   />
                   <div
                     class="absolute inset-0 flex items-center justify-center"
@@ -908,6 +953,14 @@ async function confirmUnban() {
                 <span class="text-[9px] text-slate-600 uppercase">{{
                   timeAgo(data.comment.publishedAt)
                 }}</span>
+                <!-- Language badge -->
+                <span
+                  v-if="selectedLang"
+                  class="flex items-center gap-1.5 px-1.5 py-0.5 rounded border text-[8px] font-black uppercase text-indigo-300 bg-indigo-500/10 border-white/10"
+                >
+                  <span>{{ langFlag[selectedLang] || '🌐' }}</span>
+                  <span>{{ languageNames[selectedLang] || selectedLang }}</span>
+                </span>
                 <!-- Return commenter badge -->
                 <span
                   v-if="data.comment.isReturnCommenter"
@@ -1015,9 +1068,17 @@ async function confirmUnban() {
                       }}
                     </span>
                   </template>
-                  <span class="text-[9px] text-slate-600 uppercase">{{
+                  <span class="text-[9px] text-slate-600 uppercase ml-1">{{
                     timeAgo(reply.publishedAt)
                   }}</span>
+                  <!-- Reply Language badge -->
+                  <span
+                    v-if="reply.detectedLang && !reply.isOwner"
+                    class="flex items-center gap-1 px-1 py-0.5 rounded bg-white/[0.03] border border-white/5 text-[7px] font-black uppercase text-slate-500"
+                  >
+                    <span>{{ langFlag[reply.detectedLang] || '🌐' }}</span>
+                    <span>{{ reply.detectedLang }}</span>
+                  </span>
                 </div>
                 <div
                   class="p-4 text-sm leading-relaxed shadow-sm max-w-[85%]"
@@ -1420,10 +1481,15 @@ async function confirmUnban() {
                 class="glass-card p-3 flex items-center gap-3 hover:border-indigo-500/30 transition-colors"
               >
                 <img
+                  v-if="!failedThumbnails['link-' + link.video_id]"
                   :src="highResThumbnail(link.thumbnail_url)"
                   class="w-16 aspect-video object-cover rounded shadow-lg"
                   referrerpolicy="no-referrer"
+                  @error="handleThumbnailError('link-' + link.video_id, link.video_id, $event)"
                 />
+                <div v-else class="w-16 aspect-video rounded bg-slate-800 flex items-center justify-center">
+                  <UIcon name="i-heroicons-video-camera" class="w-4 h-4 text-slate-600" />
+                </div>
                 <a
                   :href="link.url"
                   target="_blank"
@@ -1524,10 +1590,15 @@ async function confirmUnban() {
                 class="glass-card p-3 flex items-center gap-3 border-emerald-500/10 bg-emerald-500/[0.01] hover:border-emerald-500/30 transition-colors"
               >
                 <img
+                  v-if="!failedThumbnails['link-' + link.video_id]"
                   :src="highResThumbnail(link.thumbnail_url)"
                   class="w-16 aspect-video object-cover rounded shadow-lg"
                   referrerpolicy="no-referrer"
+                  @error="handleThumbnailError('link-' + link.video_id, link.video_id, $event)"
                 />
+                <div v-else class="w-16 aspect-video rounded bg-slate-800 flex items-center justify-center">
+                  <UIcon name="i-heroicons-video-camera" class="w-4 h-4 text-slate-600" />
+                </div>
                 <a
                   :href="link.url"
                   target="_blank"
@@ -1616,6 +1687,26 @@ async function confirmUnban() {
               class="text-base text-slate-200 leading-relaxed font-medium italic"
             >
               "{{ finalText }}"
+            </p>
+          </div>
+
+          <!-- Translation Verification in Modal -->
+          <div
+            v-if="activeSuggestion?.verificationTranslation"
+            class="mt-6 p-5 rounded-2xl bg-white/[0.02] border border-white/5 animate-fade-in"
+          >
+            <div class="flex items-center gap-2 mb-3 opacity-50">
+              <UIcon
+                name="i-heroicons-language"
+                class="w-3.5 h-3.5 text-slate-500"
+              />
+              <span
+                class="text-[9px] font-black text-slate-500 uppercase tracking-widest"
+                >{{ $t("comment_detail.verification_translation") }}</span
+              >
+            </div>
+            <p class="text-sm text-slate-400 italic leading-relaxed">
+              "{{ activeSuggestion.verificationTranslation }}"
             </p>
           </div>
 

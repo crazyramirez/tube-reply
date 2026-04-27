@@ -26,6 +26,7 @@ const ISO_TO_BCP47: Record<string, string> = {
   nor: 'no',
   dan: 'da',
   fin: 'fi',
+  ces: 'cs',
 }
 
 // Spanish-exclusive: ñ/¡/¿ chars + words not in Portuguese
@@ -123,7 +124,7 @@ export function detectLanguage(text: string): LangResult {
   
   // If it's a rare language (like 'qu', 'ny', 'li') and confidence is not very high,
   // it's probably a misidentification of a short Spanish/Portuguese comment.
-  const commonLangs = ['es', 'en', 'pt', 'fr', 'it', 'de', 'tr']
+  const commonLangs = ['es', 'en', 'pt', 'fr', 'it', 'de', 'tr', 'cs']
   if (!commonLangs.includes(bcp47) && confidence < 0.6) {
 
       return { lang: 'es', confidence: 0.3 }

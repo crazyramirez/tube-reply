@@ -93,6 +93,40 @@ const langFlag: Record<string, string> = {
   ja: "🇯🇵",
   zh: "🇨🇳",
   ar: "🇸🇦",
+  ko: "🇰🇷",
+  ru: "🇷🇺",
+  nl: "🇳🇱",
+  pl: "🇵🇱",
+  tr: "🇹🇷",
+  sv: "🇸🇪",
+  no: "🇳🇴",
+  da: "🇩🇰",
+  fi: "🇫🇮",
+  ca: "🇨🇦",
+  cs: "🇨🇿",
+};
+
+const languageNames: Record<string, string> = {
+  en: "English",
+  es: "Spanish",
+  pt: "Portuguese",
+  fr: "French",
+  de: "German",
+  it: "Italian",
+  nl: "Dutch",
+  pl: "Polish",
+  ru: "Russian",
+  ja: "Japanese",
+  zh: "Chinese",
+  ar: "Arabic",
+  ko: "Korean",
+  tr: "Turkish",
+  sv: "Swedish",
+  no: "Norwegian",
+  da: "Danish",
+  fi: "Finnish",
+  ca: "Catalan",
+  cs: "Czech",
 };
 
 function timeAgo(iso: string): string {
@@ -230,6 +264,21 @@ onActivated(() => {
     }, 100);
   }
 });
+
+const failedThumbnails = ref<Record<string, boolean>>({});
+
+function handleThumbnailError(commentId: string, videoId: string, event: Event) {
+  const img = event.target as HTMLImageElement;
+  const max = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+  const mq = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+  if (!img.src.includes('img.youtube.com/vi/')) {
+    img.src = max;
+  } else if (img.src === max) {
+    img.src = mq;
+  } else {
+    failedThumbnails.value[commentId] = true;
+  }
+}
 
 const { justAutoSuggestCompleted } = useSyncStatus();
 watch(justAutoSuggestCompleted, (done) => {
@@ -497,12 +546,13 @@ watch([status, page], (newVals, oldVals) => {
           <!-- Video Preview -->
           <div class="relative aspect-video bg-slate-900 overflow-hidden">
             <img
-              v-if="c.videoThumbnail"
+              v-if="c.videoThumbnail && !failedThumbnails[c.id]"
               :src="c.videoThumbnail ?? undefined"
               :alt="c.videoTitle ?? ''"
               class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               loading="lazy"
               referrerpolicy="no-referrer"
+              @error="handleThumbnailError(c.id, c.videoId, $event)"
             />
             <div v-else class="w-full h-full flex items-center justify-center">
               <UIcon
@@ -554,11 +604,14 @@ watch([status, page], (newVals, oldVals) => {
                 <UIcon name="i-heroicons-star" class="w-2.5 h-2.5" />
                 {{ parseOpportunityFlags(c.opportunityFlags)[0] }}
               </span>
+              <!-- Language badge -->
               <span
                 v-if="c.detectedLang"
-                class="bg-black/40 backdrop-blur-md px-1 sm:px-2 py-0.5 rounded text-[8px] sm:text-sm font-bold text-white border border-white/10 uppercase"
+                class="flex items-center gap-1 bg-black/60 backdrop-blur-md px-1.5 sm:px-2 py-0.5 rounded border border-white/10 text-[8px] sm:text-[10px] font-black uppercase text-white shadow-lg"
               >
-                {{ c.detectedLang }}
+                <span>{{ langFlag[c.detectedLang] || '🌐' }}</span>
+                <span class="hidden sm:inline">{{ languageNames[c.detectedLang] || c.detectedLang }}</span>
+                <span class="sm:hidden">{{ c.detectedLang }}</span>
               </span>
             </div>
 
@@ -709,12 +762,13 @@ watch([status, page], (newVals, oldVals) => {
             class="flex flex-shrink-0 w-28 sm:w-36 aspect-[4/3] sm:aspect-video rounded-xl overflow-hidden border border-white/10 relative"
           >
             <img
-              v-if="c.videoThumbnail"
+              v-if="c.videoThumbnail && !failedThumbnails[c.id]"
               :src="c.videoThumbnail ?? undefined"
               :alt="c.videoTitle ?? ''"
               class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
               loading="lazy"
               referrerpolicy="no-referrer"
+              @error="handleThumbnailError(c.id, c.videoId, $event)"
             />
             <div
               v-else
@@ -784,6 +838,14 @@ watch([status, page], (newVals, oldVals) => {
                 >
                   {{ $t('status.' + c.status).toUpperCase() }}
                 </UBadge>
+                <!-- Language badge -->
+                <span
+                  v-if="c.detectedLang"
+                  class="flex items-center gap-1 bg-white/[0.05] border border-white/[0.1] px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] font-black uppercase text-slate-300"
+                >
+                  <span>{{ langFlag[c.detectedLang] || '🌐' }}</span>
+                  <span>{{ languageNames[c.detectedLang] || c.detectedLang }}</span>
+                </span>
                 <!-- Opportunity -->
                 <span
                   v-if="parseOpportunityFlags(c.opportunityFlags).length > 0"

@@ -52,6 +52,7 @@ const FLAG: Record<string, string> = {
   nl: "🇳🇱",
   pl: "🇵🇱",
   tr: "🇹🇷",
+  cs: "🇨🇿",
 };
 
 function sentimentBar(week: any) {

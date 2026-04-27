@@ -72,6 +72,7 @@ export default defineNuxtConfig({
       { code: 'da', iso: 'da-DK', name: 'Dansk', file: 'en.json' },
       { code: 'fi', iso: 'fi-FI', name: 'Suomi', file: 'en.json' },
       { code: 'ca', iso: 'ca-ES', name: 'Català', file: 'en.json' },
+      { code: 'cs', iso: 'cs-CZ', name: 'Čeština', file: 'en.json' },
     ],
     lazy: true,
     defaultLocale: 'en',

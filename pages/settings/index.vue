@@ -100,12 +100,25 @@ const languageOptions = [
   { label: "🇩🇰 Dansk", value: "da" },
   { label: "🇫🇮 Suomi", value: "fi" },
   { label: "🇨🇦 Català", value: "ca" },
+  { label: "🇨🇿 Čeština", value: "cs" },
 ];
 
 const currentLocale = computed({
   get: () => locale.value,
   set: (val: any) => setLocale(val),
 });
+
+watch(currentLocale, async (val) => {
+  try {
+    await $fetch("/api/settings", {
+      method: "PATCH",
+      body: { language: val },
+      headers: useCsrfHeaders(),
+    });
+  } catch (err) {
+    console.error("Failed to save language setting:", err);
+  }
+}, { immediate: true });
 
 async function connectYouTube() {
   connecting.value = true;

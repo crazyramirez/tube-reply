@@ -32,6 +32,10 @@ export default defineEventHandler(async (event) => {
   if (typeof body.autoSuggestEnabled === 'boolean') {
     await setSetting('auto_suggest_enabled', body.autoSuggestEnabled ? 'true' : 'false')
   }
+  
+  if (body.language) {
+    await setSetting('language', body.language)
+  }
 
   return { success: true }
 })

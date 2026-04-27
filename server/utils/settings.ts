@@ -53,3 +53,31 @@ export async function getAiProvider(): Promise<'gemini' | 'openai'> {
   console.log(`[settings] Using AI provider from ENV (fallback): ${envProvider}`)
   return envProvider as 'gemini' | 'openai'
 }
+
+const LANGUAGE_MAP: Record<string, string> = {
+  en: "English",
+  es: "Spanish",
+  pt: "Portuguese",
+  fr: "French",
+  de: "German",
+  it: "Italian",
+  nl: "Dutch",
+  pl: "Polish",
+  ru: "Russian",
+  ja: "Japanese",
+  zh: "Chinese",
+  ar: "Arabic",
+  ko: "Korean",
+  tr: "Turkish",
+  sv: "Swedish",
+  no: "Norwegian",
+  da: "Danish",
+  fi: "Finnish",
+  ca: "Catalan",
+  cs: "Czech",
+};
+
+export async function getUserLanguage(): Promise<string> {
+  const code = await getSetting('language', 'es')
+  return LANGUAGE_MAP[code] || "Spanish"
+}

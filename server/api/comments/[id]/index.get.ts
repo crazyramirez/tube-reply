@@ -18,6 +18,7 @@ export default defineEventHandler(async (event) => {
       status: comments.status,
       detectedIntent: comments.detectedIntent,
       isReturnCommenter: comments.isReturnCommenter,
+      detectedLang: comments.detectedLang,
       priorityScore: comments.priorityScore,
       priorityLabel: comments.priorityLabel,
     })
@@ -50,6 +51,7 @@ export default defineEventHandler(async (event) => {
       authorProfileImageUrl: authors.profileImageUrl,
       text: comments.text,
       publishedAt: comments.publishedAt,
+      detectedLang: comments.detectedLang,
     })
     .from(comments)
     .leftJoin(authors, eq(comments.authorChannelId, authors.channelId))

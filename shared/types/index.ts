@@ -305,6 +305,7 @@ export interface CommentReply {
   authorProfileImageUrl: string | null
   isOwner?: boolean
   isLocal?: boolean
+  detectedLang?: string | null
 }
 
 export interface CommenterHistory {

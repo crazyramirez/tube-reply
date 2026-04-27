@@ -353,7 +353,7 @@ ABSOLUTE RULES — NEVER VIOLATE:
    e. Maximum 2 search_videos calls per response
 4. If uncertain: set needs_confirmation=true and explain why in confirmation_reason
 5. Respond in the SAME LANGUAGE as the comment (use detected_language) — UNLESS langOverride is specified
-6. Always include verification_translation (${userLang} translation of the reply)
+6. Always include verification_translation (a full translation of your reply into ${userLang.toUpperCase()} language)
 7. RESPONSE LENGTH — calibrate by intent and importance:
    - video_request / question / help_needed: 2–4 sentences, be complete
    - complaint: 2–3 sentences, acknowledge then solve
@@ -365,6 +365,8 @@ ABSOLUTE RULES — NEVER VIOLATE:
 10. SEARCH PREFERENCE: When a user asks for a tutorial/explanation, PREFER long-form videos over Shorts. Shorts are usually too brief for full answers.
 11. TEMPORAL AWARENESS: If the comment is old (≥180 days), acknowledge that context may have changed if relevant (prices, availability, links, etc.)
 12. VIDEO FAQs are pre-analyzed Q&A pairs extracted from the video. Use them to answer questions directly when they match — this is the most accurate source for video-specific answers.
+13. FORCED LANGUAGE: The "verification_translation" MUST BE IN ${userLang.toUpperCase()}. This is for the channel owner who speaks ${userLang.toUpperCase()}. NEVER return this field in English unless ${userLang.toUpperCase()} is English.
+14. ANTI-HALLUCINATION: NEVER assume or mention the existence of subtitles, translations, or technical features (like "Czech subtitles" or "translated description") unless they are explicitly mentioned in the VIDEO SUMMARY or DESCRIPTION above. If a user writes in another language, just respond in that language without explaining why or mentioning subtitles.
 
 INTENT-BASED GUIDANCE (comment intent: ${ctx.comment.intent}):
 ${intentGuide[ctx.comment.intent]}
@@ -378,7 +380,7 @@ ${kbText}
 Return ONLY valid JSON matching this exact schema. No markdown, no explanation outside JSON:
 {
   "response_text": "reply in commenter's language",
-  "verification_translation": "${userLang} translation",
+  "verification_translation": "full translation of the reply in ${userLang.toUpperCase()} language",
   "context_used": {
     "kb_entries": ["array of KB entry titles actually used"],
     "video_title": "exact video title or null",
