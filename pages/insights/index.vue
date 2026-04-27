@@ -105,6 +105,34 @@ function opportunityScore(idea: VideoIdeaCluster) {
 }
 
 const CIRC = 2 * Math.PI * 30;
+
+const STEPS = [
+  { icon: "i-heroicons-magnifying-glass", label: "Scanning comment patterns" },
+  { icon: "i-heroicons-cpu-chip", label: "Clustering semantic topics" },
+  { icon: "i-heroicons-users", label: "Profiling audience intent" },
+  { icon: "i-heroicons-signal", label: "Computing demand signals" },
+  { icon: "i-heroicons-sparkles", label: "Generating blueprints" },
+  { icon: "i-heroicons-trophy", label: "Scoring opportunities" },
+  { icon: "i-heroicons-fire", label: "Crafting viral hooks" },
+];
+const activeStep = ref(0);
+let _stepTimer: ReturnType<typeof setInterval> | null = null;
+
+watch(generating, (val) => {
+  if (val) {
+    activeStep.value = 0;
+    _stepTimer = setInterval(() => {
+      if (activeStep.value < STEPS.length - 1) activeStep.value++;
+    }, 1300);
+  } else {
+    if (_stepTimer) clearInterval(_stepTimer);
+    _stepTimer = null;
+  }
+});
+
+onUnmounted(() => {
+  if (_stepTimer) clearInterval(_stepTimer);
+});
 </script>
 
 <template>
@@ -289,8 +317,97 @@ const CIRC = 2 * Math.PI * 30;
 
       <!-- RIGHT · Blueprint Detail Panel -->
       <Transition name="blueprint" mode="out-in">
+        <!-- ── AI Generating State ─────────────────────────────────────── -->
         <div
-          v-if="selectedIdea"
+          v-if="generating && !selectedIdea"
+          key="ai-generating"
+          class="rounded-3xl overflow-hidden border border-indigo-500/20 bg-[#0b1120]/80 backdrop-blur-xl"
+        >
+          <!-- Scan Header -->
+          <div class="relative p-8 border-b border-white/[0.05] overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-br from-indigo-600/[0.07] to-transparent pointer-events-none" />
+            <div class="ai-scan bg-gradient-to-r from-transparent via-indigo-400/60 to-transparent pointer-events-none" />
+            <div class="relative">
+              <div class="flex items-center gap-2 mb-5">
+                <div class="relative flex">
+                  <div class="w-2 h-2 rounded-full bg-indigo-500 animate-ping absolute opacity-60" />
+                  <div class="w-2 h-2 rounded-full bg-indigo-500 relative" />
+                </div>
+                <span class="text-[10px] font-black text-indigo-400 uppercase tracking-[0.35em]">Neural Analysis</span>
+              </div>
+              <Transition name="step-fade" mode="out-in">
+                <div :key="activeStep" class="mb-5">
+                  <p class="text-xl font-black text-white leading-tight">
+                    {{ STEPS[activeStep].label }}
+                  </p>
+                  <p class="text-[11px] text-slate-500 mt-1">Analyzing your audience data...</p>
+                </div>
+              </Transition>
+              <div class="flex items-center gap-3">
+                <div class="flex-1 h-[2px] bg-white/[0.05] rounded-full overflow-hidden">
+                  <div
+                    class="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full transition-all duration-700 ease-out"
+                    :style="{ width: `${Math.round(((activeStep + 1) / STEPS.length) * 100)}%` }"
+                  />
+                </div>
+                <span class="text-[10px] font-black text-indigo-400 tabular-nums shrink-0">
+                  {{ Math.round(((activeStep + 1) / STEPS.length) * 100) }}%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Steps list -->
+          <div class="p-6 space-y-1">
+            <div
+              v-for="(step, i) in STEPS"
+              :key="i"
+              class="flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-300 border"
+              :class="i === activeStep ? 'bg-indigo-500/[0.07] border-indigo-500/20' : 'border-transparent'"
+            >
+              <div
+                class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 border"
+                :class="
+                  i < activeStep
+                    ? 'bg-emerald-500/10 border-emerald-500/20'
+                    : i === activeStep
+                      ? 'bg-indigo-500/10 border-indigo-500/20'
+                      : 'bg-white/[0.02] border-white/[0.05]'
+                "
+              >
+                <UIcon v-if="i < activeStep" name="i-heroicons-check" class="w-3 h-3 text-emerald-400" />
+                <div
+                  v-else-if="i === activeStep"
+                  class="w-2.5 h-2.5 border-[1.5px] border-indigo-400 border-t-transparent rounded-full animate-spin"
+                />
+                <UIcon v-else :name="step.icon" class="w-3 h-3 text-slate-700" />
+              </div>
+              <span
+                class="text-xs font-bold transition-colors duration-300"
+                :class="
+                  i < activeStep ? 'text-slate-600' : i === activeStep ? 'text-white' : 'text-slate-700'
+                "
+              >{{ step.label }}</span>
+              <span v-if="i < activeStep" class="ml-auto text-[9px] font-black text-emerald-600/70 uppercase tracking-wider">done</span>
+              <span v-else-if="i === activeStep" class="ml-auto text-[9px] font-black text-indigo-400 uppercase tracking-wider animate-pulse">live</span>
+            </div>
+          </div>
+
+          <!-- Wave visualization -->
+          <div class="px-6 pb-6">
+            <div class="flex items-end gap-[3px] h-8 px-4 rounded-2xl bg-white/[0.02] border border-white/[0.04] justify-center overflow-hidden">
+              <div
+                v-for="n in 30"
+                :key="n"
+                class="w-[3px] rounded-full bg-indigo-500/40 wave-bar shrink-0"
+                :style="{ animationDelay: `${(n - 1) * 0.055}s` }"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-else-if="selectedIdea"
           :key="selectedIdea.id"
           class="rounded-3xl overflow-hidden border border-white/[0.07] bg-[#0b1120]/80 backdrop-blur-xl"
         >
@@ -645,6 +762,41 @@ const CIRC = 2 * Math.PI * 30;
 </template>
 
 <style scoped>
+@keyframes ai-scan {
+  from { top: 0; }
+  to { top: 100%; }
+}
+.ai-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  animation: ai-scan 2.5s linear infinite;
+}
+
+@keyframes wave-bar {
+  0%, 100% { transform: scaleY(0.15); opacity: 0.3; }
+  50% { transform: scaleY(1); opacity: 0.8; }
+}
+.wave-bar {
+  height: 28px;
+  transform-origin: bottom;
+  animation: wave-bar 1.2s ease-in-out infinite;
+}
+
+.step-fade-enter-active,
+.step-fade-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.step-fade-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.step-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-5px);
+}
+
 .blueprint-enter-active,
 .blueprint-leave-active {
   transition:
