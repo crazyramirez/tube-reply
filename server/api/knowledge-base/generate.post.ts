@@ -78,7 +78,7 @@ Return a JSON array of exactly ${count} objects.`
   if (provider === 'gemini') {
     const client = getGeminiClient()
     const model = client.getGenerativeModel({
-      model: (config.geminiModel as string) || 'gemini-2.0-flash',
+      model: (config.geminiModel as string) || 'gemini-3-flash-preview',
       generationConfig: {
         responseMimeType: 'application/json',
         temperature: 0.7,

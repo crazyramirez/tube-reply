@@ -10,11 +10,6 @@ export default defineNitroPlugin(async () => {
     const db = useDb()
     const migrationsPath = resolve(process.cwd(), 'server/db/migrations')
     
-    if (!import.meta.dev) {
-      // In production, migrations should be handled differently or via serverAssets
-      // But for this robust runner, we stick to the file system if available
-    }
-
     const files = readdirSync(migrationsPath)
       .filter(f => f.endsWith('.sql'))
       .sort()
