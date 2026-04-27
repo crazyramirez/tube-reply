@@ -396,7 +396,10 @@ function replyRateColor(rate: number) {
             class="flex flex-col items-center group/fan"
           >
             <UAvatar
-              :src="fan.authorProfileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(fan.authorName || '')}&background=6366f1&color=fff`"
+              :src="
+                fan.authorProfileImageUrl ||
+                `https://ui-avatars.com/api/?name=${encodeURIComponent(fan.authorName || '')}&background=6366f1&color=fff`
+              "
               size="xl"
               class="mb-4 ring-1 ring-white/10 group-hover:scale-110 group-hover:ring-violet-500/50 transition-all duration-500 shadow-lg"
               :alt="fan.authorName"

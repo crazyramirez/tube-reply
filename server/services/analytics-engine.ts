@@ -238,21 +238,24 @@ export async function getAudienceStats() {
   // Top commenters by frequency
   const superfans = await db
     .select({
-      authorName: comments.authorName,
+      authorName: sql<string>`MAX(${comments.authorName})`,
       authorChannelId: comments.authorChannelId,
-      authorProfileImageUrl: sql<string>`MAX(NULLIF(${comments.authorProfileImageUrl}, ''))`,
+      authorProfileImageUrl: sql<string>`MAX(${comments.authorProfileImageUrl})`,
 
-
-      commentCount: count(comments.id),
+      commentCount: sql<number>`SUM(CASE WHEN ${comments.parentId} IS NULL THEN 1 ELSE 0 END)`,
       totalLikes: sum(comments.likeCount),
 
-      firstSeenAt: sql<string>`min(${comments.publishedAt})`,
-      lastSeenAt: sql<string>`max(${comments.publishedAt})`,
+      firstSeenAt: sql<string>`MIN(${comments.publishedAt})`,
+      lastSeenAt: sql<string>`MAX(${comments.publishedAt})`,
     })
     .from(comments)
-    .where(and(isNull(comments.parentId), sql`${comments.authorChannelId} IS NOT NULL`, ne(comments.authorChannelId, '')))
+    .where(and(
+      sql`${comments.authorChannelId} IS NOT NULL`, 
+      ne(comments.authorChannelId, '')
+    ))
     .groupBy(comments.authorChannelId)
-    .orderBy(desc(count(comments.id)))
+    .having(sql`SUM(CASE WHEN ${comments.parentId} IS NULL THEN 1 ELSE 0 END) > 0`)
+    .orderBy(desc(sql`SUM(CASE WHEN ${comments.parentId} IS NULL THEN 1 ELSE 0 END)`))
     .limit(10)
 
   // Language distribution
@@ -275,8 +278,8 @@ export async function getAudienceStats() {
     superfans: superfans.map(s => ({
       authorName: s.authorName,
       authorChannelId: s.authorChannelId,
-      authorProfileImageUrl: s.authorProfileImageUrl,
-      commentCount: s.commentCount,
+      authorProfileImageUrl: s.authorProfileImageUrl || null,
+      commentCount: Number(s.commentCount || 0),
       totalLikes: Number(s.totalLikes ?? 0),
       firstSeenAt: s.firstSeenAt,
       lastSeenAt: s.lastSeenAt,
