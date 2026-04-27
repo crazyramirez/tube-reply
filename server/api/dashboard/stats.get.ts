@@ -46,6 +46,7 @@ export default defineEventHandler(async (event) => {
       status: comments.status,
       videoTitle: videos.title,
       videoThumbnail: videos.thumbnailUrl,
+      authorProfileImageUrl: comments.authorProfileImageUrl,
     })
       .from(comments)
       .leftJoin(videos, eq(comments.videoId, videos.id))

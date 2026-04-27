@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
 
   const replies = await db.query.comments.findMany({
     where: and(eq(comments.videoId, comment.videoId), isNotNull(comments.parentId), eq(comments.parentId, id)),
-    columns: { id: true, authorName: true, text: true, publishedAt: true, authorChannelId: true },
+    columns: { id: true, authorName: true, text: true, publishedAt: true, authorChannelId: true, authorProfileImageUrl: true },
     orderBy: (c, { asc }) => [asc(c.publishedAt)],
   })
 

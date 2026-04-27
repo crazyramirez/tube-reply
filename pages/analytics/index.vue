@@ -360,6 +360,7 @@ function replyRateColor(rate: number) {
             size="xl"
             class="mb-4 ring-1 ring-white/10 group-hover:scale-110 transition-transform duration-500"
             :alt="fan.authorName"
+            :img-attributes="{ referrerpolicy: 'no-referrer' }"
           />
 
           <!-- Name & Link -->

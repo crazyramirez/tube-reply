@@ -353,11 +353,13 @@ const statCards = computed(() => [
         <!-- Content -->
         <div class="p-3 sm:p-5 flex flex-col flex-1 gap-2 sm:gap-4">
           <div class="flex items-center gap-2 sm:gap-3">
-            <div
-              class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-[8px] sm:text-xs"
-            >
-              {{ comment.authorName?.[0] }}
-            </div>
+            <UAvatar
+              :src="comment.authorProfileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.authorName || 'User')}&background=6366f1&color=fff`"
+              size="sm"
+              class="ring-1 ring-white/10"
+              :alt="comment.authorName"
+              :img-attributes="{ referrerpolicy: 'no-referrer' }"
+            />
             <div class="flex flex-col min-w-0">
               <span
                 class="font-bold text-[10px] sm:text-sm text-white truncate"
@@ -404,6 +406,7 @@ const statCards = computed(() => [
     </div>
   </div>
 </template>
+
 <style scoped>
 /* Show all 4 items on mobile (stacked) */
 .dashboard-single-row > *:nth-child(n + 5) {

@@ -209,6 +209,7 @@ export interface DashboardComment {
   videoTitle: string | null
   videoThumbnail: string | null
   replyText?: string | null
+  authorProfileImageUrl: string | null
 }
 
 export interface UrgentComment {
@@ -300,6 +301,7 @@ export interface CommentReply {
   text: string
   publishedAt: string
   authorChannelId: string | null
+  authorProfileImageUrl: string | null
   isOwner?: boolean
   isLocal?: boolean
 }

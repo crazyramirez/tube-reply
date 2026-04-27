@@ -192,6 +192,7 @@ async function syncChannelComments(
   const videosInvolved = new Set<string>()
   const MAX_CONSECUTIVE_EXISTING = 5 // Stop after finding 5 existing comments in a row (time ordered)
 
+  const updatedAuthors = new Set<string>()
   try {
     do {
       const res = await yt.commentThreads.list({
@@ -240,7 +241,11 @@ async function syncChannelComments(
           publishedAt: top.snippet.publishedAt ?? new Date().toISOString(),
           updatedAt: top.snippet.updatedAt ?? new Date().toISOString(),
           ownerAlreadyReplied,
-        })
+        }, updatedAuthors)
+
+        if (!top.snippet.authorProfileImageUrl) {
+           await logger.warn('comment-sync', `Missing avatar for user ${top.snippet.authorDisplayName}`, { channelId: (top.snippet.authorChannelId as any)?.value })
+        }
 
         if (isNew) {
           newCount++
@@ -273,7 +278,7 @@ async function syncChannelComments(
             publishedAt: reply.snippet.publishedAt ?? new Date().toISOString(),
             updatedAt: reply.snippet.updatedAt ?? new Date().toISOString(),
             ownerAlreadyReplied: false,
-          })
+          }, updatedAuthors)
 
           if (replyIsNew) {
             newCount++
@@ -454,6 +459,7 @@ async function syncVideoComments(
   let quotaUsed = 0
   let pageToken: string | undefined = pageTokenCache.get(videoId)
 
+  const updatedAuthors = new Set<string>()
   try {
     const res = await yt.commentThreads.list({
       part: ['snippet', 'replies'],
@@ -494,7 +500,7 @@ async function syncVideoComments(
         publishedAt: top.snippet.publishedAt ?? new Date().toISOString(),
         updatedAt: top.snippet.updatedAt ?? new Date().toISOString(),
         ownerAlreadyReplied,
-      })
+      }, updatedAuthors)
       if (isNew) newCount++
 
       // Sync replies in thread
@@ -521,7 +527,7 @@ async function syncVideoComments(
           publishedAt: reply.snippet.publishedAt ?? new Date().toISOString(),
           updatedAt: reply.snippet.updatedAt ?? new Date().toISOString(),
           ownerAlreadyReplied: false,
-        })
+        }, updatedAuthors)
         
         if (replyIsNew) {
           newCount++
@@ -586,7 +592,11 @@ type CommentInsert = {
   ownerAlreadyReplied: boolean
 }
 
-async function upsertComment(db: ReturnType<typeof useDb>, data: CommentInsert): Promise<boolean> {
+async function upsertComment(
+  db: ReturnType<typeof useDb>, 
+  data: CommentInsert, 
+  updatedAuthors?: Set<string>
+): Promise<boolean> {
   const existing = await db.query.comments.findFirst({
     where: eq(comments.id, data.id),
     columns: { id: true, updatedAt: true, status: true, authorProfileImageUrl: true },
@@ -618,6 +628,18 @@ async function upsertComment(db: ReturnType<typeof useDb>, data: CommentInsert):
       lastActivityText: data.parentId ? null : data.text,
       lastActivityAuthor: data.parentId ? null : data.authorName,
     })
+
+    // Propagate image to old comments if this is a new author seen in this sync
+    if (data.authorChannelId && data.authorProfileImageUrl && updatedAuthors && !updatedAuthors.has(data.authorChannelId)) {
+      const updatedCount = await db.update(comments)
+        .set({ authorProfileImageUrl: data.authorProfileImageUrl })
+        .where(eq(comments.authorChannelId, data.authorChannelId))
+      
+      updatedAuthors.add(data.authorChannelId)
+      if (updatedCount > 1) {
+         console.log(`[comment-sync] Propagated image for author ${data.authorName} (${data.authorChannelId}) to ${updatedCount} comments`)
+      }
+    }
 
     // If it's a reply, update the parent's activity metadata
     if (data.parentId) {
@@ -657,12 +679,19 @@ async function upsertComment(db: ReturnType<typeof useDb>, data: CommentInsert):
   }
 
   // Proactive image update: If we have a channelId and an image, 
-  // and it's different from what we have for THIS comment (or if THIS comment is new),
-  // update all comments by this author to keep images fresh.
-  if (data.authorChannelId && data.authorProfileImageUrl && (!existing || existing.authorProfileImageUrl !== data.authorProfileImageUrl)) {
-    await db.update(comments)
-      .set({ authorProfileImageUrl: data.authorProfileImageUrl })
-      .where(eq(comments.authorChannelId, data.authorChannelId))
+  // and we haven't updated this author yet in this sync run, propagate it.
+  if (data.authorChannelId && data.authorProfileImageUrl && updatedAuthors && !updatedAuthors.has(data.authorChannelId)) {
+     // Check if it's actually different or missing from THIS comment to decide if we bother
+     if (existing.authorProfileImageUrl !== data.authorProfileImageUrl) {
+        const updatedCount = await db.update(comments)
+          .set({ authorProfileImageUrl: data.authorProfileImageUrl })
+          .where(eq(comments.authorChannelId, data.authorChannelId))
+        
+        updatedAuthors.add(data.authorChannelId)
+        if (updatedCount > 0) {
+           console.log(`[comment-sync] Updated/Propagated image for existing author ${data.authorName} (${data.authorChannelId}) to ${updatedCount} comments`)
+        }
+     }
   }
 
   return false

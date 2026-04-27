@@ -240,7 +240,7 @@ export async function getAudienceStats() {
     .select({
       authorName: comments.authorName,
       authorChannelId: comments.authorChannelId,
-      authorProfileImageUrl: sql<string>`(SELECT author_profile_image_url FROM comments c2 WHERE c2.author_channel_id = comments.author_channel_id AND author_profile_image_url IS NOT NULL ORDER BY published_at DESC LIMIT 1)`,
+      authorProfileImageUrl: sql<string>`MAX(NULLIF(${comments.authorProfileImageUrl}, ''))`,
 
 
       commentCount: count(comments.id),
@@ -268,10 +268,9 @@ export async function getAudienceStats() {
     .limit(10)
 
   console.log(`[analytics] Audience: fans=${superfans.length}, langs=${langDist.length}`)
-  if (langDist.length > 0) {
-    console.log(`[analytics] Sample lang:`, JSON.stringify(langDist[0]))
-  }
-
+  const withImage = superfans.filter(s => s.authorProfileImageUrl).length
+  console.log(`[analytics] Superfans with image: ${withImage}/${superfans.length}`)
+  
   return {
     superfans: superfans.map(s => ({
       authorName: s.authorName,

@@ -855,6 +855,7 @@ async function confirmUnban() {
                   "
                   size="xs"
                   class="ring-1 ring-white/10"
+                  :img-attributes="{ referrerpolicy: 'no-referrer' }"
                 />
                 <span class="text-[10px] font-bold text-slate-400">{{
                   data.comment.authorName
@@ -909,13 +910,15 @@ async function confirmUnban() {
                       "
                       class="w-full h-full object-cover"
                       alt="Owner"
+                      referrerpolicy="no-referrer"
                     />
                   </div>
                   <UAvatar
                     v-else
-                    :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(reply.authorName)}&background=475569&color=fff`"
+                    :src="reply.authorProfileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(reply.authorName)}&background=475569&color=fff`"
                     size="xs"
                     :ui="{ rounded: 'rounded-lg' }"
+                    :img-attributes="{ referrerpolicy: 'no-referrer' }"
                   />
                   <span
                     class="text-[10px] font-bold"
