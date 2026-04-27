@@ -355,21 +355,12 @@ function replyRateColor(rate: number) {
 
 
           <!-- Avatar -->
-          <div
-            class="w-16 h-16 rounded-2xl overflow-hidden bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400 font-black text-2xl mb-4 group-hover:scale-110 transition-transform duration-500 shadow-lg shadow-violet-500/5"
-          >
-            <img
-              v-if="fan.authorProfileImageUrl"
-              :src="fan.authorProfileImageUrl"
-              class="w-full h-full object-cover"
-              :alt="fan.authorName"
-              referrerpolicy="no-referrer"
-            />
-
-            <span v-else>{{
-              fan.authorName?.replace(/^@/, "")[0] || "?"
-            }}</span>
-          </div>
+          <UAvatar
+            :src="fan.authorProfileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(fan.authorName || 'User')}&background=6366f1&color=fff`"
+            size="xl"
+            class="mb-4 ring-1 ring-white/10 group-hover:scale-110 transition-transform duration-500"
+            :alt="fan.authorName"
+          />
 
           <!-- Name & Link -->
           <a

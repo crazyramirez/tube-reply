@@ -589,7 +589,7 @@ type CommentInsert = {
 async function upsertComment(db: ReturnType<typeof useDb>, data: CommentInsert): Promise<boolean> {
   const existing = await db.query.comments.findFirst({
     where: eq(comments.id, data.id),
-    columns: { id: true, updatedAt: true, status: true },
+    columns: { id: true, updatedAt: true, status: true, authorProfileImageUrl: true },
   })
 
   if (!existing) {
@@ -640,11 +640,11 @@ async function upsertComment(db: ReturnType<typeof useDb>, data: CommentInsert):
       .set({ 
         status: 'published', 
         processedAt: new Date().toISOString(),
-        authorProfileImageUrl: data.authorProfileImageUrl // Backfill if missing
+        authorProfileImageUrl: data.authorProfileImageUrl // Backfill
       })
       .where(eq(comments.id, data.id))
   }
-  // Update if text changed (comment was edited) or if we are backfilling the avatar
+  // Update if text changed (comment was edited)
   else if (existing.updatedAt !== data.updatedAt) {
     await db.update(comments)
       .set({ 
@@ -655,13 +655,15 @@ async function upsertComment(db: ReturnType<typeof useDb>, data: CommentInsert):
       })
       .where(eq(comments.id, data.id))
   }
-  // Always try to backfill the avatar if it's missing but we have it now
-  else if (data.authorProfileImageUrl) {
-     await db.update(comments)
-      .set({ authorProfileImageUrl: data.authorProfileImageUrl })
-      .where(eq(comments.id, data.id))
-  }
 
+  // Proactive image update: If we have a channelId and an image, 
+  // and it's different from what we have for THIS comment (or if THIS comment is new),
+  // update all comments by this author to keep images fresh.
+  if (data.authorChannelId && data.authorProfileImageUrl && (!existing || existing.authorProfileImageUrl !== data.authorProfileImageUrl)) {
+    await db.update(comments)
+      .set({ authorProfileImageUrl: data.authorProfileImageUrl })
+      .where(eq(comments.authorChannelId, data.authorChannelId))
+  }
 
   return false
 }

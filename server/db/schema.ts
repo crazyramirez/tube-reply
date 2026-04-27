@@ -69,6 +69,8 @@ export const comments = sqliteTable('comments', {
   listPerfIdx: index('comments_list_perf_idx').on(t.status, t.lastActivityAt),
   // Priority inbox index
   priorityIdx: index('comments_priority_idx').on(t.status, t.priorityScore),
+  // Author index for analytics and sync
+  authorChannelIdx: index('comments_author_channel_idx').on(t.authorChannelId),
 }))
 
 // ─── Suggested Replies ────────────────────────────────────────────────────────

@@ -58,6 +58,7 @@ export interface TopicCluster {
 export interface SuperfanEntry {
   authorName: string
   authorChannelId: string | null
+  authorProfileImageUrl: string | null
   commentCount: number
   totalLikes: number
   firstSeenAt: string

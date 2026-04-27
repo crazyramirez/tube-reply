@@ -240,7 +240,7 @@ export async function getAudienceStats() {
     .select({
       authorName: comments.authorName,
       authorChannelId: comments.authorChannelId,
-      authorProfileImageUrl: sql<string>`max(${comments.authorProfileImageUrl})`,
+      authorProfileImageUrl: sql<string>`(SELECT author_profile_image_url FROM comments c2 WHERE c2.author_channel_id = comments.author_channel_id AND author_profile_image_url IS NOT NULL ORDER BY published_at DESC LIMIT 1)`,
 
 
       commentCount: count(comments.id),

@@ -105,7 +105,7 @@
     "context_placeholder": "E.g. 'Tell them we have a discount code', 'Ask for their email'...",
     "ai_assistance": "Intelligence Assistance",
     "add_instructions": "AI Instructions",
-    "quick_ai_draft": "Quick AI Draft",
+    "quick_ai_draft": "AI Generate",
     "generate_draft": "Generate Draft",
     "active_session": "Active reply session",
     "ai_ready": "AI Ready",

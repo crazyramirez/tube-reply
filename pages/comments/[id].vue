@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import type { SuggestedReply, CommentDetailResponse, CommenterHistory } from "~/shared/types";
+import type {
+  SuggestedReply,
+  CommentDetailResponse,
+  CommenterHistory,
+} from "~/shared/types";
 
 definePageMeta({ middleware: "auth" });
 
@@ -105,11 +109,16 @@ const { data: commenterHistory } = useFetch<CommenterHistory>(
   { lazy: true },
 );
 
-
-function parseOpportunityFlags(flags: string | string[] | null | undefined): string[] {
+function parseOpportunityFlags(
+  flags: string | string[] | null | undefined,
+): string[] {
   if (!flags) return [];
   if (Array.isArray(flags)) return flags;
-  try { return JSON.parse(flags as string); } catch { return []; }
+  try {
+    return JSON.parse(flags as string);
+  } catch {
+    return [];
+  }
 }
 
 async function continueConversation() {
@@ -840,10 +849,12 @@ async function confirmUnban() {
             <div class="flex flex-col gap-2 items-start">
               <div class="flex items-center gap-2 ml-1 flex-wrap">
                 <UAvatar
-                  :src="data.comment.authorProfileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.comment.authorName)}&background=6366f1&color=fff`"
+                  :src="
+                    data.comment.authorProfileImageUrl ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(data.comment.authorName)}&background=6366f1&color=fff`
+                  "
                   size="xs"
                   class="ring-1 ring-white/10"
-                />
                 />
                 <span class="text-[10px] font-bold text-slate-400">{{
                   data.comment.authorName
@@ -861,7 +872,9 @@ async function confirmUnban() {
                 </span>
                 <!-- Opportunity flags -->
                 <span
-                  v-for="flag in parseOpportunityFlags(data.comment.opportunityFlags)"
+                  v-for="flag in parseOpportunityFlags(
+                    data.comment.opportunityFlags,
+                  )"
                   :key="flag"
                   class="flex items-center gap-0.5 px-1.5 py-0.5 rounded border text-[8px] font-black uppercase text-yellow-400 bg-yellow-500/10 border-yellow-500/20"
                 >
@@ -1014,17 +1027,28 @@ async function confirmUnban() {
         >
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
-              <UIcon name="i-heroicons-user-circle" class="w-4 h-4 text-violet-400" />
-              <span class="text-[10px] font-black text-violet-400 uppercase tracking-[0.2em]">
+              <UIcon
+                name="i-heroicons-user-circle"
+                class="w-4 h-4 text-violet-400"
+              />
+              <span
+                class="text-[10px] font-black text-violet-400 uppercase tracking-[0.2em]"
+              >
                 {{ $t("comment_detail.commenter_history") }}
               </span>
             </div>
-            <div class="flex items-center gap-3 text-[10px] font-bold text-slate-500">
+            <div
+              class="flex items-center gap-3 text-[10px] font-bold text-slate-500"
+            >
               <span class="flex items-center gap-1">
                 <UIcon name="i-heroicons-chat-bubble-left" class="w-3 h-3" />
-                {{ commenterHistory.total }} {{ $t("comment_detail.comments_total") }}
+                {{ commenterHistory.total }}
+                {{ $t("comment_detail.comments_total") }}
               </span>
-              <span v-if="commenterHistory.totalLikes > 0" class="flex items-center gap-1">
+              <span
+                v-if="commenterHistory.totalLikes > 0"
+                class="flex items-center gap-1"
+              >
                 <UIcon name="i-heroicons-hand-thumb-up" class="w-3 h-3" />
                 {{ commenterHistory.totalLikes }}
               </span>
@@ -1038,7 +1062,13 @@ async function confirmUnban() {
               class="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] hover:border-white/[0.09] transition-all group"
             >
               <UBadge
-                :color="item.status === 'published' ? 'green' : item.status === 'suggested' ? 'blue' : 'gray'"
+                :color="
+                  item.status === 'published'
+                    ? 'green'
+                    : item.status === 'suggested'
+                      ? 'blue'
+                      : 'gray'
+                "
                 variant="soft"
                 size="xs"
                 class="rounded mt-0.5 shrink-0 text-[8px] font-black"
@@ -1046,10 +1076,17 @@ async function confirmUnban() {
                 {{ item.status.toUpperCase() }}
               </UBadge>
               <div class="min-w-0 flex-1">
-                <p class="text-[11px] text-slate-400 line-clamp-2 italic">"{{ item.text }}"</p>
-                <p class="text-[9px] text-slate-600 mt-0.5 truncate">{{ item.videoTitle }}</p>
+                <p class="text-[11px] text-slate-400 line-clamp-2 italic">
+                  "{{ item.text }}"
+                </p>
+                <p class="text-[9px] text-slate-600 mt-0.5 truncate">
+                  {{ item.videoTitle }}
+                </p>
               </div>
-              <UIcon name="i-heroicons-arrow-right" class="w-3 h-3 text-slate-700 group-hover:text-indigo-400 shrink-0 mt-1 transition-colors" />
+              <UIcon
+                name="i-heroicons-arrow-right"
+                class="w-3 h-3 text-slate-700 group-hover:text-indigo-400 shrink-0 mt-1 transition-colors"
+              />
             </NuxtLink>
           </div>
         </div>

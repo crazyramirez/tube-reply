@@ -106,7 +106,7 @@
     "context_placeholder": "Ej. 'Diles que tenemos un código de descuento', 'Pídeles su email'...",
     "ai_assistance": "Asistencia de Inteligencia",
     "add_instructions": "Instrucciones para la IA",
-    "quick_ai_draft": "Borrador rápido con IA",
+    "quick_ai_draft": "Generar con IA",
     "generate_draft": "Generar Borrador",
     "active_session": "Sesión de respuesta activa",
     "ai_ready": "IA Lista",
