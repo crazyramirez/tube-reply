@@ -777,13 +777,13 @@ watch([status, page], (newVals, oldVals) => {
           class="glass-card p-3 sm:p-4 flex items-stretch gap-3 sm:gap-5 group"
         >
           <div
-            class="flex flex-shrink-0 w-28 sm:w-36 aspect-[4/3] sm:aspect-video rounded-xl overflow-hidden border border-white/10 relative"
+            class="flex flex-shrink-0 w-32 sm:w-56 aspect-video rounded-xl overflow-hidden border border-white/10 relative bg-slate-900"
           >
             <img
               v-if="c.videoThumbnail && !failedThumbnails[c.id]"
               :src="c.videoThumbnail ?? undefined"
               :alt="c.videoTitle ?? ''"
-              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+              class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
               loading="lazy"
               referrerpolicy="no-referrer"
               @error="handleThumbnailError(c.id, c.videoId, $event)"
