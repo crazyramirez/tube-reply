@@ -1,6 +1,6 @@
 import { eq, and, desc, count, isNull, inArray, sql } from 'drizzle-orm'
 import { useDb } from '../../utils/db'
-import { comments, videos } from '../../db/schema'
+import { comments, videos, authors } from '../../db/schema'
 
 const INBOX_STATUSES = ['pending', 'suggested'] as const
 
@@ -61,7 +61,7 @@ export default defineEventHandler(async (event) => {
       videoId: comments.videoId,
       authorName: comments.authorName,
       authorChannelId: comments.authorChannelId,
-      authorProfileImageUrl: comments.authorProfileImageUrl,
+      authorProfileImageUrl: authors.profileImageUrl,
       text: comments.text,
       lastText: comments.lastActivityText,
       lastAuthor: comments.lastActivityAuthor,
@@ -95,6 +95,7 @@ export default defineEventHandler(async (event) => {
     })
     .from(comments)
     .leftJoin(videos, eq(comments.videoId, videos.id))
+    .leftJoin(authors, eq(comments.authorChannelId, authors.channelId))
     .where(and(...whereConditions))
     .orderBy(...orderBy)
     .limit(limit)

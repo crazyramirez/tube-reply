@@ -1,7 +1,7 @@
 import { eq, and, desc, count, countDistinct, sum, avg, isNull, gte, sql, ne, inArray } from 'drizzle-orm'
 
 import { useDb } from '../utils/db'
-import { comments, publishedReplies, videos } from '../db/schema'
+import { comments, publishedReplies, videos, authors } from '../db/schema'
 import { generateUnified } from '../utils/ai'
 
 
@@ -254,18 +254,19 @@ export async function getAudienceStats() {
 
   const ids = activeIds.map(f => f.authorChannelId!)
 
-  // 2. Fetch full stats for these specific authors, looking across ALL their comments for the image
+  // 2. Fetch full stats for these specific authors, JOINING with the authors table for profile info
   const superfans = await db
     .select({
-      authorName: sql<string>`MAX(${comments.authorName})`,
+      authorName: authors.name,
       authorChannelId: comments.authorChannelId,
-      authorProfileImageUrl: sql<string>`MAX(${comments.authorProfileImageUrl})`,
+      authorProfileImageUrl: authors.profileImageUrl,
       commentCount: sql<number>`SUM(CASE WHEN ${comments.parentId} IS NULL THEN 1 ELSE 0 END)`,
       totalLikes: sum(comments.likeCount),
       firstSeenAt: sql<string>`MIN(${comments.publishedAt})`,
       lastSeenAt: sql<string>`MAX(${comments.publishedAt})`,
     })
     .from(comments)
+    .leftJoin(authors, eq(comments.authorChannelId, authors.channelId))
     .where(inArray(comments.authorChannelId, ids))
     .groupBy(comments.authorChannelId)
     .orderBy(desc(sql`SUM(CASE WHEN ${comments.parentId} IS NULL THEN 1 ELSE 0 END)`))

@@ -1,9 +1,9 @@
-import { eq, inArray } from 'drizzle-orm'
+import { eq, and, desc, count, isNull, sql, inArray, ne } from 'drizzle-orm'
 import { useDb } from '../utils/db'
 import { getAuthenticatedYouTube, refreshChannelMetadata } from '../utils/youtube'
 import { logger } from '../utils/logger'
 import { detectLanguage } from './language-detect'
-import { videos, comments, syncLog, oauthTokens } from '../db/schema'
+import { videos, comments, syncLog, oauthTokens, authors } from '../db/schema'
 import { getRemainingQuota } from '../utils/quota'
 
 type SyncType = 'videos' | 'comments' | 'manual' | 'scheduled'
@@ -170,6 +170,9 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
 
     // AUTO-HEAL: Backfill missing author images from historical data
     try {
+      // 1. First ensure authors table is populated from comments
+      await backfillAuthorsTable()
+      // 2. Then heal the comments table using the authors table
       const backfilled = await backfillMissingAvatars()
       if (backfilled > 0) await logger.info('comment-sync', `Auto-healed ${backfilled} missing author avatars`)
     } catch (healErr) {
@@ -615,8 +618,26 @@ async function upsertComment(
 ): Promise<boolean> {
   const existing = await db.query.comments.findFirst({
     where: eq(comments.id, data.id),
-    columns: { id: true, updatedAt: true, status: true, authorProfileImageUrl: true },
+    columns: { id: true, updatedAt: true, status: true, authorProfileImageUrl: true, authorChannelId: true },
   })
+
+  // SMART SYNC: Always update/insert the authors table
+  if (data.authorChannelId) {
+    await db.insert(authors).values({
+      channelId: data.authorChannelId,
+      name: data.authorName,
+      profileImageUrl: data.authorProfileImageUrl,
+      lastSeenAt: data.publishedAt,
+    }).onConflictDoUpdate({
+      target: authors.channelId,
+      set: {
+        name: data.authorName,
+        profileImageUrl: data.authorProfileImageUrl || sql`profile_image_url`, // Don't overwrite with null if we have one
+        lastSeenAt: data.publishedAt,
+        updatedAt: new Date().toISOString(),
+      }
+    })
+  }
 
   if (!existing) {
     let status: 'pending' | 'published' | 'skipped' = 'pending'
@@ -741,6 +762,41 @@ export async function backfillMissingAvatars(): Promise<number> {
           AND c3.author_profile_image_url IS NOT NULL 
           AND c3.author_profile_image_url != ''
       )
+  `)
+
+  return result.rowsAffected || 0
+}
+
+/**
+ * One-time/Continuous backfill to populate the 'authors' table from existing 'comments'.
+ */
+export async function backfillAuthorsTable(): Promise<number> {
+  const db = useDb()
+  
+  // Find unique authors in comments and insert them into authors table
+  const result = await db.run(sql`
+    INSERT OR IGNORE INTO authors (channel_id, name, profile_image_url, last_seen_at)
+    SELECT 
+      author_channel_id, 
+      MAX(author_name), 
+      MAX(author_profile_image_url),
+      MAX(published_at)
+    FROM comments
+    WHERE author_channel_id IS NOT NULL AND author_channel_id != ''
+    GROUP BY author_channel_id
+  `)
+
+  // Also update images in authors table if we found better ones in comments
+  await db.run(sql`
+    UPDATE authors
+    SET profile_image_url = (
+      SELECT MAX(author_profile_image_url)
+      FROM comments
+      WHERE comments.author_channel_id = authors.channel_id
+        AND author_profile_image_url IS NOT NULL
+        AND author_profile_image_url != ''
+    )
+    WHERE (profile_image_url IS NULL OR profile_image_url = '')
   `)
 
   return result.rowsAffected || 0

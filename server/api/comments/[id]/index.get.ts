@@ -1,14 +1,31 @@
 import { eq, and, isNotNull } from 'drizzle-orm'
 import { useDb } from '../../../utils/db'
-import { comments, videos, suggestedReplies, publishedReplies, bannedAuthors, oauthTokens } from '../../../db/schema'
+import { comments, videos, suggestedReplies, publishedReplies, bannedAuthors, oauthTokens, authors } from '../../../db/schema'
 
 export default defineEventHandler(async (event) => {
   const db = useDb()
   const id = getRouterParam(event, 'id')!
 
-  const comment = await db.query.comments.findFirst({
-    where: eq(comments.id, id),
-  })
+  const [comment] = await db
+    .select({
+      id: comments.id,
+      videoId: comments.videoId,
+      authorName: authors.name,
+      authorChannelId: comments.authorChannelId,
+      authorProfileImageUrl: authors.profileImageUrl,
+      text: comments.text,
+      publishedAt: comments.publishedAt,
+      status: comments.status,
+      detectedIntent: comments.detectedIntent,
+      isReturnCommenter: comments.isReturnCommenter,
+      priorityScore: comments.priorityScore,
+      priorityLabel: comments.priorityLabel,
+    })
+    .from(comments)
+    .leftJoin(authors, eq(comments.authorChannelId, authors.channelId))
+    .where(eq(comments.id, id))
+    .limit(1)
+
   if (!comment) throw createError({ statusCode: 404, statusMessage: 'Comment not found' })
 
   const video = await db.query.videos.findFirst({
@@ -25,11 +42,19 @@ export default defineEventHandler(async (event) => {
   const ownerChannelId = token?.channelId
   const ownerThumbnail = token?.channelThumbnailUrl
 
-  const replies = await db.query.comments.findMany({
-    where: and(eq(comments.videoId, comment.videoId), isNotNull(comments.parentId), eq(comments.parentId, id)),
-    columns: { id: true, authorName: true, text: true, publishedAt: true, authorChannelId: true, authorProfileImageUrl: true },
-    orderBy: (c, { asc }) => [asc(c.publishedAt)],
-  })
+  const replies = await db
+    .select({
+      id: comments.id,
+      authorName: authors.name,
+      authorChannelId: comments.authorChannelId,
+      authorProfileImageUrl: authors.profileImageUrl,
+      text: comments.text,
+      publishedAt: comments.publishedAt,
+    })
+    .from(comments)
+    .leftJoin(authors, eq(comments.authorChannelId, authors.channelId))
+    .where(and(eq(comments.videoId, comment.videoId), isNotNull(comments.parentId), eq(comments.parentId, id)))
+    .orderBy(comments.publishedAt)
 
   const enrichedReplies = replies.map(r => ({
     ...r,

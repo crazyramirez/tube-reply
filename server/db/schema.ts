@@ -25,6 +25,18 @@ export const videos = sqliteTable('videos', {
   channelIdx: index('videos_channel_idx').on(t.channelId),
 }))
 
+// ─── Authors ──────────────────────────────────────────────────────────────────
+
+export const authors = sqliteTable('authors', {
+  channelId: text('channel_id').primaryKey(),
+  name: text('name').notNull(),
+  profileImageUrl: text('profile_image_url'),
+  lastSeenAt: text('last_seen_at'),
+  updatedAt: text('updated_at').default(sql`(datetime('now'))`),
+}, (t) => ({
+  nameIdx: index('authors_name_idx').on(t.name),
+}))
+
 // ─── Comments ─────────────────────────────────────────────────────────────────
 
 export const comments = sqliteTable('comments', {
