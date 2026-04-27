@@ -998,7 +998,7 @@ async function confirmUnban() {
                 <div v-html="renderCommentHtml(data.comment.text)"></div>
                 
                 <!-- Translation -->
-                <div v-if="data.comment.translatedText" class="mt-3 pt-3 border-t border-white/5 opacity-80">
+                <div v-if="data.comment.translatedText && data.comment.translatedText !== data.comment.text" class="mt-3 pt-3 border-t border-white/5 opacity-80">
                   <div class="flex items-center gap-1.5 mb-1.5">
                     <UIcon name="i-heroicons-language" class="w-3 h-3 text-indigo-400" />
                     <span class="text-[9px] font-black uppercase tracking-widest text-indigo-400">TRADUCCIÓN</span>
@@ -1114,7 +1114,7 @@ async function confirmUnban() {
                   <div v-html="renderCommentHtml(reply.text)"></div>
                   
                   <!-- Translation for replies -->
-                  <div v-if="reply.translatedText" class="mt-3 pt-3 border-t border-white/5 opacity-80">
+                  <div v-if="reply.translatedText && reply.translatedText !== reply.text" class="mt-3 pt-3 border-t border-white/5 opacity-80">
                     <div class="flex items-center gap-1.5 mb-1.5">
                       <UIcon name="i-heroicons-language" class="w-3 h-3 text-indigo-400" />
                       <span class="text-[9px] font-black uppercase tracking-widest text-indigo-400">TRADUCCIÓN</span>
@@ -1727,7 +1727,7 @@ async function confirmUnban() {
 
           <!-- Translation Verification in Modal -->
           <div
-            v-if="activeSuggestion?.verificationTranslation"
+            v-if="activeSuggestion?.verificationTranslation && activeSuggestion.verificationTranslation !== activeSuggestion.responseText"
             class="mt-6 p-5 rounded-2xl bg-white/[0.02] border border-white/5 animate-fade-in"
           >
             <div class="flex items-center gap-2 mb-3 opacity-50">

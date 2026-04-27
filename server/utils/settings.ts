@@ -54,7 +54,7 @@ export async function getAiProvider(): Promise<'gemini' | 'openai'> {
   return envProvider as 'gemini' | 'openai'
 }
 
-const LANGUAGE_MAP: Record<string, string> = {
+export const LANGUAGE_MAP: Record<string, string> = {
   en: "English",
   es: "Spanish",
   pt: "Portuguese",

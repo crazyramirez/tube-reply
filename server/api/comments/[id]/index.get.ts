@@ -46,6 +46,9 @@ export default defineEventHandler(async (event) => {
         .set({ translatedText, translationLang: userLangCode })
         .where(eq(comments.id, id))
     }
+  } else {
+    // If language is the same, do NOT provide a translation
+    translatedText = null
   }
 
   const video = await db.query.videos.findFirst({
@@ -125,7 +128,10 @@ export default defineEventHandler(async (event) => {
   // Translate thread replies in parallel (with caching)
   const threadWithTranslations = await Promise.all(threadReplies.map(async (r) => {
     if (r.isOwner) return r // Don't translate our own replies
-    if (r.detectedLang && r.detectedLang === userLangCode) return r // Already in user language
+    
+    if (r.detectedLang && r.detectedLang === userLangCode) {
+      return { ...r, translatedText: null } // Already in user language
+    }
     
     // Check cache
     if (r.cachedTranslation && r.cachedTranslationLang === userLangCode) {

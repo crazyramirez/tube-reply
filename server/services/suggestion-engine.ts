@@ -313,6 +313,15 @@ export async function generateSuggestion(
   let parsed: AIOutput
   try {
     parsed = JSON.parse(rawText) as AIOutput
+    
+    // Suppress translation if it's the same language
+    const userLangCode = await getUserLanguageCode()
+    const detectedBase = parsed.detected_language?.split('-')[0].toLowerCase()
+    if (detectedBase === userLangCode) {
+      console.log(`[suggestion-engine] Suppressing translation: detected ${detectedBase} matches user lang ${userLangCode}`)
+      parsed.verification_translation = ''
+    }
+    
     console.log(`[suggestion-engine] Parsed links:`, JSON.stringify(parsed.video_links_used, null, 2))
   }
   catch {
