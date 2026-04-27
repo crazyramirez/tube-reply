@@ -13,6 +13,7 @@ export default defineEventHandler(async () => {
     return { 
       success: true, 
       message: 'Database healing completed',
+      updated: commentsHealed,
       stats: {
         authorsProcessed: authorsFilled,
         commentsHealed: commentsHealed
