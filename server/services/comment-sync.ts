@@ -120,6 +120,15 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
 
     await logger.info('comment-sync', `Syncing ${videosToSync.length} videos (type: ${syncType}, scope: ${scope})`)
 
+    // AUTO-HEAL: Ensure authors table is ready and missing avatars are healed
+    // Doing this early ensures we have data even if the main sync is interrupted by quota
+    try {
+      await backfillAuthorsTable()
+      await backfillMissingAvatars()
+    } catch (healErr) {
+      await logger.warn('comment-sync', 'Pre-sync auto-heal failed (non-critical)', { error: (healErr as Error).message })
+    }
+
     for (const video of videosToSync) {
       if (totalQuota >= remaining - 10) {
         await logger.warn('comment-sync', 'Approaching quota limit, stopping sync', { totalQuota, remaining })
