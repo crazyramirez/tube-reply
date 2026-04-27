@@ -240,7 +240,15 @@ export async function getAudienceStats() {
     .select({
       authorName: sql<string>`MAX(${comments.authorName})`,
       authorChannelId: comments.authorChannelId,
-      authorProfileImageUrl: sql<string>`MAX(${comments.authorProfileImageUrl})`,
+      // Correlated subquery to find a valid image for this author from ANY of their comments
+      authorProfileImageUrl: sql<string>`(
+        SELECT author_profile_image_url 
+        FROM comments c2 
+        WHERE c2.author_channel_id = ${comments.authorChannelId} 
+          AND c2.author_profile_image_url IS NOT NULL 
+          AND c2.author_profile_image_url != '' 
+        LIMIT 1
+      )`,
 
       commentCount: sql<number>`SUM(CASE WHEN ${comments.parentId} IS NULL THEN 1 ELSE 0 END)`,
       totalLikes: sum(comments.likeCount),
