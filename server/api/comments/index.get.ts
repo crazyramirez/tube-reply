@@ -83,7 +83,7 @@ export default defineEventHandler(async (event) => {
     .offset(offset)
 
   const [{ value: total }] = await db
-    .select({ value: count() })
+    .select({ value: count(comments.id) })
     .from(comments)
     .where(and(...whereConditions))
 

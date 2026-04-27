@@ -5,8 +5,8 @@ import { useDb } from '../../utils/db'
 export default defineEventHandler(async () => {
   const db = useDb()
 
-  const [{ value }] = await db
-    .select({ value: count() })
+  const [{ value: pendingCount }] = await db
+    .select({ value: count(comments.id) })
     .from(comments)
     .where(
       and(
@@ -16,5 +16,5 @@ export default defineEventHandler(async () => {
       ),
     )
 
-  return { count: value }
+  return { count: pendingCount }
 })

@@ -31,16 +31,16 @@ export default defineEventHandler(async (event) => {
     urgentComments,
     [{ urgentCount }],
   ] = await Promise.all([
-    db.select({ pending: count() }).from(comments)
+    db.select({ pending: count(comments.id) }).from(comments)
       .where(and(eq(comments.status, 'pending'), isNull(comments.parentId))),
 
-    db.select({ suggested: count() }).from(comments)
+    db.select({ suggested: count(comments.id) }).from(comments)
       .where(and(eq(comments.status, 'suggested'), isNull(comments.parentId))),
 
-    db.select({ publishedToday: count() }).from(publishedReplies)
+    db.select({ publishedToday: count(publishedReplies.id) }).from(publishedReplies)
       .where(sql`date(${publishedReplies.publishedAt}, 'localtime') = date('now', 'localtime')`),
 
-    db.select({ totalPublished: count() }).from(publishedReplies),
+    db.select({ totalPublished: count(publishedReplies.id) }).from(publishedReplies),
 
     db.select({
       id: comments.id,
@@ -61,7 +61,7 @@ export default defineEventHandler(async (event) => {
       .limit(COMMENT_PAGE_SIZE)
       .offset(commentOffset),
 
-    db.select({ recentCommentsTotal: count() })
+    db.select({ recentCommentsTotal: count(comments.id) })
       .from(comments)
       .where(needsAttentionWhere),
 
@@ -84,7 +84,7 @@ export default defineEventHandler(async (event) => {
       .orderBy(desc(comments.priorityScore))
       .limit(3),
 
-    db.select({ urgentCount: count() })
+    db.select({ urgentCount: count(comments.id) })
       .from(comments)
       .where(urgentWhere),
   ])

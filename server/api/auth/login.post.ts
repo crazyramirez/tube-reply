@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
   const lockoutUntil = new Date(Date.now() - config.lockoutDurationMinutes * 60 * 1000).toISOString()
 
   const [{ value: recentFailures }] = await db
-    .select({ value: count() })
+    .select({ value: count(loginAttempts.id) })
     .from(loginAttempts)
     .where(
       and(
