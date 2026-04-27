@@ -22,12 +22,13 @@
     "insights": "Video Ideas"
   },
   "login": {
-    "subtitle": "YouTube Comment Assistant",
-    "password": "Password",
-    "placeholder": "Enter admin password",
-    "submit": "Sign In",
-    "signing_in": "Signing in…",
-    "error": "Login failed"
+    "subtitle": "AI-Powered Community Intelligence",
+    "password": "Security Key",
+    "placeholder": "Enter access password",
+    "submit": "Initialize Session",
+    "signing_in": "Authenticating…",
+    "error": "Authentication failed",
+    "secure_access": "Secure access via Tube Reply Neural Engine"
   },
   "time": {
     "just_now": "just now",
@@ -318,6 +319,15 @@
     "force_suggest_modal_description": "{n} pending comments will be processed sequentially. This runs in the background and may take a few minutes.",
     "force_suggest_modal_confirm": "Run Now",
     "sync_completed": "Sync completed",
+    "reset_app": "Reset Application",
+    "cancel": "Cancel",
+    "danger_zone": "Danger Zone",
+    "reset_description": "This will permanently delete all data, including your YouTube connection, comments, and settings. This action cannot be undone.",
+    "reset_confirm_title": "Reset Application?",
+    "reset_confirm_description": "Are you absolutely sure? This will erase the entire database and disconnect you from YouTube.",
+    "reset_confirm_instruction": "Please type {ok} to confirm",
+    "reset_success": "Application reset successfully. Redirecting...",
+    "reset_failed": "Failed to reset application.",
     "active_model": "Active model (from .env)",
     "not_connected_title": "Channel not connected",
     "last_sync_status": "Last synchronization status",
@@ -334,7 +344,20 @@
     "gemini_key_missing_desc": "GEMINI_API_KEY is not configured in the .env file",
     "openai_key_missing_desc": "OPENAI_API_KEY is not configured in the .env file",
     "ai_provider_switched": "AI Provider auto-adjusted",
-    "ai_provider_switched_desc": "Switched to {name} because the previous provider was missing a valid API Key."
+    "ai_provider_switched_desc": "Switched to {name} because the previous provider was missing a valid API Key.",
+    "ai_engine_title": "Intelligence Engine",
+    "ai_engine_manual_queue": "Process queue manually",
+    "automation_rules_title": "Automation Rules",
+    "automation_rules_subtitle": "Filters and automatic actions",
+    "maintenance_title": "Data Maintenance",
+    "maintenance_subtitle": "Recover missing YouTube avatars for all stored comments.",
+    "backfill_avatars": "Backfill Avatars",
+    "reset_warning": "⚠️ This action will permanently delete all your comments, knowledge base, and local settings.",
+    "connection_error_title": "Connection Error",
+    "backfill_started": "Backfill started",
+    "backfill_failed": "Backfill failed",
+    "used": "used",
+    "limit": "Limit"
   },
   "pwa": {
     "offline_ready": "App ready to work offline",

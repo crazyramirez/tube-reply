@@ -23,12 +23,13 @@
 
   },
   "login": {
-    "subtitle": "Asistente de Comentarios YouTube",
-    "password": "Contraseña",
-    "placeholder": "Ingresa la contraseña de admin",
-    "submit": "Iniciar sesión",
-    "signing_in": "Iniciando sesión…",
-    "error": "Error al iniciar sesión"
+    "subtitle": "Inteligencia de Comunidad Impulsada por IA",
+    "password": "Llave de Seguridad",
+    "placeholder": "Ingresa la clave de acceso",
+    "submit": "Inicializar Sesión",
+    "signing_in": "Autenticando…",
+    "error": "Error de autenticación",
+    "secure_access": "Acceso seguro vía Tube Reply Neural Engine"
   },
   "time": {
     "just_now": "ahora",
@@ -320,6 +321,15 @@
     "force_suggest_modal_description": "Se procesarán {n} comentarios pendientes de forma secuencial. El proceso se ejecuta en segundo plano y puede tardar unos minutos.",
     "force_suggest_modal_confirm": "Ejecutar Ahora",
     "sync_completed": "Sincronización finalizada",
+    "reset_app": "Resetear Aplicación",
+    "cancel": "Cancelar",
+    "danger_zone": "Zona de Peligro",
+    "reset_description": "Esto eliminará permanentemente todos los datos, incluyendo tu conexión de YouTube, comentarios y ajustes. Esta acción no se puede deshacer.",
+    "reset_confirm_title": "¿Resetear Aplicación?",
+    "reset_confirm_description": "¿Estás absolutamente seguro? Esto borrará toda la base de datos y te desconectará de YouTube.",
+    "reset_confirm_instruction": "Por favor escribe {ok} para confirmar",
+    "reset_success": "Aplicación reseteada con éxito. Redirigiendo...",
+    "reset_failed": "Error al resetear la aplicación.",
     "active_model": "Modelo activo (desde .env)",
     "not_connected_title": "Canal no conectado",
     "last_sync_status": "Estado de la última sincronización",
@@ -336,7 +346,20 @@
     "gemini_key_missing_desc": "GEMINI_API_KEY no está configurada en el archivo .env",
     "openai_key_missing_desc": "OPENAI_API_KEY no está configurada en el archivo .env",
     "ai_provider_switched": "Proveedor ajustado automáticamente",
-    "ai_provider_switched_desc": "Se ha cambiado a {name} porque el proveedor anterior no tiene una API Key configurada."
+    "ai_provider_switched_desc": "Se ha cambiado a {name} porque el proveedor anterior no tiene una API Key configurada.",
+    "ai_engine_title": "Motor de Inteligencia",
+    "ai_engine_manual_queue": "Procesar cola manualmente",
+    "automation_rules_title": "Reglas de Automatización",
+    "automation_rules_subtitle": "Filtros y acciones automáticas",
+    "maintenance_title": "Mantenimiento de Datos",
+    "maintenance_subtitle": "Recuperar avatars faltantes de YouTube para todos los comentarios almacenados.",
+    "backfill_avatars": "Recuperar Avatars",
+    "reset_warning": "⚠️ Esta acción eliminará permanentemente todos tus comentarios, base de conocimiento y configuraciones locales.",
+    "connection_error_title": "Error de Conexión",
+    "backfill_started": "Backfill iniciado",
+    "backfill_failed": "Error en backfill",
+    "used": "usado",
+    "limit": "Límite"
   },
   "pwa": {
     "offline_ready": "App lista para trabajar sin conexión",

@@ -1,20 +1,20 @@
 import {
-  GoogleGenerativeAI,
+  GoogleGenAI,
   HarmCategory,
   HarmBlockThreshold,
-  FunctionCallingMode,
-  SchemaType,
+  FunctionCallingConfigMode,
   type Tool,
   type Part,
-} from '@google/generative-ai'
+} from '@google/genai'
+import { type VideoSearchFn } from './ai-types'
 
-let _client: GoogleGenerativeAI | null = null
+let _client: GoogleGenAI | null = null
 
 export function getGeminiClient() {
   if (_client) return _client
   const config = useRuntimeConfig()
   if (!config.geminiApiKey) throw new Error('GEMINI_API_KEY not configured')
-  _client = new GoogleGenerativeAI(config.geminiApiKey)
+  _client = new GoogleGenAI({ apiKey: config.geminiApiKey })
   return _client
 }
 
@@ -27,32 +27,38 @@ export function getModel(modelName?: string) {
   const config = useRuntimeConfig()
   const model = modelName ?? (config.geminiModel as string) ?? 'gemini-3-flash-preview'
   const client = getGeminiClient()
-  return client.getGenerativeModel({
-    model,
-    generationConfig: {
-      responseMimeType: 'application/json',
-      temperature: 0.4,
-      maxOutputTokens: 1024,
-      topP: 0.8,
-    },
-    safetySettings: SAFETY_SETTINGS,
-  })
+  // Note: getModel is a helper to return a configured request object or similar
+  // In the new SDK, we call client.models.generateContent directly.
+  return {
+    generateContent: (prompt: string | Part[]) => client.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        responseMimeType: 'application/json',
+        temperature: 0.4,
+        maxOutputTokens: 2048,
+        topP: 0.8,
+        safetySettings: SAFETY_SETTINGS,
+      }
+    })
+  }
 }
 
-// Tool-capable model — responseMimeType is incompatible with function calling
+// Tool-capable model helper
 function getToolModel(modelName?: string) {
   const config = useRuntimeConfig()
   const model = modelName ?? (config.geminiModel as string) ?? 'gemini-3-flash-preview'
   const client = getGeminiClient()
-  return client.getGenerativeModel({
+  return {
     model,
-    generationConfig: {
+    client,
+    config: {
       temperature: 0.4,
-      maxOutputTokens: 4096, // higher budget: tool rounds + JSON response
+      maxOutputTokens: 4096,
       topP: 0.8,
-    },
-    safetySettings: SAFETY_SETTINGS,
-  })
+      safetySettings: SAFETY_SETTINGS,
+    }
+  }
 }
 
 export const searchVideosTool: Tool = {
@@ -72,11 +78,11 @@ export const searchVideosTool: Tool = {
         'AR examples: "أين فيديو الكروشيه؟" → query "كروشيه"; "هل عندك درس مكياج؟" → query "مكياج".',
         'If the first search returns 0 results, retry with a shorter or synonym query (e.g. drop one keyword, try a synonym).',
       ].join(' '),
-      parameters: {
-        type: SchemaType.OBJECT,
+      parametersJsonSchema: {
+        type: 'object',
         properties: {
           query: {
-            type: SchemaType.STRING,
+            type: 'string',
             description: 'Focused topic keywords (2–4 words max, any language). No filler/stop words — only subject matter nouns/adjectives. The search engine handles accents, diacritics, emojis and spelling variants automatically.',
           },
         },
@@ -86,20 +92,14 @@ export const searchVideosTool: Tool = {
   ],
 }
 
-// Extract JSON object from model output — handles code fences, preamble text, trailing text
 function extractJSON(text: string): string {
-  // 1. Markdown code block: ```json ... ```
   const codeBlock = text.match(/```(?:json)?\s*([\s\S]*?)```/)
   if (codeBlock) return codeBlock[1].trim()
-
-  // 2. Find first { and last } — handles "Here is the JSON: { ... }"
   const start = text.indexOf('{')
   const end = text.lastIndexOf('}')
   if (start !== -1 && end > start) return text.substring(start, end + 1)
-
   return text.trim()
 }
-
 
 export async function geminiGenerateWithTools(
   prompt: string,
@@ -110,42 +110,38 @@ export async function geminiGenerateWithTools(
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const model = getToolModel()
+      const { client, model, config } = getToolModel()
       let promptTokens = 0
       let completionTokens = 0
 
-      // Use startChat for proper multi-turn function calling state management
-      const chat = model.startChat({
-        tools: [searchVideosTool],
-        toolConfig: { functionCallingConfig: { mode: FunctionCallingMode.AUTO } },
+      // In the new SDK, we use generateContent and manage the loop
+      let response = await client.models.generateContent({
+        model,
+        contents: prompt,
+        config: {
+          ...config,
+          tools: [searchVideosTool],
+          toolConfig: { functionCallingConfig: { mode: FunctionCallingConfigMode.AUTO } },
+        }
       })
 
-      const result1 = await chat.sendMessage(prompt)
-      const response1 = result1.response
-      promptTokens += response1.usageMetadata?.promptTokenCount ?? 0
-      completionTokens += response1.usageMetadata?.candidatesTokenCount ?? 0
+      promptTokens += response.usageMetadata?.promptTokenCount ?? 0
+      completionTokens += response.usageMetadata?.candidatesTokenCount ?? 0
 
-      const functionCalls = response1.functionCalls()
-      console.log(`[gemini] first call finishReason: ${response1.candidates?.[0]?.finishReason}, functionCalls: ${functionCalls?.length ?? 0}`)
-
-      // No tool needed — return direct response
-      if (!functionCalls?.length) {
-        const directText = extractJSON(response1.text())
-        console.log(`[gemini] direct response, text length: ${directText.length}`)
-        return { text: directText, promptTokens, completionTokens }
-      }
-
-      // Tool-calling loop — model may call search_videos multiple times
+      // Tool-calling loop
       const MAX_TOOL_ROUNDS = 3
       const queryCache = new Map<string, Array<{ id: string; title: string }>>()
-      let currentResponse = response1
+      const history: any[] = [{ role: 'user', parts: [{ text: prompt }] }]
 
       for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-        const calls = currentResponse.functionCalls()
-        if (!calls?.length) break
+        const functionCalls = response.functionCalls
+        if (!functionCalls?.length) break
+
+        // Add the model's function calls to history
+        history.push({ role: 'model', parts: functionCalls.map(fc => ({ functionCall: fc })) })
 
         const toolParts: Part[] = await Promise.all(
-          calls.map(async (call) => {
+          functionCalls.map(async (call) => {
             const { query } = call.args as { query: string }
             const cacheKey = query.toLowerCase().trim()
             let results = queryCache.get(cacheKey)
@@ -175,18 +171,30 @@ export async function geminiGenerateWithTools(
           }),
         )
 
-        const nextResult = await chat.sendMessage(toolParts)
-        currentResponse = nextResult.response
-        promptTokens += currentResponse.usageMetadata?.promptTokenCount ?? 0
-        completionTokens += currentResponse.usageMetadata?.candidatesTokenCount ?? 0
+        // Add tool responses to history
+        history.push({ role: 'user', parts: toolParts })
+
+        response = await client.models.generateContent({
+          model,
+          contents: history,
+          config: {
+            ...config,
+            tools: [searchVideosTool],
+            toolConfig: { functionCallingConfig: { mode: FunctionCallingConfigMode.AUTO } },
+          }
+        })
+
+        promptTokens += response.usageMetadata?.promptTokenCount ?? 0
+        completionTokens += response.usageMetadata?.candidatesTokenCount ?? 0
       }
 
-      const finalText = extractJSON(currentResponse.text())
-      console.log(`[gemini] final finishReason: ${currentResponse.candidates?.[0]?.finishReason}, text length: ${finalText.length}`)
+      const finalText = extractJSON(response.text || '')
+      console.log(`[gemini] final response text length: ${finalText.length}`)
       return { text: finalText, promptTokens, completionTokens }
     }
     catch (err) {
       lastError = err as Error
+      console.error(`[gemini] Error in geminiGenerateWithTools (attempt ${attempt}):`, err)
       if (attempt < retries) {
         await new Promise(r => setTimeout(r, 1000 * (attempt + 1)))
       }
@@ -201,12 +209,12 @@ export async function generateWithRetry(prompt: string, retries = 2): Promise<{ 
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const model = getModel()
-      const result = await model.generateContent(prompt)
-      const response = result.response
+      const modelHelper = getModel()
+      const result = await modelHelper.generateContent(prompt)
+      const response = result
 
       return {
-        text: response.text(),
+        text: response.text || '',
         promptTokens: response.usageMetadata?.promptTokenCount ?? 0,
         completionTokens: response.usageMetadata?.candidatesTokenCount ?? 0,
       }
@@ -219,5 +227,5 @@ export async function generateWithRetry(prompt: string, retries = 2): Promise<{ 
     }
   }
 
-  throw lastError
+  throw lastError!
 }

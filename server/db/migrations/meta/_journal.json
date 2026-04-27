@@ -5,43 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1777047315990,
-      "tag": "0000_familiar_cyclops",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1777100000000,
-      "tag": "0001_channel_metadata",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1777118531610,
-      "tag": "0002_cynical_epoch",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1777280927077,
-      "tag": "0003_stiff_silvermane",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1777304332483,
-      "tag": "0004_colossal_morg",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1777309581785,
-      "tag": "0005_steady_landau",
+      "when": 1777322867521,
+      "tag": "0000_wide_colonel_america",
       "breakpoints": true
     }
   ]

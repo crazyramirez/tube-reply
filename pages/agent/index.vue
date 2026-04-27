@@ -695,12 +695,12 @@ watch(messages, () => {
                   class="w-6 h-6 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center"
                 >
                   <UIcon
-                    name="i-heroicons-sparkles"
+                    :name="statusData?.provider === 'openai' ? 'i-simple-icons-openai' : 'i-heroicons-sparkles'"
                     class="w-3.5 h-3.5 text-indigo-400"
                   />
                 </div>
                 <span class="text-[10px] text-slate-600 font-medium"
-                  >AI · Gemini Flash</span
+                  >AI · {{ statusData?.provider === 'openai' ? 'OpenAI' : 'Gemini' }}</span
                 >
               </div>
             </div>

@@ -16,16 +16,22 @@ export function getOpenAIClient() {
 export async function openaiGenerate(
   prompt: string,
   retries = 2,
+  responseFormat?: { type: 'json_object' | 'text' }
 ): Promise<{ text: string; promptTokens: number; completionTokens: number }> {
   const config = useRuntimeConfig()
   const model = (config.openaiModel as string) ?? 'gpt-4o-mini'
   const client = getOpenAIClient()
+
+  // Auto-detect JSON if not specified
+  const finalResponseFormat = responseFormat ?? (prompt.toLowerCase().includes('json') ? { type: 'json_object' } : undefined)
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const response = await client.chat.completions.create({
         model,
         messages: [{ role: 'user', content: prompt }],
+        response_format: finalResponseFormat,
+        max_tokens: 2048,
       })
       return {
         text: response.choices[0].message.content ?? '',

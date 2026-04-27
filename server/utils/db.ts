@@ -4,6 +4,7 @@ import { mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import * as schema from '../db/schema'
 
+let _sqlite: Database.Database | null = null
 let _db: ReturnType<typeof drizzle<typeof schema>> | null = null
 
 export function useDb() {
@@ -24,13 +25,13 @@ export function useDb() {
     console.log(`[db] Initializing SQLite at: ${dbPath}`)
   }
 
-  const sqlite = new Database(dbPath)
-  sqlite.pragma('journal_mode = WAL')
-  sqlite.pragma('foreign_keys = ON')
+  _sqlite = new Database(dbPath)
+  _sqlite.pragma('journal_mode = WAL')
+  _sqlite.pragma('foreign_keys = ON')
 
   // Custom function: strip diacritics + emojis for accent-insensitive search.
   // Covers: Latin/Greek combining marks (U+0300–U+036F) + Arabic tashkeel (U+064B–U+065F)
-  sqlite.function('normalize_text', (text: string | null) => {
+  _sqlite.function('normalize_text', (text: string | null) => {
     if (!text) return ''
     return text
       .normalize('NFD')
@@ -43,7 +44,7 @@ export function useDb() {
   // Relevance scorer: returns a numeric score based on where the keyword matches.
   // title match = 10 pts, tags match = 5 pts, description match = 1 pt.
   // Called from searchVideos for result ranking.
-  sqlite.function('score_relevance', (title: string | null, tags: string | null, description: string | null, keyword: string) => {
+  _sqlite.function('score_relevance', (title: string | null, tags: string | null, description: string | null, keyword: string) => {
     const norm = (s: string | null) => (s ?? '')
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
@@ -59,6 +60,18 @@ export function useDb() {
     return score
   })
 
-  _db = drizzle(sqlite, { schema })
+  _db = drizzle(_sqlite, { schema })
   return _db
+}
+
+export function closeDb() {
+  if (_sqlite) {
+    try {
+      _sqlite.close()
+    } catch (err) {
+      console.error('[db] Error closing SQLite:', err)
+    }
+    _sqlite = null
+    _db = null
+  }
 }

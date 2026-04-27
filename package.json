@@ -9,12 +9,13 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push --force",
     "db:migrate": "node --import tsx/esm server/db/migrate.ts",
-    "db:push": "drizzle-kit push",
+    "db:check": "node check-db.cjs",
     "hash-password": "node --import tsx/esm scripts/hash-password.ts"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.0",
+    "@google/genai": "^1.50.1",
     "@nuxtjs/i18n": "^9.5.6",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^12.9.0",

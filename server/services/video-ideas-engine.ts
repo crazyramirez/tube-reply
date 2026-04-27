@@ -48,7 +48,7 @@ async function generateVideoIdeas(event?: any): Promise<VideoIdeaCluster[]> {
       )
     )
     .orderBy(desc(comments.likeCount))
-    .limit(150)
+    .limit(60)
 
   if (rows.length < 5) return []
 
@@ -58,26 +58,34 @@ These are not just titles; they are high-fidelity production guides for videos t
 
 For each of the 4 Blueprints, you must provide:
 1. "topic": Short category (e.g., "Sizing Masterclass").
-2. "suggestedTitle": A high-CTR title (e.g., "The ONLY Sizing Guide You'll Ever Need for Crochet").
-3. "strategicObjective": Why this video is a strategic win (e.g., "Solves the #1 friction point in your sales funnel").
-4. "viralHook": A powerful first 10-second script/hook idea to maximize retention.
-5. "keyPillars": Exactly 3 specific points/sections that MUST be in the video based on the comments.
-6. "productionTips": Specific advice on how to film/edit this to make it professional and clear.
-7. "expectedOutcome": What KPI will this improve (e.g., "Will reduce repetitive support comments by 40%").
+2. "suggestedTitle": A high-CTR title.
+3. "strategicObjective": Why this video is a strategic win.
+4. "viralHook": A powerful first 10-second script/hook idea.
+5. "keyPillars": Exactly 3 specific points that MUST be in the video.
+6. "productionTips": Specific advice on filming/editing.
+7. "expectedOutcome": What KPI will this improve.
 8. "demandCount": Number of comments requesting this.
 9. "totalLikes": Sum of likes on those comments.
 10. "exampleQuestions": 3 representative quotes from fans.
 
 Comments to analyze:
-${rows.map((r, i) => `${i + 1}. [Likes: ${r.likeCount}] ${r.text}`).join('\n')}
+${rows.map((r, i) => {
+  const clean = r.text
+    .replace(/"/g, "'")
+    .replace(/\\/g, "/")
+    .replace(/\n/g, ' ')
+    .slice(0, 150)
+  return `${i + 1}. [Likes: ${r.likeCount}] ${clean}`
+}).join('\n')}
 
-Respond ONLY with a valid JSON array of 4 objects.
+Return ONLY a valid JSON object. Do not include markdown or extra text.
 Schema:
-[{ "topic": string, "suggestedTitle": string, "strategicObjective": string, "viralHook": string, "keyPillars": string[], "productionTips": string, "expectedOutcome": string, "demandCount": number, "totalLikes": number, "exampleQuestions": string[] }]`
+{ "ideas": [{ "topic": string, "suggestedTitle": string, "strategicObjective": string, "viralHook": string, "keyPillars": string[], "productionTips": string, "expectedOutcome": string, "demandCount": number, "totalLikes": number, "exampleQuestions": string[] }] }`
 
   try {
     const { text } = await generateUnified(prompt, 2, event)
-    let clusters: VideoIdeaCluster[] = JSON.parse(text)
+    const rawData = JSON.parse(text)
+    let clusters: VideoIdeaCluster[] = Array.isArray(rawData) ? rawData : (rawData.ideas || [])
     
     // Force exactly 4 and add IDs
     clusters = clusters.slice(0, 4).map((c, idx) => ({
@@ -88,7 +96,7 @@ Schema:
     await db.insert(videoIdeasCache).values({
       clusters: JSON.stringify(clusters),
       commentsAnalyzed: rows.length,
-      modelUsed: 'gemini',
+      modelUsed: 'ai-engine',
     })
 
     return clusters

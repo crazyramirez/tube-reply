@@ -3,7 +3,10 @@ const path = require('path');
 const dbPath = path.resolve('data/youtube.db');
 const db = new Database(dbPath);
 const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
-console.log('tables:', tables.map(t=>t.name).join(', '));
-const info = db.prepare("PRAGMA table_info(videos)").all();
-console.log('videos cols:', info.map(c=>c.name).join(', '));
+
+for (const table of tables) {
+    const info = db.prepare(`PRAGMA table_info(${table.name})`).all();
+    console.log(`${table.name}: ${info.map(c=>c.name).join(', ')}`);
+}
+
 db.close();

@@ -20,31 +20,49 @@ export async function generateUnified(prompt: string, retries = 2, event?: any) 
   const localizedPrompt = `User Language: ${userLang}\nIMPORTANT: Respond in ${userLang === 'es' ? 'Spanish' : userLang === 'pt' ? 'Portuguese' : 'the user language'}.\n\n${prompt}`
 
   let lastError: any = null
+  let currentPrompt = prompt
+
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
+      const currentLocalizedPrompt = `User Language: ${userLang}\nIMPORTANT: Respond in ${userLang === 'es' ? 'Spanish' : userLang === 'pt' ? 'Portuguese' : 'the user language'}.\n\n${currentPrompt}`
+      
       let result: { text: string; promptTokens: number; completionTokens: number }
       if (provider === 'openai') {
-        result = await openaiGenerate(localizedPrompt, 1) // use 1 retry inside openaiGenerate
+        result = await openaiGenerate(currentLocalizedPrompt, 1)
       } else {
-        result = await geminiGenerate(localizedPrompt, 1)
+        result = await geminiGenerate(currentLocalizedPrompt, 1)
       }
 
       // Clean and extract
       const cleaned = extractJSON(result.text)
       
       // Validate JSON if the prompt expects it (rough check)
-      if (prompt.toLowerCase().includes('json')) {
-        JSON.parse(cleaned)
+      if (currentPrompt.toLowerCase().includes('json')) {
+        try {
+          JSON.parse(cleaned)
+        } catch (e) {
+          // Try to repair if it looks like truncation
+          const repaired = repairJSON(cleaned)
+          try {
+            JSON.parse(repaired)
+            result.text = repaired
+            return result
+          } catch (e2) {
+            throw new Error(`Invalid JSON: ${e instanceof Error ? e.message : 'Parse error'}`)
+          }
+        }
       }
 
       result.text = cleaned
       return result
     } catch (err) {
       lastError = err
-      console.warn(`[ai] Attempt ${attempt + 1} failed:`, err instanceof Error ? err.message : err)
-      // On second attempt, add a reminder to be strictly valid JSON
-      if (attempt === 0) {
-        prompt += "\n\nCRITICAL: Your previous response was invalid JSON. Please ensure your output is strictly valid JSON."
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      console.warn(`[ai] Attempt ${attempt + 1} failed:`, errorMessage)
+      
+      // On retry, add a reminder to be strictly valid JSON and maybe fix specific issues
+      if (attempt < retries) {
+        currentPrompt += "\n\nCRITICAL: Your previous response was invalid. Please ensure your output is strictly valid JSON. Do not truncate strings and escape all double quotes within strings. Ensure the JSON object is fully closed."
       }
     }
   }
@@ -56,6 +74,8 @@ export async function generateUnified(prompt: string, retries = 2, event?: any) 
  * Extracts and cleans a JSON string from potentially messy model output.
  */
 function extractJSON(text: string): string {
+  if (!text) return ''
+
   // 1. Markdown code block: ```json ... ```
   const codeBlock = text.match(/```(?:json)?\s*([\s\S]*?)```/)
   let extracted = codeBlock ? codeBlock[1].trim() : text.trim()
@@ -67,7 +87,7 @@ function extractJSON(text: string): string {
     let start = -1
     let end = -1
 
-    if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+    if (firstBrace !== -1 && (firstBracket === -1 || (firstBrace < firstBracket && firstBrace !== -1))) {
       start = firstBrace
       end = extracted.lastIndexOf('}')
     } else if (firstBracket !== -1) {
@@ -75,17 +95,47 @@ function extractJSON(text: string): string {
       end = extracted.lastIndexOf(']')
     }
 
-    if (start !== -1 && end > start) {
-      extracted = extracted.substring(start, end + 1)
+    if (start !== -1 && (end > start || end === -1)) {
+      extracted = extracted.substring(start, end !== -1 ? end + 1 : undefined)
     }
   }
 
   // 3. Common fixes for AI-generated "JSON"
-  return extracted
-    .replace(/,\s*([\]}])/g, '$1') // Remove trailing commas: [1, 2,] -> [1, 2]
-    .replace(/\n/g, ' ')           // Remove newlines inside strings (simplified)
+  // Remove trailing commas before closing braces/brackets
+  extracted = extracted
+    .replace(/,\s*([\]}])/g, '$1')
+    .replace(/\n/g, ' ')
     .replace(/\r/g, '')
-    .trim()
+  
+  return extracted.trim()
+}
+
+/**
+ * Basic JSON repair for truncated responses.
+ */
+function repairJSON(json: string): string {
+  let repaired = json.trim()
+
+  // Remove trailing garbage that looks like a broken escape sequence
+  repaired = repaired.replace(/\\u[0-9a-fA-F]{0,3}$/, '')
+  repaired = repaired.replace(/\\$/, '')
+
+  // Close unterminated string
+  const quoteCount = (repaired.match(/"/g) || []).length
+  if (quoteCount % 2 !== 0) {
+    repaired += '"'
+  }
+
+  // Close brackets/braces
+  const openBraces = (repaired.match(/{/g) || []).length
+  const closeBraces = (repaired.match(/}/g) || []).length
+  const openBrackets = (repaired.match(/\[/g) || []).length
+  const closeBrackets = (repaired.match(/\]/g) || []).length
+
+  for (let i = 0; i < openBrackets - closeBrackets; i++) repaired += ']'
+  for (let i = 0; i < openBraces - closeBraces; i++) repaired += '}'
+
+  return repaired
 }
 
 

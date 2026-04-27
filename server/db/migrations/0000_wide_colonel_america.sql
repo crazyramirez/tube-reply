@@ -1,9 +1,63 @@
+CREATE TABLE `agent_chats` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`title` text DEFAULT 'New conversation' NOT NULL,
+	`message_count` integer DEFAULT 0,
+	`created_at` text DEFAULT (datetime('now')),
+	`updated_at` text DEFAULT (datetime('now'))
+);
+--> statement-breakpoint
+CREATE TABLE `agent_messages` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`chat_id` integer NOT NULL,
+	`role` text NOT NULL,
+	`content` text NOT NULL,
+	`metadata` text,
+	`created_at` text DEFAULT (datetime('now')),
+	FOREIGN KEY (`chat_id`) REFERENCES `agent_chats`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE INDEX `agent_messages_chat_idx` ON `agent_messages` (`chat_id`);--> statement-breakpoint
+CREATE TABLE `app_settings` (
+	`key` text PRIMARY KEY NOT NULL,
+	`value` text NOT NULL,
+	`updated_at` text DEFAULT (datetime('now'))
+);
+--> statement-breakpoint
+CREATE TABLE `authors` (
+	`channel_id` text PRIMARY KEY NOT NULL,
+	`name` text NOT NULL,
+	`profile_image_url` text,
+	`last_seen_at` text,
+	`updated_at` text DEFAULT (datetime('now'))
+);
+--> statement-breakpoint
+CREATE INDEX `authors_name_idx` ON `authors` (`name`);--> statement-breakpoint
+CREATE TABLE `automation_rules` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`name` text NOT NULL,
+	`is_active` integer DEFAULT true,
+	`conditions` text NOT NULL,
+	`action` text NOT NULL,
+	`action_params` text,
+	`trigger_count` integer DEFAULT 0,
+	`created_at` text DEFAULT (datetime('now')),
+	`updated_at` text DEFAULT (datetime('now'))
+);
+--> statement-breakpoint
+CREATE TABLE `banned_authors` (
+	`channel_id` text PRIMARY KEY NOT NULL,
+	`author_name` text NOT NULL,
+	`banned_at` text DEFAULT (datetime('now')),
+	`reason` text
+);
+--> statement-breakpoint
 CREATE TABLE `comments` (
 	`id` text PRIMARY KEY NOT NULL,
 	`video_id` text NOT NULL,
 	`parent_id` text,
 	`author_name` text NOT NULL,
 	`author_channel_id` text,
+	`author_profile_image_url` text,
 	`text` text NOT NULL,
 	`text_original` text,
 	`like_count` integer DEFAULT 0,
@@ -14,6 +68,16 @@ CREATE TABLE `comments` (
 	`status` text DEFAULT 'pending' NOT NULL,
 	`fetched_at` text DEFAULT (datetime('now')),
 	`processed_at` text,
+	`last_activity_at` text,
+	`last_activity_text` text,
+	`last_activity_author` text,
+	`priority_score` integer DEFAULT 50,
+	`priority_label` text DEFAULT 'normal',
+	`is_return_commenter` integer DEFAULT false,
+	`opportunity_flags` text,
+	`detected_intent` text,
+	`translated_text` text,
+	`translation_lang` text,
 	FOREIGN KEY (`video_id`) REFERENCES `videos`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
@@ -21,6 +85,10 @@ CREATE INDEX `comments_video_idx` ON `comments` (`video_id`);--> statement-break
 CREATE INDEX `comments_status_idx` ON `comments` (`status`);--> statement-breakpoint
 CREATE INDEX `comments_published_at_idx` ON `comments` (`published_at`);--> statement-breakpoint
 CREATE UNIQUE INDEX `comments_yt_id_unique` ON `comments` (`id`);--> statement-breakpoint
+CREATE INDEX `comments_parent_idx` ON `comments` (`parent_id`,`published_at`);--> statement-breakpoint
+CREATE INDEX `comments_list_perf_idx` ON `comments` (`status`,`last_activity_at`);--> statement-breakpoint
+CREATE INDEX `comments_priority_idx` ON `comments` (`status`,`priority_score`);--> statement-breakpoint
+CREATE INDEX `comments_author_channel_idx` ON `comments` (`author_channel_id`);--> statement-breakpoint
 CREATE TABLE `error_logs` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`level` text NOT NULL,
@@ -66,6 +134,10 @@ CREATE TABLE `oauth_tokens` (
 	`token_type` text DEFAULT 'Bearer',
 	`expires_at` text NOT NULL,
 	`scope` text,
+	`channel_title` text,
+	`channel_thumbnail_url` text,
+	`channel_subscriber_count` text,
+	`channel_video_count` text,
 	`created_at` text DEFAULT (datetime('now')),
 	`updated_at` text DEFAULT (datetime('now'))
 );
@@ -79,6 +151,10 @@ CREATE TABLE `published_replies` (
 	`final_text` text NOT NULL,
 	`published_at` text DEFAULT (datetime('now')),
 	`published_by` text DEFAULT 'owner',
+	`like_count` integer DEFAULT 0,
+	`commenter_replied_back` integer DEFAULT false,
+	`thread_growth_after` integer DEFAULT 0,
+	`reply_metrics_synced_at` text,
 	FOREIGN KEY (`comment_id`) REFERENCES `comments`(`id`) ON UPDATE no action ON DELETE no action,
 	FOREIGN KEY (`suggestion_id`) REFERENCES `suggested_replies`(`id`) ON UPDATE no action ON DELETE no action
 );
@@ -132,6 +208,14 @@ CREATE TABLE `sync_log` (
 	`completed_at` text
 );
 --> statement-breakpoint
+CREATE TABLE `video_ideas_cache` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`clusters` text NOT NULL,
+	`generated_at` text DEFAULT (datetime('now')),
+	`comments_analyzed` integer DEFAULT 0,
+	`model_used` text
+);
+--> statement-breakpoint
 CREATE TABLE `video_summaries` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`video_id` text NOT NULL,
@@ -157,6 +241,7 @@ CREATE TABLE `videos` (
 	`category_id` text,
 	`default_language` text,
 	`view_count` integer DEFAULT 0,
+	`like_count` integer DEFAULT 0,
 	`comment_count` integer DEFAULT 0,
 	`last_synced_at` text,
 	`created_at` text DEFAULT (datetime('now')),

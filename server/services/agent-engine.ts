@@ -1,15 +1,17 @@
 import {
-  GoogleGenerativeAI,
+  GoogleGenAI,
   HarmCategory,
   HarmBlockThreshold,
-  SchemaType,
+  FunctionCallingConfigMode,
   type Content,
   type Tool,
   type FunctionCall,
-} from '@google/generative-ai'
+} from '@google/genai'
 import { desc, eq, and, or, isNull, like } from 'drizzle-orm'
 import { useDb } from '../utils/db'
 import { videos, comments, knowledgeBase, oauthTokens, agentMessages } from '../db/schema'
+import { getAiProvider, getSetting } from '../utils/settings'
+import { openaiGenerate } from '../utils/openai'
 
 // ─── DB search tools ─────────────────────────────────────────────────────────
 
@@ -136,11 +138,11 @@ const agentTools: Tool[] = [{
     {
       name: 'search_comments',
       description: 'Search the comments database for specific comments by keyword or phrase. Use when the user asks who said something, wants to find a specific comment, or asks about what viewers said about a topic.',
-      parameters: {
-        type: SchemaType.OBJECT,
+      parametersJsonSchema: {
+        type: 'object',
         properties: {
-          query: { type: SchemaType.STRING, description: 'Keywords or phrase to search for in comment text' },
-          limit: { type: SchemaType.NUMBER, description: 'Max results to return (default 8, max 20)' },
+          query: { type: 'string', description: 'Keywords or phrase to search for in comment text' },
+          limit: { type: 'number', description: 'Max results to return (default 8, max 20)' },
         },
         required: ['query'],
       },
@@ -148,11 +150,11 @@ const agentTools: Tool[] = [{
     {
       name: 'search_comments_by_author',
       description: 'Find all comments made by a specific person (commenter/viewer) by their name.',
-      parameters: {
-        type: SchemaType.OBJECT,
+      parametersJsonSchema: {
+        type: 'object',
         properties: {
-          author_name: { type: SchemaType.STRING, description: 'Name of the commenter to search for' },
-          limit: { type: SchemaType.NUMBER, description: 'Max results to return (default 8, max 20)' },
+          author_name: { type: 'string', description: 'Name of the commenter to search for' },
+          limit: { type: 'number', description: 'Max results to return (default 8, max 20)' },
         },
         required: ['author_name'],
       },
@@ -160,11 +162,11 @@ const agentTools: Tool[] = [{
     {
       name: 'get_video_comments',
       description: 'Get comments for a specific video by searching the video title. Useful when the user wants to know what people said about a particular video.',
-      parameters: {
-        type: SchemaType.OBJECT,
+      parametersJsonSchema: {
+        type: 'object',
         properties: {
-          video_keyword: { type: SchemaType.STRING, description: 'Part of the video title to search for' },
-          limit: { type: SchemaType.NUMBER, description: 'Max results to return (default 10, max 30)' },
+          video_keyword: { type: 'string', description: 'Part of the video title to search for' },
+          limit: { type: 'number', description: 'Max results to return (default 10, max 30)' },
         },
         required: ['video_keyword'],
       },
@@ -399,41 +401,64 @@ export async function runAgentChat(
   userMessage: string,
   history: AgentMessage[],
 ): Promise<{ text: string; promptTokens: number; completionTokens: number }> {
+  const provider = await getAiProvider()
+  const dbModel = await getSetting('ai_model', '')
   const config = useRuntimeConfig()
-  if (!config.geminiApiKey) throw new Error('GEMINI_API_KEY not configured')
-
+  
   const ctx = await buildChannelContext()
   const systemPrompt = buildSystemPrompt(ctx)
 
-  const client = new GoogleGenerativeAI(config.geminiApiKey)
-  const model = client.getGenerativeModel({
-    model: config.geminiModel ?? 'gemini-3-flash-preview',
-    systemInstruction: systemPrompt,
-    tools: agentTools,
-    generationConfig: {
-      temperature: 0.65,
-      maxOutputTokens: 4096,
-      topP: 0.9,
-    },
-    safetySettings: [
-      { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-      { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
-    ],
-  })
+  // ─── Case: OpenAI ──────────────────────────────────────────────────────────
+  if (provider === 'openai') {
+    const fullPrompt = `SYSTEM: ${systemPrompt}\n\nUSER: ${userMessage}`
+    return await openaiGenerate(fullPrompt, 2)
+  }
 
-  const geminiHistory: Content[] = history.map(msg => ({
+  // ─── Case: Gemini (Default) ────────────────────────────────────────────────
+  const apiKey = config.geminiApiKey || process.env.GEMINI_API_KEY
+  if (!apiKey) throw new Error('GEMINI_API_KEY not configured')
+
+  const model = dbModel || config.geminiModel || 'gemini-3-flash-preview'
+
+  const ai = new GoogleGenAI({ apiKey })
+  
+  const contents: Content[] = history.map(msg => ({
     role: msg.role === 'user' ? 'user' : 'model',
     parts: [{ text: msg.content }],
   }))
+  contents.push({ role: 'user', parts: [{ text: userMessage }] })
 
-  const chat = model.startChat({ history: geminiHistory })
-  let result = await chat.sendMessage(userMessage)
+  let promptTokens = 0
+  let completionTokens = 0
 
-  // Tool call loop — let the model call DB tools until it produces a text response
+  let response = await ai.models.generateContent({
+    model,
+    contents,
+    config: {
+      systemInstruction: systemPrompt,
+      tools: agentTools,
+      toolConfig: { functionCallingConfig: { mode: FunctionCallingConfigMode.AUTO } },
+      temperature: 0.65,
+      maxOutputTokens: 4096,
+      topP: 0.9,
+      safetySettings: [
+        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+      ],
+    }
+  })
+
+  promptTokens += response.usageMetadata?.promptTokenCount ?? 0
+  completionTokens += response.usageMetadata?.candidatesTokenCount ?? 0
+
+  // Tool call loop
   let iterations = 0
   while (iterations++ < 5) {
-    const fcs: FunctionCall[] = result.response.functionCalls() ?? []
-    if (!fcs.length) break
+    const fcs = response.functionCalls
+    if (!fcs?.length) break
+
+    // Add model's function calls to content history
+    contents.push({ role: 'model', parts: fcs.map(fc => ({ functionCall: fc })) })
 
     const toolResponses = await Promise.all(
       fcs.map(async (fc) => ({
@@ -443,14 +468,31 @@ export async function runAgentChat(
         },
       })),
     )
-    result = await chat.sendMessage(toolResponses)
+
+    // Add tool responses to content history
+    contents.push({ role: 'user', parts: toolResponses })
+
+    response = await ai.models.generateContent({
+      model,
+      contents,
+      config: {
+        systemInstruction: systemPrompt,
+        tools: agentTools,
+        toolConfig: { functionCallingConfig: { mode: FunctionCallingConfigMode.AUTO } },
+        temperature: 0.65,
+        maxOutputTokens: 4096,
+        topP: 0.9,
+      }
+    })
+
+    promptTokens += response.usageMetadata?.promptTokenCount ?? 0
+    completionTokens += response.usageMetadata?.candidatesTokenCount ?? 0
   }
 
-  const response = result.response
   return {
-    text: response.text(),
-    promptTokens: response.usageMetadata?.promptTokenCount ?? 0,
-    completionTokens: response.usageMetadata?.candidatesTokenCount ?? 0,
+    text: response.text || '',
+    promptTokens,
+    completionTokens,
   }
 }
 

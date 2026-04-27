@@ -181,7 +181,7 @@ export async function getTopTopics(limit = 15, event?: any) {
       )
     )
     .orderBy(desc(comments.publishedAt))
-    .limit(100)
+    .limit(50)
 
   if (questionComments.length < 5) {
     return []
@@ -197,18 +197,32 @@ Group similar questions into clusters. For each cluster, provide:
 3. The total number of likes these comments received combined.
 
 Comments:
-${questionComments.map((c, i) => `${i + 1}. [Likes: ${c.likeCount}] ${c.text}`).join('\n')}
+${questionComments.map((c, i) => {
+  // Sanitize comment text to avoid JSON confusion
+  const cleanText = c.text
+    .replace(/"/g, "'")           // Replace double quotes with single
+    .replace(/\\/g, "/")          // Replace backslashes with forward slashes
+    .replace(/\n/g, ' ')          // Remove newlines
+    .slice(0, 150)                // Limit length
+  return `${i + 1}. [Likes: ${c.likeCount}] ${cleanText}`
+}).join('\n')}
 
-Return ONLY a JSON array with this schema:
-[{ "topic": string, "count": number, "totalLikes": number, "exampleComments": string[] }]
+Return ONLY a valid JSON object. Do not include any markdown formatting, backticks, or extra text.
+Schema:
+{ "topics": [{ "topic": string, "count": number, "totalLikes": number, "exampleComments": string[] }] }
+
 Rules:
-- YOU MUST RETURN EXACTLY 4 TOPICS. No more, no less.
-- Sort by totalLikes descending.`
+- THE OBJECT MUST CONTAIN A "topics" ARRAY WITH EXACTLY 4 ITEMS.
+- Sort by totalLikes descending.
+- Limit "exampleComments" to a maximum of 3 representative samples per topic.
+- IMPORTANT: Use double quotes for keys and strings. Escape any internal double quotes with a backslash.
+- Ensure the final output is a single valid JSON object.`
 
 
   try {
     const { text } = await generateUnified(prompt, 2, event)
-    let data = JSON.parse(text)
+    const rawData = JSON.parse(text)
+    let data = Array.isArray(rawData) ? rawData : (rawData.topics || [])
     
     // Force exactly 4
     if (Array.isArray(data)) {

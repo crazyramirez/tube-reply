@@ -9,10 +9,12 @@ const generating = ref(false);
 const copiedHook = ref(false);
 const selectedIdea = ref<VideoIdeaCluster | null>(null);
 
-const { data: ideas, refresh } = useFetch<VideoIdeaCluster[]>(
+const { data: ideas, refresh, pending } = useFetch<VideoIdeaCluster[]>(
   "/api/insights/video-ideas",
   { lazy: true },
 );
+
+const isAnalyzing = computed(() => generating.value || (pending.value && !ideas.value));
 
 watch(
   ideas,
@@ -118,7 +120,7 @@ const STEPS = [
 const activeStep = ref(0);
 let _stepTimer: ReturnType<typeof setInterval> | null = null;
 
-watch(generating, (val) => {
+watch(isAnalyzing, (val) => {
   if (val) {
     activeStep.value = 0;
     _stepTimer = setInterval(() => {
@@ -128,7 +130,7 @@ watch(generating, (val) => {
     if (_stepTimer) clearInterval(_stepTimer);
     _stepTimer = null;
   }
-});
+}, { immediate: true });
 
 onUnmounted(() => {
   if (_stepTimer) clearInterval(_stepTimer);
@@ -168,8 +170,11 @@ onUnmounted(() => {
       </UButton>
     </div>
 
-    <!-- ── Loading ──────────────────────────────────────────────────── -->
-    <div v-if="!ideas" class="grid grid-cols-1 lg:grid-cols-[20rem_1fr] gap-5">
+    <!-- ── Loading (Initial state before analysis) ────────────────── -->
+    <div
+      v-if="!ideas && !isAnalyzing"
+      class="grid grid-cols-1 lg:grid-cols-[20rem_1fr] gap-5"
+    >
       <div class="space-y-3">
         <div
           v-for="i in 4"
@@ -184,7 +189,7 @@ onUnmounted(() => {
 
     <!-- ── Empty ────────────────────────────────────────────────────── -->
     <div
-      v-else-if="ideas.length === 0"
+      v-else-if="ideas?.length === 0 && !isAnalyzing"
       class="bg-white/[0.02] border border-white/[0.06] border-dashed rounded-3xl py-24 text-center"
     >
       <UIcon
@@ -218,108 +223,117 @@ onUnmounted(() => {
     >
       <!-- LEFT · Mission List -->
       <div class="flex flex-col gap-2.5">
-        <button
-          v-for="(idea, idx) in ideas"
-          :key="idea.id"
-          class="group relative w-full text-left rounded-2xl p-5 border transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-          :class="
-            selectedIdea?.id === idea.id
-              ? 'bg-indigo-500/[0.07] border-indigo-500/30 shadow-lg shadow-indigo-500/5'
-              : 'bg-white/[0.02] border-white/[0.05] hover:bg-white/[0.04] hover:border-white/[0.08]'
-          "
-          @click="selectedIdea = idea"
-        >
-          <!-- Active indicator -->
+        <template v-if="!ideas">
           <div
-            class="absolute left-0 inset-y-3 w-[3px] rounded-full transition-all duration-300"
+            v-for="i in 4"
+            :key="i"
+            class="h-28 rounded-2xl bg-white/[0.03] border border-white/[0.05] animate-pulse"
+          />
+        </template>
+        <template v-else>
+          <button
+            v-for="(idea, idx) in ideas"
+            :key="idea.id"
+            class="group relative w-full text-left rounded-2xl p-5 border transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
             :class="
               selectedIdea?.id === idea.id
-                ? 'bg-indigo-500 opacity-100'
-                : 'opacity-0'
+                ? 'bg-indigo-500/[0.07] border-indigo-500/30 shadow-lg shadow-indigo-500/5'
+                : 'bg-white/[0.02] border-white/[0.05] hover:bg-white/[0.04] hover:border-white/[0.08]'
             "
-          />
-
-          <div class="flex items-start gap-3 pl-1">
-            <!-- Mission number -->
-            <span
-              class="font-mono text-[11px] font-black mt-0.5 shrink-0 transition-colors duration-200"
+            @click="selectedIdea = idea"
+          >
+            <!-- Active indicator -->
+            <div
+              class="absolute left-0 inset-y-3 w-[3px] rounded-full transition-all duration-300"
               :class="
                 selectedIdea?.id === idea.id
-                  ? 'text-indigo-400'
-                  : 'text-slate-700'
+                  ? 'bg-indigo-500 opacity-100'
+                  : 'opacity-0'
               "
-            >
-              {{ String(idx + 1).padStart(2, "0") }}
-            </span>
+            />
 
-            <div class="min-w-0 flex-1">
-              <!-- Topic pill -->
+            <div class="flex items-start gap-3 pl-1">
+              <!-- Mission number -->
               <span
-                class="inline-block text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border mb-1.5 transition-all duration-200"
+                class="font-mono text-[11px] font-black mt-0.5 shrink-0 transition-colors duration-200"
                 :class="
                   selectedIdea?.id === idea.id
-                    ? 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20'
-                    : 'text-slate-600 bg-white/[0.02] border-white/[0.05]'
+                    ? 'text-indigo-400'
+                    : 'text-slate-700'
                 "
               >
-                {{ idea.topic }}
+                {{ String(idx + 1).padStart(2, '0') }}
               </span>
 
-              <!-- Title -->
-              <p
-                class="text-sm font-black leading-snug line-clamp-2 mb-3 transition-colors duration-200"
-                :class="
-                  selectedIdea?.id === idea.id
-                    ? 'text-white'
-                    : 'text-slate-300 group-hover:text-white'
-                "
-              >
-                {{ idea.suggestedTitle }}
-              </p>
-
-              <!-- Demand signal bars -->
-              <div class="flex items-center gap-2">
-                <div class="flex items-end gap-[3px] h-4">
-                  <div
-                    v-for="bar in 3"
-                    :key="bar"
-                    class="w-[3px] rounded-full transition-all duration-200"
-                    :class="[
-                      bar <= demandSignal(idea.demandCount).bars
-                        ? demandSignal(idea.demandCount).barColor
-                        : 'bg-slate-700',
-                      bar === 1 ? 'h-[6px]' : bar === 2 ? 'h-[10px]' : 'h-4',
-                    ]"
-                  />
-                </div>
+              <div class="min-w-0 flex-1">
+                <!-- Topic pill -->
                 <span
-                  class="text-[9px] font-black uppercase tracking-wider"
-                  :class="demandSignal(idea.demandCount).text"
+                  class="inline-block text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border mb-1.5 transition-all duration-200"
+                  :class="
+                    selectedIdea?.id === idea.id
+                      ? 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20'
+                      : 'text-slate-600 bg-white/[0.02] border-white/[0.05]'
+                  "
                 >
-                  {{ $t("insights.signals", { n: idea.demandCount }) }}
+                  {{ idea.topic }}
                 </span>
+
+                <!-- Title -->
+                <p
+                  class="text-sm font-black leading-snug line-clamp-2 mb-3 transition-colors duration-200"
+                  :class="
+                    selectedIdea?.id === idea.id
+                      ? 'text-white'
+                      : 'text-slate-300 group-hover:text-white'
+                  "
+                >
+                  {{ idea.suggestedTitle }}
+                </p>
+
+                <!-- Demand signal bars -->
+                <div class="flex items-center gap-2">
+                  <div class="flex items-end gap-[3px] h-4">
+                    <div
+                      v-for="bar in 3"
+                      :key="bar"
+                      class="w-[3px] rounded-full transition-all duration-200"
+                      :class="[
+                        bar <= demandSignal(idea.demandCount).bars
+                          ? demandSignal(idea.demandCount).barColor
+                          : 'bg-slate-700',
+                        bar === 1 ? 'h-[6px]' : bar === 2 ? 'h-[10px]' : 'h-4',
+                      ]"
+                    />
+                  </div>
+                  <span
+                    class="text-[9px] font-black uppercase tracking-wider"
+                    :class="demandSignal(idea.demandCount).text"
+                  >
+                    {{ $t('insights.signals', { n: idea.demandCount }) }}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        </button>
-
-        <!-- Refresh hint -->
-        <p class="text-[10px] text-slate-700 text-center mt-1 font-medium">
-          {{ $t("insights.refresh_hint") }} ·
-          <button
-            class="text-indigo-600 hover:text-indigo-400 transition-colors font-bold"
-            @click="regenerate"
-          >
-            {{ $t("insights.force_analysis") }}
           </button>
-        </p>
+
+          <!-- Refresh hint -->
+          <p class="text-[10px] text-slate-700 text-center mt-1 font-medium">
+            {{ $t('insights.refresh_hint') }} ·
+            <button
+              class="text-indigo-600 hover:text-indigo-400 transition-colors font-bold"
+              @click="regenerate"
+            >
+              {{ $t('insights.force_analysis') }}
+            </button>
+          </p>
+        </template>
       </div>
 
       <!-- RIGHT · Blueprint Detail Panel -->
       <Transition name="blueprint" mode="out-in">
         <!-- ── AI Generating State ─────────────────────────────────────── -->
         <div
-          v-if="generating && !selectedIdea"
+          v-if="isAnalyzing && !selectedIdea"
           key="ai-generating"
           class="rounded-3xl overflow-hidden border border-indigo-500/20 bg-[#0b1120]/80 backdrop-blur-xl"
         >
