@@ -10,45 +10,60 @@ export default defineNitroPlugin(async () => {
     const db = useDb()
     const migrationsPath = resolve(process.cwd(), 'server/db/migrations')
     
-    // List all .sql files in order
+    if (!import.meta.dev) {
+      // In production, migrations should be handled differently or via serverAssets
+      // But for this robust runner, we stick to the file system if available
+    }
+
     const files = readdirSync(migrationsPath)
       .filter(f => f.endsWith('.sql'))
       .sort()
 
     for (const file of files) {
-      console.log(`  → Processing migration: ${file}`)
+      console.log(`  → Checking migration: ${file}`)
       const content = readFileSync(resolve(migrationsPath, file), 'utf-8')
       
-      // Drizzle splits statements with '--> statement-breakpoint' or just ';'
+      // Split by statement breakpoint or semicolon
       const statements = content.split(/--> statement-breakpoint|;/).filter(s => s.trim())
 
       for (const statement of statements) {
+        const cleanSql = statement.trim()
+        if (!cleanSql) continue
+
         try {
-          const cleanSql = statement.trim()
-          if (!cleanSql) continue
-          
-          // Execute raw SQL
+          // Use .run() for better-sqlite3 DDL statements
           db.run(sql.raw(cleanSql))
+          
+          // Log success for important DDL changes
+          const lowerSql = cleanSql.toLowerCase()
+          if (lowerSql.includes('alter table') || lowerSql.includes('create table') || lowerSql.includes('create index')) {
+            console.log(`    ✅ Applied: ${cleanSql.split('\n')[0].substring(0, 80)}${cleanSql.length > 80 ? '...' : ''}`)
+          }
         } catch (err: any) {
           const errMsg = err.message || ''
-          const causeMsg = err.cause?.message || ''
-          const fullMsg = `${errMsg} ${causeMsg}`.toLowerCase()
-
-          const isAlreadyExists = 
-            fullMsg.includes('already exists') || 
-            fullMsg.includes('duplicate column') ||
-            fullMsg.includes('duplicate column name') ||
-            fullMsg.includes('already has')
-
-          if (isAlreadyExists) {
-            continue
+          const fullErr = err.toString().toLowerCase()
+          const causeMsg = err.cause ? String(err.cause).toLowerCase() : ''
+          const combined = `${fullErr} ${causeMsg}`
+          
+          // Ignore "already exists" errors (catch direct SQLite, Drizzle-wrapped, and cause-wrapped errors)
+          const isIgnorable = 
+            combined.includes('already exists') || 
+            combined.includes('duplicate column') ||
+            combined.includes('already has column') ||
+            combined.includes('already has') ||
+            combined.includes('table already exists') ||
+            combined.includes('index already exists')
+          
+          if (!isIgnorable) {
+            console.error(`    ❌ Error in ${file}: ${errMsg}`)
+            if (causeMsg) console.error(`       Cause: ${causeMsg}`)
+            console.error(`       Statement: ${cleanSql.substring(0, 100)}...`)
           }
-          console.warn(`    ⚠️ Statement failed in ${file}: ${errMsg}`)
         }
       }
     }
     
-    console.log('✓ Database migrations synchronized')
+    console.log('✓ Database migrations sync completed')
   } catch (error: any) {
     console.error('✗ Robust migration failed:', error.message)
   }
