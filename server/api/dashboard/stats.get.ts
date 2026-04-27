@@ -15,11 +15,6 @@ export default defineEventHandler(async (event) => {
     or(eq(comments.status, 'pending'), eq(comments.status, 'suggested')),
   )
 
-  const urgentWhere = and(
-    isNull(comments.parentId),
-    or(eq(comments.status, 'pending'), eq(comments.status, 'suggested')),
-    inArray(comments.priorityLabel, ['urgent', 'high']),
-  )
 
   const [
     [{ pending }],
@@ -28,8 +23,6 @@ export default defineEventHandler(async (event) => {
     [{ totalPublished }],
     recentComments,
     [{ recentCommentsTotal }],
-    urgentComments,
-    [{ urgentCount }],
   ] = await Promise.all([
     db.select({ pending: count(comments.id) }).from(comments)
       .where(and(eq(comments.status, 'pending'), isNull(comments.parentId))),
@@ -65,28 +58,6 @@ export default defineEventHandler(async (event) => {
       .from(comments)
       .where(needsAttentionWhere),
 
-    db.select({
-      id: comments.id,
-      authorName: comments.authorName,
-      text: comments.text,
-      likeCount: comments.likeCount,
-      priorityLabel: comments.priorityLabel,
-      priorityScore: comments.priorityScore,
-      opportunityFlags: comments.opportunityFlags,
-      detectedIntent: comments.detectedIntent,
-      publishedAt: comments.publishedAt,
-      status: comments.status,
-      videoTitle: videos.title,
-    })
-      .from(comments)
-      .leftJoin(videos, eq(comments.videoId, videos.id))
-      .where(urgentWhere)
-      .orderBy(desc(comments.priorityScore))
-      .limit(3),
-
-    db.select({ urgentCount: count(comments.id) })
-      .from(comments)
-      .where(urgentWhere),
   ])
 
   return {
@@ -98,7 +69,5 @@ export default defineEventHandler(async (event) => {
     },
     recentComments,
     recentCommentsTotal,
-    urgentComments,
-    urgentCount,
   }
 })

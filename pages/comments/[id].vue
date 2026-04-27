@@ -105,12 +105,6 @@ const { data: commenterHistory } = useFetch<CommenterHistory>(
   { lazy: true },
 );
 
-const priorityConfig: Record<string, { color: string; icon: string; label: string }> = {
-  urgent: { color: "text-red-400 bg-red-500/10 border-red-500/20", icon: "i-heroicons-fire", label: "URGENT" },
-  high:   { color: "text-orange-400 bg-orange-500/10 border-orange-500/20", icon: "i-heroicons-arrow-trending-up", label: "HIGH" },
-  normal: { color: "", icon: "", label: "" },
-  low:    { color: "", icon: "", label: "" },
-};
 
 function parseOpportunityFlags(flags: string | string[] | null | undefined): string[] {
   if (!flags) return [];
@@ -857,15 +851,6 @@ async function confirmUnban() {
                 <span class="text-[9px] text-slate-600 uppercase">{{
                   timeAgo(data.comment.publishedAt)
                 }}</span>
-                <!-- Priority badge -->
-                <span
-                  v-if="data.comment.priorityLabel === 'urgent' || data.comment.priorityLabel === 'high'"
-                  class="flex items-center gap-0.5 px-1.5 py-0.5 rounded border text-[8px] font-black uppercase"
-                  :class="priorityConfig[data.comment.priorityLabel]?.color"
-                >
-                  <UIcon :name="priorityConfig[data.comment.priorityLabel]?.icon" class="w-2.5 h-2.5" />
-                  {{ priorityConfig[data.comment.priorityLabel]?.label }}
-                </span>
                 <!-- Return commenter badge -->
                 <span
                   v-if="data.comment.isReturnCommenter"

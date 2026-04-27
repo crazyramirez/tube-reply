@@ -39,7 +39,6 @@
     "all": "Total",
     "inbox": "Inbox",
 
-    "priority": "Priority",
     "pending": "Pending",
     "suggested": "Suggested",
     "published": "Published",
@@ -63,8 +62,6 @@
     "awaiting_ai": "In Queue (Awaiting AI)",
     "published_today": "Published Today",
     "total_published": "Total Published",
-    "urgent_title": "Needs Attention Now",
-    "see_all_urgent": "See All Priority"
   },
   "comments": {
     "hub_label": "Intelligence Hub",

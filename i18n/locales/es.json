@@ -40,7 +40,6 @@
     "all": "Todos",
     "inbox": "Bandeja",
 
-    "priority": "Prioridad",
     "pending": "Pendiente",
     "suggested": "Sugerido",
     "published": "Publicado",
@@ -64,8 +63,6 @@
     "awaiting_ai": "En Cola (Esperando IA)",
     "published_today": "Publicados Hoy",
     "total_published": "Total Publicados",
-    "urgent_title": "Requiere Atención Ahora",
-    "see_all_urgent": "Ver Todos Prioritarios"
   },
   "comments": {
     "hub_label": "Centro de Inteligencia",

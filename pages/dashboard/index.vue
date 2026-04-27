@@ -259,58 +259,6 @@ const statCards = computed(() => [
       </div>
     </div>
 
-    <!-- Urgent Comments Widget -->
-    <div
-      v-if="stats?.urgentComments?.length"
-      class="mb-8 bg-red-500/5 border border-red-500/20 rounded-3xl p-5 animate-fade-in"
-    >
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-2">
-          <UIcon name="i-heroicons-fire" class="w-4 h-4 text-red-400" />
-          <span class="text-[10px] font-black text-red-400 uppercase tracking-[0.3em]">
-            {{ $t("dashboard.urgent_title") }}
-          </span>
-          <span class="px-2 py-0.5 rounded-full bg-red-500/20 border border-red-500/30 text-[10px] font-black text-red-400">
-            {{ stats.urgentCount }}
-          </span>
-        </div>
-        <NuxtLink
-          to="/comments?status=priority"
-          class="text-[10px] font-bold text-red-400/60 hover:text-red-400 uppercase tracking-widest transition-colors"
-        >
-          {{ $t("dashboard.see_all_urgent") }} →
-        </NuxtLink>
-      </div>
-      <div class="space-y-2">
-        <NuxtLink
-          v-for="c in stats.urgentComments"
-          :key="c.id"
-          :to="`/comments/${c.id}`"
-          class="flex items-center gap-3 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:bg-red-500/5 hover:border-red-500/10 transition-all group"
-        >
-          <div
-            class="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center"
-            :class="c.priorityLabel === 'urgent' ? 'bg-red-500/10 border border-red-500/20' : 'bg-orange-500/10 border border-orange-500/20'"
-          >
-            <UIcon
-              :name="c.priorityLabel === 'urgent' ? 'i-heroicons-fire' : 'i-heroicons-arrow-trending-up'"
-              class="w-4 h-4"
-              :class="c.priorityLabel === 'urgent' ? 'text-red-400' : 'text-orange-400'"
-            />
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 mb-0.5">
-              <span class="text-[11px] font-bold text-white truncate">{{ c.authorName }}</span>
-              <span v-if="c.likeCount" class="text-[9px] text-slate-600 flex items-center gap-0.5 shrink-0">
-                <UIcon name="i-heroicons-hand-thumb-up" class="w-2.5 h-2.5" />{{ c.likeCount }}
-              </span>
-            </div>
-            <p class="text-[11px] text-slate-500 line-clamp-1 italic">"{{ c.text }}"</p>
-          </div>
-          <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-slate-700 group-hover:text-red-400 transition-colors shrink-0" />
-        </NuxtLink>
-      </div>
-    </div>
 
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-2">

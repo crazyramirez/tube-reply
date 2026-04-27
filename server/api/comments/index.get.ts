@@ -11,7 +11,6 @@ export default defineEventHandler(async (event) => {
   const statusParam = (query.status as string) || 'inbox'
   const intentParam = query.intent as string | undefined
   const isInbox = statusParam === 'inbox'
-  const isPriority = statusParam === 'priority'
   const videoId = query.videoId as string | undefined
   const page = Math.max(1, Number(query.page ?? 1))
   const limit = Math.min(50, Math.max(1, Number(query.limit ?? 20)))
@@ -19,7 +18,7 @@ export default defineEventHandler(async (event) => {
 
   const statusCondition = statusParam === 'all'
     ? sql`1=1`
-    : (isInbox || isPriority)
+    : isInbox
       ? inArray(comments.status, INBOX_STATUSES)
       : eq(comments.status, statusParam as 'pending' | 'suggested' | 'dismissed' | 'published' | 'skipped')
 
@@ -32,9 +31,7 @@ export default defineEventHandler(async (event) => {
   ]
 
 
-  const orderBy = isPriority
-    ? [desc(comments.priorityScore), sql`CASE WHEN ${comments.status} = 'suggested' THEN 0 ELSE 1 END`]
-    : isInbox
+  const orderBy = isInbox
       ? [sql`CASE WHEN ${comments.status} = 'suggested' THEN 0 ELSE 1 END`, desc(comments.lastActivityAt)]
       : [desc(comments.lastActivityAt)]
 
