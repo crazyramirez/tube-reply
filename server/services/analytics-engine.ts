@@ -30,7 +30,7 @@ export async function getAnalyticsOverview() {
 
   const [allTopLevel, repliedTopLevel, recentComments, recentPublished] = await Promise.all([
     // total top-level comments
-    db.select({ total: count() }).from(comments).where(isNull(comments.parentId)),
+    db.select({ total: count(comments.id) }).from(comments).where(isNull(comments.parentId)),
 
     // top-level comments that have at least one reply from the owner
     db.select({ total: countDistinct(comments.parentId) })
@@ -43,9 +43,13 @@ export async function getAnalyticsOverview() {
       ),
 
     // recent comments for sentiment
-    db.select({ detectedIntent: comments.detectedIntent, detectedLang: comments.detectedLang })
+    db.select({ 
+      detectedIntent: comments.detectedIntent, 
+      detectedLang: comments.detectedLang,
+      publishedAt: comments.publishedAt
+    })
       .from(comments)
-      .where(and(isNull(comments.parentId), gte(comments.publishedAt, thirtyDaysAgo))),
+      .where(and(isNull(comments.parentId), sql`${comments.publishedAt} >= ${thirtyDaysAgo}`)),
 
     // recent published replies for avg response time
     db.select({
@@ -53,9 +57,14 @@ export async function getAnalyticsOverview() {
       commentId: publishedReplies.commentId,
     })
       .from(publishedReplies)
-      .where(gte(publishedReplies.publishedAt, thirtyDaysAgo))
+      .where(sql`${publishedReplies.publishedAt} >= ${thirtyDaysAgo}`)
       .limit(200),
   ])
+
+  console.log(`[analytics] Overview: totalTop=${allTopLevel[0].total}, recentComments=${recentComments.length}`)
+  if (recentComments.length > 0) {
+    console.log(`[analytics] Sample recent comment:`, JSON.stringify(recentComments[0]))
+  }
 
   const totalTop = allTopLevel[0].total
   const repliedCount = repliedTopLevel[0].total ?? 0
@@ -79,7 +88,7 @@ export async function getAnalyticsOverview() {
 
   // Return commenter rate
   const returnCommenters = await db
-    .select({ total: count() })
+    .select({ total: count(comments.id) })
     .from(comments)
     .where(and(isNull(comments.parentId), eq(comments.isReturnCommenter, true)))
 
@@ -119,7 +128,7 @@ export async function getSentimentTrend() {
       .where(
         and(
           isNull(comments.parentId),
-          gte(comments.publishedAt, weekStart),
+          sql`${comments.publishedAt} >= ${weekStart}`,
           sql`${comments.publishedAt} < ${weekEnd}`,
         )
       )
@@ -168,7 +177,7 @@ export async function getTopTopics(limit = 15, event?: any) {
       and(
         isNull(comments.parentId),
         eq(comments.detectedIntent, 'question'),
-        gte(comments.publishedAt, ninetyDaysAgo),
+        sql`${comments.publishedAt} >= ${ninetyDaysAgo}`,
       )
     )
     .orderBy(desc(comments.publishedAt))
@@ -241,7 +250,7 @@ export async function getAudienceStats() {
       lastSeenAt: sql<string>`max(${comments.publishedAt})`,
     })
     .from(comments)
-    .where(and(isNull(comments.parentId), ne(comments.authorChannelId, '')))
+    .where(and(isNull(comments.parentId), sql`${comments.authorChannelId} IS NOT NULL`, ne(comments.authorChannelId, '')))
     .groupBy(comments.authorChannelId)
     .orderBy(desc(count(comments.id)))
     .limit(10)
@@ -250,13 +259,18 @@ export async function getAudienceStats() {
   const langDist = await db
     .select({
       lang: comments.detectedLang,
-      total: count(),
+      total: count(comments.id),
     })
     .from(comments)
-    .where(isNull(comments.parentId))
+    .where(and(isNull(comments.parentId), sql`${comments.detectedLang} IS NOT NULL`, ne(comments.detectedLang, '')))
     .groupBy(comments.detectedLang)
-    .orderBy(desc(count()))
+    .orderBy(desc(count(comments.id)))
     .limit(10)
+
+  console.log(`[analytics] Audience: fans=${superfans.length}, langs=${langDist.length}`)
+  if (langDist.length > 0) {
+    console.log(`[analytics] Sample lang:`, JSON.stringify(langDist[0]))
+  }
 
   return {
     superfans: superfans.map(s => ({
