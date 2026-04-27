@@ -261,6 +261,10 @@ function renderMarkdown(text: string): string {
       '<code class="bg-white/10 text-indigo-300 px-1.5 py-0.5 rounded text-[0.85em] font-mono">$1</code>',
     )
     .replace(
+      /^> (.+)$/gm,
+      '<blockquote class="border-l-2 border-indigo-500/40 pl-3 my-2 text-slate-400 italic">$1</blockquote>',
+    )
+    .replace(
       /^- (.+)$/gm,
       '<li class="flex gap-2 text-slate-300"><span class="text-indigo-400 mt-1 shrink-0">•</span><span>$1</span></li>',
     )
