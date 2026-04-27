@@ -87,16 +87,6 @@ const statusColor = (s: string) =>
         ? "gray"
         : "yellow";
 
-const priorityConfig: Record<string, { color: string; icon: string; label: string }> = {
-  urgent: { color: "text-red-400 bg-red-500/10 border-red-500/20", icon: "i-heroicons-fire", label: "URGENT" },
-  high:   { color: "text-orange-400 bg-orange-500/10 border-orange-500/20", icon: "i-heroicons-arrow-trending-up", label: "HIGH" },
-  normal: { color: "text-slate-500 bg-white/5 border-white/10", icon: "", label: "" },
-  low:    { color: "text-slate-600 bg-white/[0.02] border-white/5", icon: "", label: "" },
-};
-
-function priorityBadge(label: string | null) {
-  return priorityConfig[label ?? "normal"] ?? priorityConfig.normal;
-}
 
 function parseOpportunityFlags(flags: string | string[] | null): string[] {
   if (!flags) return [];
@@ -113,7 +103,6 @@ const statusTabs = computed(() => [
   { label: t("status.all"), value: "all", icon: "i-heroicons-list-bullet" },
   { label: t("status.inbox"), value: "inbox", icon: "i-heroicons-inbox" },
 
-  { label: t("status.priority"), value: "priority", icon: "i-heroicons-fire" },
   {
     label: t("status.published"),
     value: "published",
@@ -443,15 +432,6 @@ watch([status, page], (newVals, oldVals) => {
               >
                 {{ $t('status.' + c.status).toUpperCase() }}
               </UBadge>
-              <!-- Priority badge (urgent/high only) -->
-              <span
-                v-if="c.priorityLabel === 'urgent' || c.priorityLabel === 'high'"
-                class="flex items-center gap-0.5 px-1 sm:px-1.5 py-0.5 rounded border text-[8px] sm:text-[9px] font-black uppercase backdrop-blur-md"
-                :class="priorityBadge(c.priorityLabel).color"
-              >
-                <UIcon :name="priorityBadge(c.priorityLabel).icon" class="w-2.5 h-2.5" />
-                {{ priorityBadge(c.priorityLabel).label }}
-              </span>
               <!-- Opportunity flag -->
               <span
                 v-if="parseOpportunityFlags(c.opportunityFlags).length > 0"
@@ -686,15 +666,6 @@ watch([status, page], (newVals, oldVals) => {
                 >
                   {{ $t('status.' + c.status).toUpperCase() }}
                 </UBadge>
-                <!-- Priority badge -->
-                <span
-                  v-if="c.priorityLabel === 'urgent' || c.priorityLabel === 'high'"
-                  class="flex items-center gap-0.5 px-1 py-0 rounded border text-[8px] font-black uppercase"
-                  :class="priorityBadge(c.priorityLabel).color"
-                >
-                  <UIcon :name="priorityBadge(c.priorityLabel).icon" class="w-2.5 h-2.5" />
-                  {{ priorityBadge(c.priorityLabel).label }}
-                </span>
                 <!-- Opportunity -->
                 <span
                   v-if="parseOpportunityFlags(c.opportunityFlags).length > 0"
