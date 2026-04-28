@@ -472,7 +472,7 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
           v-model="searchInput"
           type="search"
           :placeholder="$t('comments.search_placeholder')"
-          class="w-full pl-10 pr-10 py-3 bg-white/[0.03] border border-white/[0.07] rounded-2xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.05] focus:ring-1 focus:ring-indigo-500/20 transition-all duration-200"
+          class="w-full pl-10 pr-10 py-3 bg-white/[0.03] border border-white/[0.07] rounded-2xl text-md text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.05] focus:ring-1 focus:ring-indigo-500/20 transition-all duration-200"
         />
         <!-- Clear button -->
         <Transition

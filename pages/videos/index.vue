@@ -179,7 +179,7 @@ onActivated(() => {
           v-model="searchInput"
           type="search"
           :placeholder="$t('videos.search_placeholder')"
-          class="w-full pl-12 pr-12 py-2.5 bg-white/[0.03] border border-white/[0.07] rounded-2xl text-sm text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.05] focus:ring-4 focus:ring-indigo-500/10 transition-all duration-300"
+          class="w-full pl-12 pr-12 py-2.5 bg-white/[0.03] border border-white/[0.07] rounded-2xl text-md text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.05] focus:ring-4 focus:ring-indigo-500/10 transition-all duration-300"
         />
         <button
           v-if="searchInput"
