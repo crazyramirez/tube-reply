@@ -550,10 +550,20 @@ const { failedThumbnails, getCleanThumbnailUrl, handleThumbnailError } =
               </div>
             </div>
 
-            <!-- Overlay Stats (Views/Likes) -->
+            <!-- Total Comments Badge (Top Left) -->
             <div
-              class="absolute bottom-2 left-2 right-2 flex items-center justify-between"
+              class="absolute top-2 left-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-indigo-600 text-[11px] sm:text-[13px] font-black text-white backdrop-blur-md border border-white/20 shadow-xl flex items-center gap-1.5 sm:gap-2 z-10"
+              title="Total Comments"
             >
+              <UIcon
+                name="i-heroicons-chat-bubble-left-right"
+                class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-200"
+              />
+              {{ v.totalComments }}
+            </div>
+
+            <!-- Overlay Stats (Views/Likes) -->
+            <div class="absolute bottom-2 left-2 right-2 flex items-center">
               <div class="flex gap-1.5 sm:gap-2">
                 <div
                   class="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-black/80 text-[11px] sm:text-[13px] font-black text-white backdrop-blur-md border border-white/10 flex items-center gap-1.5 sm:gap-2 shadow-xl"
@@ -574,12 +584,6 @@ const { failedThumbnails, getCleanThumbnailUrl, handleThumbnailError } =
                   />
                   {{ v.likeCount?.toLocaleString() }}
                 </div>
-              </div>
-              <div
-                class="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-indigo-600 text-[11px] sm:text-[13px] font-black text-white backdrop-blur-md border border-white/20 shadow-[0_4px_12px_rgba(79,70,229,0.4)]"
-                title="Total Comments"
-              >
-                {{ v.totalComments }}
               </div>
             </div>
           </a>
@@ -620,7 +624,7 @@ const { failedThumbnails, getCleanThumbnailUrl, handleThumbnailError } =
               <!-- Internal Review Button -->
               <NuxtLink
                 :to="`/comments?videoId=${v.videoId}`"
-                class="w-full py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] text-[10px] md:text-[11px] font-bold text-slate-500 uppercase tracking-widest text-center hover:bg-white/[0.06] hover:text-indigo-400 hover:border-indigo-500/20 transition-all flex items-center justify-center gap-2"
+                class="w-full py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center hover:bg-white/[0.06] hover:text-indigo-400 hover:border-indigo-500/20 transition-all flex items-center justify-center gap-2"
               >
                 <UIcon
                   name="i-heroicons-chat-bubble-left-right"

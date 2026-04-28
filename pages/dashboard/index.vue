@@ -316,7 +316,7 @@ const statCards = computed(() => [
 
     <div
       v-else
-      class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2 sm:gap-6 dashboard-single-row mb-12"
+      class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2 sm:gap-3 dashboard-single-row mb-12"
     >
       <NuxtLink
         v-for="(comment, idx) in stats.recentComments"
@@ -527,7 +527,7 @@ const statCards = computed(() => [
 
     <div
       v-else
-      class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6"
+      class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3"
     >
       <NuxtLink
         v-for="(video, idx) in stats.recentVideos"
