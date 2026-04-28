@@ -46,6 +46,7 @@ export default defineEventHandler(async (event) => {
       thumbnailUrl: true,
       publishedAt: true,
       viewCount: true,
+      likeCount: true,
       commentCount: true,
       lastSyncedAt: true,
       defaultLanguage: true,

@@ -1,99 +1,158 @@
 <script setup lang="ts">
-import type { AutomationRule, AutomationCondition, AutomationConditionField, AutomationAction } from '~/shared/types'
+import type {
+  AutomationRule,
+  AutomationCondition,
+  AutomationConditionField,
+  AutomationAction,
+} from "~/shared/types";
 
-definePageMeta({ middleware: 'auth' })
+definePageMeta({ middleware: "auth" });
 
-const toast = useToast()
+const toast = useToast();
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
-const { data: rules, refresh } = await useFetch<AutomationRule[]>('/api/automation')
+const { data: rules, refresh } =
+  await useFetch<AutomationRule[]>("/api/automation");
 
 // ─── Field / action meta ──────────────────────────────────────────────────────
 
-const CONDITION_FIELDS: { value: AutomationConditionField; label: string; type: 'text' | 'number' | 'select' | 'boolean'; options?: string[] }[] = [
-  { value: 'contains_keyword', label: 'Contains keyword', type: 'text' },
-  { value: 'intent_is', label: 'Intent is', type: 'select', options: ['question', 'complaint', 'compliment', 'help_needed', 'video_request', 'spam', 'neutral'] },
-  { value: 'score_above', label: 'Score above', type: 'number' },
-  { value: 'score_below', label: 'Score below', type: 'number' },
-  { value: 'language_is', label: 'Language is', type: 'text' },
-  { value: 'is_return_commenter', label: 'Is return commenter', type: 'boolean' },
-  { value: 'has_opportunity_flag', label: 'Has opportunity flag', type: 'text' },
-]
+const CONDITION_FIELDS: {
+  value: AutomationConditionField;
+  label: string;
+  type: "text" | "number" | "select" | "boolean";
+  options?: string[];
+}[] = [
+  { value: "contains_keyword", label: "Contains keyword", type: "text" },
+  {
+    value: "intent_is",
+    label: "Intent is",
+    type: "select",
+    options: [
+      "question",
+      "complaint",
+      "compliment",
+      "help_needed",
+      "video_request",
+      "spam",
+      "neutral",
+    ],
+  },
+  { value: "score_above", label: "Score above", type: "number" },
+  { value: "score_below", label: "Score below", type: "number" },
+  { value: "language_is", label: "Language is", type: "text" },
+  {
+    value: "is_return_commenter",
+    label: "Is return commenter",
+    type: "boolean",
+  },
+  {
+    value: "has_opportunity_flag",
+    label: "Has opportunity flag",
+    type: "text",
+  },
+];
 
-const ACTION_OPTIONS: { value: AutomationAction; label: string; hasParams: boolean; paramKey?: string; paramType?: 'text' | 'select'; paramOptions?: string[] }[] = [
-  { value: 'auto_dismiss', label: 'Auto-dismiss comment', hasParams: false },
-  { value: 'set_priority', label: 'Set priority', hasParams: true, paramKey: 'label', paramType: 'select', paramOptions: ['urgent', 'high', 'normal', 'low'] },
-  { value: 'add_flag', label: 'Add opportunity flag', hasParams: true, paramKey: 'flag', paramType: 'text' },
-  { value: 'auto_suggest', label: 'Auto-generate AI reply', hasParams: false },
-  { value: 'notify', label: 'Mark as urgent (notify)', hasParams: false },
-]
+const ACTION_OPTIONS: {
+  value: AutomationAction;
+  label: string;
+  hasParams: boolean;
+  paramKey?: string;
+  paramType?: "text" | "select";
+  paramOptions?: string[];
+}[] = [
+  { value: "auto_dismiss", label: "Auto-dismiss comment", hasParams: false },
+  {
+    value: "set_priority",
+    label: "Set priority",
+    hasParams: true,
+    paramKey: "label",
+    paramType: "select",
+    paramOptions: ["urgent", "high", "normal", "low"],
+  },
+  {
+    value: "add_flag",
+    label: "Add opportunity flag",
+    hasParams: true,
+    paramKey: "flag",
+    paramType: "text",
+  },
+  { value: "auto_suggest", label: "Auto-generate AI reply", hasParams: false },
+  { value: "notify", label: "Mark as urgent (notify)", hasParams: false },
+];
 
 // ─── Builder state ────────────────────────────────────────────────────────────
 
-const showBuilder = ref(false)
-const saving = ref(false)
-const deletingId = ref<number | null>(null)
-const togglingId = ref<number | null>(null)
+const showBuilder = ref(false);
+const saving = ref(false);
+const deletingId = ref<number | null>(null);
+const togglingId = ref<number | null>(null);
 
 const draft = ref({
-  name: '',
-  conditions: [{ field: 'contains_keyword' as AutomationConditionField, value: '' }] as AutomationCondition[],
-  action: 'set_priority' as AutomationAction,
-  actionParam: 'high',
-})
+  name: "",
+  conditions: [
+    { field: "contains_keyword" as AutomationConditionField, value: "" },
+  ] as AutomationCondition[],
+  action: "set_priority" as AutomationAction,
+  actionParam: "high",
+});
 
 function resetDraft() {
   draft.value = {
-    name: '',
-    conditions: [{ field: 'contains_keyword', value: '' }],
-    action: 'set_priority',
-    actionParam: 'high',
-  }
+    name: "",
+    conditions: [{ field: "contains_keyword", value: "" }],
+    action: "set_priority",
+    actionParam: "high",
+  };
 }
 
 function openBuilder() {
-  resetDraft()
-  showBuilder.value = true
+  resetDraft();
+  showBuilder.value = true;
 }
 
 function addCondition() {
-  draft.value.conditions.push({ field: 'contains_keyword', value: '' })
+  draft.value.conditions.push({ field: "contains_keyword", value: "" });
 }
 
 function removeCondition(i: number) {
-  draft.value.conditions.splice(i, 1)
+  draft.value.conditions.splice(i, 1);
 }
 
 function conditionMeta(field: AutomationConditionField) {
-  return CONDITION_FIELDS.find(f => f.value === field)!
+  return CONDITION_FIELDS.find((f) => f.value === field)!;
 }
 
 function actionMeta(action: AutomationAction) {
-  return ACTION_OPTIONS.find(a => a.value === action)!
+  return ACTION_OPTIONS.find((a) => a.value === action)!;
 }
 
 // ─── Save ─────────────────────────────────────────────────────────────────────
 
 async function saveRule() {
   if (!draft.value.name.trim()) {
-    toast.add({ title: 'Rule name is required', color: 'red' })
-    return
+    toast.add({ title: "Rule name is required", color: "red" });
+    return;
   }
-  if (draft.value.conditions.some(c => c.value === '' && conditionMeta(c.field).type !== 'boolean')) {
-    toast.add({ title: 'All conditions need a value', color: 'red' })
-    return
+  if (
+    draft.value.conditions.some(
+      (c) => c.value === "" && conditionMeta(c.field).type !== "boolean",
+    )
+  ) {
+    toast.add({ title: "All conditions need a value", color: "red" });
+    return;
   }
 
-  const meta = actionMeta(draft.value.action)
-  const actionParams = meta.hasParams && meta.paramKey
-    ? { [meta.paramKey]: draft.value.actionParam }
-    : null
+  const meta = actionMeta(draft.value.action);
+  const actionParams =
+    meta.hasParams && meta.paramKey
+      ? { [meta.paramKey]: draft.value.actionParam }
+      : null;
 
-  saving.value = true
+  saving.value = true;
   try {
-    await $fetch('/api/automation', {
-      method: 'POST',
+    await $fetch("/api/automation", {
+      method: "POST",
       headers: useCsrfHeaders(),
       body: {
         name: draft.value.name,
@@ -101,72 +160,76 @@ async function saveRule() {
         action: draft.value.action,
         actionParams,
       },
-    })
-    await refresh()
-    showBuilder.value = false
-    toast.add({ title: 'Rule created', color: 'green' })
+    });
+    await refresh();
+    showBuilder.value = false;
+    toast.add({ title: "Rule created", color: "green" });
   } catch {
-    toast.add({ title: 'Failed to save rule', color: 'red' })
+    toast.add({ title: "Failed to save rule", color: "red" });
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 // ─── Toggle active ────────────────────────────────────────────────────────────
 
 async function toggleRule(rule: AutomationRule) {
-  togglingId.value = rule.id
+  togglingId.value = rule.id;
   try {
     await $fetch(`/api/automation/${rule.id}`, {
-      method: 'PATCH',
+      method: "PATCH",
       headers: useCsrfHeaders(),
       body: { isActive: !rule.isActive },
-    })
-    await refresh()
+    });
+    await refresh();
   } catch {
-    toast.add({ title: 'Failed to update rule', color: 'red' })
+    toast.add({ title: "Failed to update rule", color: "red" });
   } finally {
-    togglingId.value = null
+    togglingId.value = null;
   }
 }
 
 // ─── Delete ───────────────────────────────────────────────────────────────────
 
 async function deleteRule(id: number) {
-  deletingId.value = id
+  deletingId.value = id;
   try {
     await $fetch(`/api/automation/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
       headers: useCsrfHeaders(),
-    })
-    await refresh()
-    toast.add({ title: 'Rule deleted', color: 'green' })
+    });
+    await refresh();
+    toast.add({ title: "Rule deleted", color: "green" });
   } catch {
-    toast.add({ title: 'Failed to delete rule', color: 'red' })
+    toast.add({ title: "Failed to delete rule", color: "red" });
   } finally {
-    deletingId.value = null
+    deletingId.value = null;
   }
 }
 
 // ─── Display helpers ──────────────────────────────────────────────────────────
 
 function parseConditions(rule: AutomationRule): AutomationCondition[] {
-  if (Array.isArray(rule.conditions)) return rule.conditions
-  try { return JSON.parse(rule.conditions as unknown as string) } catch { return [] }
+  if (Array.isArray(rule.conditions)) return rule.conditions;
+  try {
+    return JSON.parse(rule.conditions as unknown as string);
+  } catch {
+    return [];
+  }
 }
 
 function conditionSummary(cond: AutomationCondition): string {
-  const meta = CONDITION_FIELDS.find(f => f.value === cond.field)
-  return `${meta?.label ?? cond.field} = ${cond.value}`
+  const meta = CONDITION_FIELDS.find((f) => f.value === cond.field);
+  return `${meta?.label ?? cond.field} = ${cond.value}`;
 }
 
 function actionSummary(rule: AutomationRule): string {
-  const meta = ACTION_OPTIONS.find(a => a.value === rule.action)
-  if (!meta) return rule.action
+  const meta = ACTION_OPTIONS.find((a) => a.value === rule.action);
+  if (!meta) return rule.action;
   if (meta.hasParams && rule.actionParams && meta.paramKey) {
-    return `${meta.label}: ${rule.actionParams[meta.paramKey]}`
+    return `${meta.label}: ${rule.actionParams[meta.paramKey]}`;
   }
-  return meta.label
+  return meta.label;
 }
 </script>
 
@@ -175,12 +238,18 @@ function actionSummary(rule: AutomationRule): string {
     <!-- Header -->
     <div class="flex items-start sm:items-end justify-between mb-8 gap-4">
       <div>
-        <div class="flex items-center gap-2 text-[10px] font-bold text-violet-400 uppercase tracking-[0.3em] mb-1">
+        <div
+          class="flex items-center gap-2 text-[10px] font-bold text-violet-400 uppercase tracking-[0.3em] mb-1"
+        >
           <UIcon name="i-heroicons-bolt" class="w-3.5 h-3.5" />
           Automation
         </div>
-        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tighter">Automation Rules</h1>
-        <p class="text-slate-500 text-sm mt-1">If/then rules that run automatically on every sync.</p>
+        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tighter">
+          Automation Rules
+        </h1>
+        <p class="text-slate-500 text-sm mt-1">
+          If/then rules that run automatically on every sync.
+        </p>
       </div>
       <UButton
         icon="i-heroicons-plus"
@@ -195,21 +264,43 @@ function actionSummary(rule: AutomationRule): string {
     </div>
 
     <!-- Rule builder modal -->
-    <UModal v-model="showBuilder" :ui="{ container: 'items-center', width: 'max-w-lg' }">
-      <div class="bg-slate-900 border border-white/[0.08] rounded-2xl p-6 space-y-5">
+    <UModal
+      v-model="showBuilder"
+      :ui="{ container: 'items-center', width: 'max-w-lg' }"
+    >
+      <div
+        class="bg-slate-900 border border-white/[0.08] rounded-2xl p-6 space-y-5"
+      >
         <h2 class="text-lg font-black text-white">New Automation Rule</h2>
 
         <!-- Name -->
         <div>
-          <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 block">Rule name</label>
-          <UInput v-model="draft.name" placeholder="e.g. Auto-dismiss spam" class="w-full" />
+          <label
+            class="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 block"
+            >Rule name</label
+          >
+          <UInput
+            v-model="draft.name"
+            placeholder="e.g. Auto-dismiss spam"
+            class="w-full"
+          />
         </div>
 
         <!-- Conditions -->
         <div class="space-y-2">
           <div class="flex items-center justify-between">
-            <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Conditions (ALL must match)</label>
-            <UButton size="xs" variant="ghost" color="slate" icon="i-heroicons-plus" class="rounded-lg" @click="addCondition">
+            <label
+              class="text-[10px] font-black text-slate-500 uppercase tracking-widest"
+              >Conditions (ALL must match)</label
+            >
+            <UButton
+              size="xs"
+              variant="ghost"
+              color="slate"
+              icon="i-heroicons-plus"
+              class="rounded-lg"
+              @click="addCondition"
+            >
               Add
             </UButton>
           </div>
@@ -222,7 +313,12 @@ function actionSummary(rule: AutomationRule): string {
             <!-- Field selector -->
             <USelect
               v-model="cond.field"
-              :options="CONDITION_FIELDS.map(f => ({ value: f.value, label: f.label }))"
+              :options="
+                CONDITION_FIELDS.map((f) => ({
+                  value: f.value,
+                  label: f.label,
+                }))
+              "
               size="sm"
               class="flex-1"
             />
@@ -231,7 +327,10 @@ function actionSummary(rule: AutomationRule): string {
             <template v-if="conditionMeta(cond.field).type === 'boolean'">
               <USelect
                 v-model="cond.value"
-                :options="[{ value: true, label: 'Yes' }, { value: false, label: 'No' }]"
+                :options="[
+                  { value: 1, label: 'Yes' },
+                  { value: 0, label: 'No' },
+                ]"
                 size="sm"
                 class="w-24"
               />
@@ -245,10 +344,21 @@ function actionSummary(rule: AutomationRule): string {
               />
             </template>
             <template v-else-if="conditionMeta(cond.field).type === 'number'">
-              <UInput v-model.number="cond.value" type="number" size="sm" class="w-24" placeholder="0-100" />
+              <UInput
+                v-model.number="cond.value"
+                type="number"
+                size="sm"
+                class="w-24"
+                placeholder="0-100"
+              />
             </template>
             <template v-else>
-              <UInput v-model="cond.value" size="sm" class="w-36" placeholder="value" />
+              <UInput
+                v-model="cond.value"
+                size="sm"
+                class="w-36"
+                placeholder="value"
+              />
             </template>
 
             <UButton
@@ -265,10 +375,15 @@ function actionSummary(rule: AutomationRule): string {
 
         <!-- Action -->
         <div class="space-y-2">
-          <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest block">Action</label>
+          <label
+            class="text-[10px] font-black text-slate-500 uppercase tracking-widest block"
+            >Action</label
+          >
           <USelect
             v-model="draft.action"
-            :options="ACTION_OPTIONS.map(a => ({ value: a.value, label: a.label }))"
+            :options="
+              ACTION_OPTIONS.map((a) => ({ value: a.value, label: a.label }))
+            "
             class="w-full"
           />
 
@@ -290,9 +405,24 @@ function actionSummary(rule: AutomationRule): string {
         </div>
 
         <!-- Footer -->
-        <div class="flex items-center justify-end gap-2 pt-2 border-t border-white/[0.06]">
-          <UButton variant="ghost" color="slate" size="sm" class="rounded-xl" @click="showBuilder = false">Cancel</UButton>
-          <UButton color="violet" size="sm" class="rounded-xl font-bold" :loading="saving" @click="saveRule">
+        <div
+          class="flex items-center justify-end gap-2 pt-2 border-t border-white/[0.06]"
+        >
+          <UButton
+            variant="ghost"
+            color="slate"
+            size="sm"
+            class="rounded-xl"
+            @click="showBuilder = false"
+            >Cancel</UButton
+          >
+          <UButton
+            color="violet"
+            size="sm"
+            class="rounded-xl font-bold"
+            :loading="saving"
+            @click="saveRule"
+          >
             Create Rule
           </UButton>
         </div>
@@ -304,10 +434,25 @@ function actionSummary(rule: AutomationRule): string {
       v-if="!rules?.length"
       class="bg-white/[0.02] border border-white/[0.06] border-dashed rounded-3xl py-24 text-center"
     >
-      <UIcon name="i-heroicons-bolt" class="w-12 h-12 mx-auto mb-3 text-slate-700" />
-      <p class="text-slate-400 font-bold uppercase tracking-widest text-sm mb-2">No rules yet</p>
-      <p class="text-slate-600 text-xs mb-6">Create your first rule to automate comment handling.</p>
-      <UButton color="violet" variant="soft" size="sm" class="rounded-xl" @click="openBuilder">
+      <UIcon
+        name="i-heroicons-bolt"
+        class="w-12 h-12 mx-auto mb-3 text-slate-700"
+      />
+      <p
+        class="text-slate-400 font-bold uppercase tracking-widest text-sm mb-2"
+      >
+        No rules yet
+      </p>
+      <p class="text-slate-600 text-xs mb-6">
+        Create your first rule to automate comment handling.
+      </p>
+      <UButton
+        color="violet"
+        variant="soft"
+        size="sm"
+        class="rounded-xl"
+        @click="openBuilder"
+      >
         Create First Rule
       </UButton>
     </div>
@@ -334,7 +479,9 @@ function actionSummary(rule: AutomationRule): string {
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 mb-2">
             <span class="text-sm font-black text-white">{{ rule.name }}</span>
-            <span class="text-[9px] font-black text-slate-600 uppercase tracking-widest">
+            <span
+              class="text-[9px] font-black text-slate-600 uppercase tracking-widest"
+            >
               {{ rule.triggerCount }} triggers
             </span>
           </div>
@@ -352,8 +499,13 @@ function actionSummary(rule: AutomationRule): string {
 
           <!-- Action -->
           <div class="flex items-center gap-1.5">
-            <UIcon name="i-heroicons-arrow-right" class="w-3 h-3 text-slate-600 shrink-0" />
-            <span class="text-[11px] font-bold text-violet-400">{{ actionSummary(rule) }}</span>
+            <UIcon
+              name="i-heroicons-arrow-right"
+              class="w-3 h-3 text-slate-600 shrink-0"
+            />
+            <span class="text-[11px] font-bold text-violet-400">{{
+              actionSummary(rule)
+            }}</span>
           </div>
         </div>
 

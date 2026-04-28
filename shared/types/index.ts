@@ -118,7 +118,7 @@ export type AutomationAction = 'auto_dismiss' | 'set_priority' | 'add_flag' | 'a
 
 export interface AutomationCondition {
   field: AutomationConditionField
-  value: string | number | boolean
+  value: any
 }
 
 export interface AutomationRule {

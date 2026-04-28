@@ -318,15 +318,17 @@ const statCards = computed(() => [
       v-else
       class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2 sm:gap-3 dashboard-single-row mb-12"
     >
-      <NuxtLink
+      <div
         v-for="(comment, idx) in stats.recentComments"
         :key="comment.id"
-        :to="`/comments/${comment.id}`"
         class="glass-card overflow-hidden flex flex-col group animate-slide-up"
         :class="`stagger-${(idx % 4) + 1}`"
       >
-        <!-- Video Preview -->
-        <div class="relative aspect-video bg-slate-900 overflow-hidden">
+        <!-- Video Preview (Clickable to detail) -->
+        <NuxtLink
+          :to="`/comments/${comment.id}`"
+          class="relative aspect-video bg-slate-900 overflow-hidden block"
+        >
           <img
             v-if="comment.videoThumbnail && !failedThumbnails[comment.id]"
             :src="getCleanThumbnailUrl(comment.videoId, comment.videoThumbnail)"
@@ -373,15 +375,16 @@ const statCards = computed(() => [
               {{ comment.videoTitle }}
             </p>
           </div>
-        </div>
+        </NuxtLink>
 
         <!-- Content -->
         <div class="p-3 sm:p-5 flex flex-col flex-1 gap-2 sm:gap-4">
           <a
             v-if="comment.authorChannelId"
+            :href="`https://youtube.com/channel/${comment.authorChannelId}`"
+            target="_blank"
             rel="noreferrer"
             class="flex items-center gap-2 sm:gap-3 group/author"
-            @click.stop
           >
             <UAvatar
               :src="
@@ -398,7 +401,7 @@ const statCards = computed(() => [
             />
             <div class="flex flex-col min-w-0">
               <span
-                class="font-bold text-[10px] sm:text-sm text-white truncate"
+                class="font-bold text-[10px] sm:text-sm text-white truncate group-hover/author:text-indigo-400 transition-colors"
                 >{{ comment.authorName }}</span
               >
               <span
@@ -433,8 +436,9 @@ const statCards = computed(() => [
             </div>
           </div>
 
-          <div
-            class="bg-white/5 border border-white/5 rounded-lg sm:rounded-xl p-2 sm:p-4 flex-1"
+          <NuxtLink
+            :to="`/comments/${comment.id}`"
+            class="bg-white/5 border border-white/5 rounded-lg sm:rounded-xl p-2 sm:p-4 flex-1 hover:bg-white/10 transition-colors block"
           >
             <p
               class="text-[10px] sm:text-sm text-slate-300 leading-relaxed line-clamp-2 italic"
@@ -445,7 +449,7 @@ const statCards = computed(() => [
                   : comment.lastText || comment.text
               }}"
             </p>
-          </div>
+          </NuxtLink>
 
           <!-- Your response preview -->
           <div
@@ -481,15 +485,16 @@ const statCards = computed(() => [
                 {{ comment.likeCount }}
               </span>
             </div>
-            <div
-              class="flex items-center gap-1 text-[10px] font-bold text-indigo-400 group-hover:translate-x-1 transition-transform"
+            <NuxtLink
+              :to="`/comments/${comment.id}`"
+              class="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:translate-x-1 transition-transform"
             >
               <span class="hidden sm:inline">{{ $t("comments.review") }}</span>
               <UIcon name="i-heroicons-arrow-right" class="w-3 h-3" />
-            </div>
+            </NuxtLink>
           </div>
         </div>
-      </NuxtLink>
+      </div>
     </div>
 
     <!-- Latest Videos -->
@@ -529,88 +534,19 @@ const statCards = computed(() => [
       v-else
       class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3"
     >
-      <NuxtLink
+      <VideoCard
         v-for="(video, idx) in stats.recentVideos"
         :key="video.id"
-        :to="`/comments?videoId=${video.id}`"
-        class="glass-card overflow-hidden flex flex-col group animate-slide-up"
-        :class="`stagger-${(idx % 4) + 1}`"
-      >
-        <div class="relative aspect-video bg-slate-900 overflow-hidden">
-          <img
-            v-if="video.thumbnailUrl && !failedThumbnails[video.id]"
-            :src="getCleanThumbnailUrl(video.id, video.thumbnailUrl)"
-            :alt="video.title"
-            class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-            loading="lazy"
-            referrerpolicy="no-referrer"
-            @error="handleThumbnailError(video.id, video.id, $event)"
-          />
-          <div
-            v-else
-            class="w-full h-full flex items-center justify-center bg-slate-900"
-          >
-            <UIcon
-              name="i-heroicons-video-camera"
-              class="w-8 h-8 text-slate-800"
-            />
-          </div>
-          <div
-            class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
-          />
-
-          <!-- Overlay Stats (Views/Likes) -->
-          <div
-            class="absolute bottom-2 left-2 right-2 flex items-center justify-between"
-          >
-            <div class="flex gap-1.5">
-              <div
-                class="px-2 py-1 rounded-lg bg-black/80 text-[10px] font-black text-white backdrop-blur-md border border-white/10 flex items-center gap-1.5 shadow-xl"
-              >
-                <UIcon name="i-heroicons-eye" class="w-3 h-3 text-slate-400" />
-                {{ video.viewCount?.toLocaleString() || 0 }}
-              </div>
-              <div
-                v-if="video.likeCount"
-                class="px-2 py-1 rounded-lg bg-black/80 text-[10px] font-black text-white backdrop-blur-md border border-white/10 flex items-center gap-1.5 shadow-xl"
-              >
-                <UIcon
-                  name="i-heroicons-hand-thumb-up"
-                  class="w-3 h-3 text-indigo-400"
-                />
-                {{ video.likeCount?.toLocaleString() }}
-              </div>
-            </div>
-            <div
-              class="px-2 py-1 rounded-lg bg-indigo-600 text-[10px] font-black text-white backdrop-blur-md border border-white/20 shadow-[0_4px_12px_rgba(79,70,229,0.4)]"
-            >
-              {{ video.commentCount?.toLocaleString() || 0 }}
-            </div>
-          </div>
-        </div>
-
-        <!-- Content -->
-        <div class="p-3 flex flex-col flex-1 bg-white/[0.02]">
-          <p
-            class="text-[11px] font-black text-slate-200 line-clamp-2 group-hover:text-indigo-400 transition-colors mb-2 leading-tight h-8"
-          >
-            {{ video.title }}
-          </p>
-
-          <div
-            class="mt-auto flex items-center justify-between border-t border-white/5 pt-2"
-          >
-            <span
-              class="text-[9px] font-black text-indigo-500/50 uppercase tracking-widest"
-            >
-              {{ $t("nav.comments") }}
-            </span>
-            <span class="text-[9px] font-bold text-slate-600">
-              {{ isMounted ? timeAgo(video.publishedAt) : "..." }}
-            </span>
-          </div>
-        </div>
-      </NuxtLink>
+        :id="video.id"
+        :title="video.title"
+        :thumbnail-url="video.thumbnailUrl"
+        :view-count="video.viewCount"
+        :like-count="video.likeCount"
+        :comment-count="video.commentCount"
+        :published-at="timeAgo(video.publishedAt)"
+        :manage-link="`/comments?videoId=${video.id}`"
+        :style="{ animationDelay: `${idx * 50}ms` }"
+      />
     </div>
   </div>
 </template>

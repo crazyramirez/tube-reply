@@ -96,26 +96,6 @@ const typeTabs = [
   { label: "videos.short", value: "short", icon: "i-heroicons-bolt" },
 ];
 
-const formatNumber = (n: number) => {
-  if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
-  if (n >= 1000) return (n / 1000).toFixed(1) + "K";
-  return n.toString();
-};
-
-function isShort(duration: string | null): boolean {
-  if (!duration) return false;
-  if (duration.includes("H")) return false;
-  const match = duration.match(/PT(\d+)M/);
-  if (match) {
-    const minutes = parseInt(match[1]);
-    if (minutes >= 1) return false;
-  }
-  return true;
-}
-
-const { failedThumbnails, getCleanThumbnailUrl, handleThumbnailError } =
-  useYouTubeThumbnail();
-
 const savedScrollPos = ref(0);
 
 onBeforeRouteLeave((to, from) => {
@@ -288,130 +268,20 @@ onActivated(() => {
         'sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4',
       ]"
     >
-      <div
+      <VideoCard
         v-for="(video, idx) in data.items"
         :key="video.id"
-        class="group glass-card overflow-hidden flex flex-col h-full animate-slide-up hover:border-indigo-500/30 transition-all duration-500"
+        :id="video.id"
+        :title="video.title"
+        :thumbnail-url="video.thumbnailUrl"
+        :view-count="video.viewCount"
+        :like-count="video.likeCount"
+        :comment-count="video.commentCount"
+        :duration="video.duration"
+        :published-at="timeAgo(video.publishedAt)"
+        :manage-link="`/comments?videoId=${video.id}${search ? '&search=' + encodeURIComponent(search) : ''}`"
         :style="{ animationDelay: `${idx * 50}ms` }"
-      >
-        <!-- Thumbnail -->
-        <a
-          :href="`https://youtube.com/watch?v=${video.id}`"
-          target="_blank"
-          class="relative aspect-video bg-slate-900 overflow-hidden block"
-        >
-          <img
-            v-if="video.thumbnailUrl && !failedThumbnails[video.id]"
-            :src="getCleanThumbnailUrl(video.id, video.thumbnailUrl)"
-            :alt="video.title"
-            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-            loading="lazy"
-            referrerpolicy="no-referrer"
-            @error="handleThumbnailError(video.id, video.id, $event)"
-          />
-          <div v-else class="w-full h-full flex items-center justify-center">
-            <UIcon
-              name="i-heroicons-video-camera"
-              class="text-slate-800 w-12 h-12"
-            />
-          </div>
-
-          <!-- YouTube Play Overlay -->
-          <div
-            class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-          >
-            <div
-              class="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white shadow-xl scale-90 group-hover:scale-100 transition-transform"
-            >
-              <UIcon name="i-heroicons-play-solid" class="w-5 h-5" />
-            </div>
-          </div>
-
-          <!-- Badges -->
-          <div class="absolute top-3 left-3 flex gap-2">
-            <UBadge
-              v-if="isShort(video.duration)"
-              color="rose"
-              variant="solid"
-              size="xs"
-              class="font-black tracking-tighter rounded-lg px-2 py-0.5 uppercase flex items-center gap-1 shadow-lg"
-            >
-              <UIcon name="i-heroicons-bolt" class="w-3 h-3" />
-              Short
-            </UBadge>
-          </div>
-
-          <!-- Overlay stats -->
-          <div
-            class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4"
-          >
-            <div class="flex items-center gap-4 text-white text-xs font-bold">
-              <span class="flex items-center gap-1.5">
-                <UIcon name="i-heroicons-eye" class="w-4 h-4 text-indigo-400" />
-                {{ formatNumber(video.viewCount || 0) }}
-              </span>
-              <span class="flex items-center gap-1.5">
-                <UIcon
-                  name="i-heroicons-chat-bubble-left-right"
-                  class="w-4 h-4 text-emerald-400"
-                />
-                {{ formatNumber(video.commentCount || 0) }}
-              </span>
-            </div>
-          </div>
-        </a>
-
-        <!-- Content -->
-        <div class="p-5 flex flex-col flex-1">
-          <a
-            :href="`https://youtube.com/watch?v=${video.id}`"
-            target="_blank"
-            class="block mb-3"
-          >
-            <h3
-              class="text-white font-bold text-sm leading-snug line-clamp-2 group-hover:text-indigo-300 transition-colors"
-            >
-              {{ video.title }}
-            </h3>
-          </a>
-
-          <div class="mt-auto pt-4 border-t border-white/5 space-y-4">
-            <div class="flex items-center justify-between">
-              <div class="flex flex-col">
-                <span
-                  class="text-[10px] font-bold text-slate-500 uppercase tracking-widest"
-                  >{{ timeAgo(video.publishedAt) }}</span
-                >
-                <span class="text-[11px] text-slate-400 font-medium">
-                  {{
-                    $t("videos.stats", {
-                      views: formatNumber(video.viewCount || 0),
-                      comments: formatNumber(video.commentCount || 0),
-                    })
-                  }}
-                </span>
-              </div>
-
-              <div
-                class="text-[10px] font-black text-slate-600 uppercase tracking-widest"
-              >
-                ID: {{ video.id.substring(0, 4) }}...
-              </div>
-            </div>
-
-            <NuxtLink
-              :to="`/comments?videoId=${video.id}${search ? '&search=' + encodeURIComponent(search) : ''}`"
-              class="w-full py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] text-[10px] md:text-[11px] font-bold text-slate-500 uppercase tracking-widest text-center hover:bg-white/[0.06] hover:text-indigo-400 hover:border-indigo-500/20 transition-all flex items-center justify-center gap-2"
-            >
-              <UIcon
-                name="i-heroicons-chat-bubble-left-right"
-                class="w-3.5 h-3.5"
-              />
-              {{ $t("analytics.manage_comments") }}
-            </NuxtLink>
-          </div>
-        </div>
-      </div>
+      />
     </div>
 
     <!-- Pagination -->

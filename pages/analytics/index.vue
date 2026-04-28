@@ -70,9 +70,6 @@ function replyRateColor(rate: number) {
   if (rate >= 30) return "text-amber-400";
   return "text-red-400";
 }
-
-const { failedThumbnails, getCleanThumbnailUrl, handleThumbnailError } =
-  useYouTubeThumbnail();
 </script>
 
 <template>
@@ -513,128 +510,20 @@ const { failedThumbnails, getCleanThumbnailUrl, handleThumbnailError } =
         v-if="lastVideos.length"
         class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
       >
-        <div
+        <VideoCard
           v-for="v in lastVideos"
           :key="v.videoId"
-          class="glass-card group relative flex flex-col overflow-hidden"
-        >
-          <!-- Thumbnail Container (Links to YouTube) -->
-          <a
-            :href="`https://youtube.com/watch?v=${v.videoId}`"
-            target="_blank"
-            class="relative aspect-video overflow-hidden block"
-          >
-            <img
-              v-if="v.thumbnailUrl && !failedThumbnails[v.videoId]"
-              :src="getCleanThumbnailUrl(v.videoId, v.thumbnailUrl)"
-              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-              referrerpolicy="no-referrer"
-              crossorigin="anonymous"
-              @error="handleThumbnailError(v.videoId, v.videoId, $event)"
-            />
-            <div
-              class="absolute inset-0 bg-slate-900 flex items-center justify-center"
-              v-else
-            >
-              <UIcon name="i-heroicons-film" class="w-8 h-8 text-slate-700" />
-            </div>
-
-            <!-- YouTube Play Overlay (Shows on hover) -->
-            <div
-              class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-            >
-              <div
-                class="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center text-white shadow-xl scale-90 group-hover:scale-100 transition-transform"
-              >
-                <UIcon name="i-heroicons-play-solid" class="w-6 h-6" />
-              </div>
-            </div>
-
-            <!-- Total Comments Badge (Top Left) -->
-            <div
-              class="absolute top-2 left-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-indigo-600 text-[11px] sm:text-[13px] font-black text-white backdrop-blur-md border border-white/20 shadow-xl flex items-center gap-1.5 sm:gap-2 z-10"
-              title="Total Comments"
-            >
-              <UIcon
-                name="i-heroicons-chat-bubble-left-right"
-                class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-200"
-              />
-              {{ v.totalComments }}
-            </div>
-
-            <!-- Overlay Stats (Views/Likes) -->
-            <div class="absolute bottom-2 left-2 right-2 flex items-center">
-              <div class="flex gap-1.5 sm:gap-2">
-                <div
-                  class="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-black/80 text-[11px] sm:text-[13px] font-black text-white backdrop-blur-md border border-white/10 flex items-center gap-1.5 sm:gap-2 shadow-xl"
-                >
-                  <UIcon
-                    name="i-heroicons-eye"
-                    class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400"
-                  />
-                  {{ v.viewCount?.toLocaleString() || 0 }}
-                </div>
-                <div
-                  v-if="v.likeCount"
-                  class="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-black/80 text-[11px] sm:text-[13px] font-black text-white backdrop-blur-md border border-white/10 flex items-center gap-1.5 sm:gap-2 shadow-xl"
-                >
-                  <UIcon
-                    name="i-heroicons-hand-thumb-up"
-                    class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-400"
-                  />
-                  {{ v.likeCount?.toLocaleString() }}
-                </div>
-              </div>
-            </div>
-          </a>
-
-          <!-- Content -->
-          <div class="p-3 flex flex-col flex-1">
-            <p
-              class="text-xs font-black text-slate-200 line-clamp-3 group-hover:text-indigo-300 transition-colors mb-3 leading-snug h-12"
-            >
-              {{ v.videoTitle }}
-            </p>
-
-            <div class="mt-auto flex flex-col gap-3">
-              <div class="flex flex-wrap gap-1.5">
-                <NuxtLink
-                  v-if="v.pendingCount > 0"
-                  :to="`/comments?videoId=${v.videoId}&status=pending`"
-                  class="px-2 py-1 rounded-md bg-amber-400/10 text-[8px] md:text-[10px] font-black text-amber-400 border border-amber-400/20 hover:bg-amber-400/20 transition-colors"
-                >
-                  {{ v.pendingCount }} {{ $t("analytics.pending_label") }}
-                </NuxtLink>
-                <NuxtLink
-                  v-if="v.negativeCount > 0"
-                  :to="`/comments?videoId=${v.videoId}&intent=complaint`"
-                  class="px-2 py-1 rounded-md bg-red-400/10 text-[8px] md:text-[10px] font-black text-red-400 border border-red-400/20 hover:bg-red-400/20 transition-colors"
-                >
-                  {{ v.negativeCount }} {{ $t("analytics.complaints_label") }}
-                </NuxtLink>
-                <NuxtLink
-                  v-if="v.questionCount > 0"
-                  :to="`/comments?videoId=${v.videoId}&intent=question`"
-                  class="px-2 py-1 rounded-md bg-blue-400/10 text-[8px] md:text-[10px] font-black text-blue-400 border border-blue-400/20 hover:bg-blue-400/20 transition-colors"
-                >
-                  {{ v.questionCount }} {{ $t("analytics.questions_label") }}
-                </NuxtLink>
-              </div>
-
-              <!-- Internal Review Button -->
-              <NuxtLink
-                :to="`/comments?videoId=${v.videoId}`"
-                class="w-full py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center hover:bg-white/[0.06] hover:text-indigo-400 hover:border-indigo-500/20 transition-all flex items-center justify-center gap-2"
-              >
-                <UIcon
-                  name="i-heroicons-chat-bubble-left-right"
-                  class="w-3.5 h-3.5"
-                />
-                {{ $t("analytics.manage_comments") }}
-              </NuxtLink>
-            </div>
-          </div>
-        </div>
+          :id="v.videoId"
+          :title="v.videoTitle"
+          :thumbnail-url="v.thumbnailUrl"
+          :view-count="v.viewCount"
+          :like-count="v.likeCount"
+          :comment-count="v.totalComments"
+          :pending-count="v.pendingCount"
+          :negative-count="v.negativeCount"
+          :question-count="v.questionCount"
+          :manage-link="`/comments?videoId=${v.videoId}`"
+        />
       </div>
 
       <div

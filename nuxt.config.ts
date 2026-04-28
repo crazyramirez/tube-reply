@@ -156,7 +156,7 @@ export default defineNuxtConfig({
         { name: 'description', content: 'AI-powered YouTube comment management. Sync, generate suggestions, and reply faster.' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'theme-color', content: '#000000' },
-        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
         { name: 'apple-mobile-web-app-title', content: 'Tube Reply' },
         { property: 'og:type', content: 'website' },

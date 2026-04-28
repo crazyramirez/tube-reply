@@ -46,6 +46,7 @@ const mobileChatView = ref(false);
 
 const { data: statusData } = await useFetch<{
   configured: boolean;
+  provider: string;
   model: string;
 }>("/api/agent/status");
 const geminiConfigured = computed(() => statusData.value?.configured ?? false);
