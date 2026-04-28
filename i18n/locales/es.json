@@ -73,7 +73,7 @@
     "hub_label": "Centro de Inteligencia",
     "title": "Voz de la Comunidad",
     "filtered_by": "Filtrado por Video",
-
+    "no_comments_all": "Bandeja vacía — Este vídeo no tiene comentarios",
     "list_view": "Vista Lista",
     "grid_view": "Vista Cuadrícula",
     "select_all": "Seleccionar Todo",

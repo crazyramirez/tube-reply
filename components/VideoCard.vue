@@ -52,9 +52,11 @@ const formatNumber = (n: number | null | undefined) => {
     />
 
     <!-- Thumbnail Container -->
-    <NuxtLink
+    <a
       v-if="manageLink"
-      :to="manageLink"
+      :href="`https://www.youtube.com/watch?v=${id}`"
+      target="_blank"
+      rel="noopener noreferrer"
       class="group/thumb relative aspect-[16/10] overflow-hidden block bg-slate-950"
     >
       <img
@@ -72,7 +74,7 @@ const formatNumber = (n: number | null | undefined) => {
 
       <!-- Play Button Overlay (Premium) -->
       <div
-        class="absolute inset-0 flex items-center justify-center z-30 pointer-events-none"
+        class="absolute inset-0 flex items-center justify-center z-30"
       >
         <div
           class="absolute inset-0 bg-indigo-950/0 backdrop-blur-0 group-hover/thumb:bg-indigo-950/40 group-hover/thumb:backdrop-blur-[4px] transition-all duration-700 ease-out will-change-[backdrop-filter]"
@@ -144,7 +146,7 @@ const formatNumber = (n: number | null | undefined) => {
           {{ formatNumber(likeCount) }}
         </div>
       </div>
-    </NuxtLink>
+    </a>
     <div v-else class="group/thumb relative aspect-[16/10] overflow-hidden block bg-slate-950">
        <!-- Duplicate content or use a slot/component if this was more complex -->
        <img
