@@ -39,19 +39,19 @@ const formatNumber = (n: number | null | undefined) => {
 
 <template>
   <div
-    class="glass-card group relative flex flex-col overflow-hidden h-full animate-slide-up hover:border-indigo-500/30 transition-all duration-500"
+    class="glass-card group/card relative flex flex-col overflow-hidden h-full animate-slide-up hover:border-indigo-500/30 transition-all duration-500"
   >
     <!-- Thumbnail Container -->
     <a
       :href="`https://youtube.com/watch?v=${id}`"
       target="_blank"
-      class="relative aspect-video overflow-hidden block bg-slate-900"
+      class="group/thumb relative aspect-video overflow-hidden block bg-slate-900"
     >
       <img
         v-if="thumbnailUrl && !failedThumbnails[id]"
         :src="getCleanThumbnailUrl(id, thumbnailUrl)"
         :alt="title"
-        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+        class="w-full h-full object-cover group-hover/thumb:scale-110 transition-transform duration-700"
         loading="lazy"
         referrerpolicy="no-referrer"
         @error="handleThumbnailError(id, id, $event)"
@@ -62,12 +62,18 @@ const formatNumber = (n: number | null | undefined) => {
 
       <!-- YouTube Play Overlay -->
       <div
-        class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+        class="absolute inset-0 bg-black/60 opacity-0 [@media(hover:hover)]:group-hover/thumb:opacity-100 active:opacity-100 transition-all duration-500 flex items-center justify-center z-30 backdrop-blur-[2px]"
       >
         <div
-          class="w-12 h-12 rounded-full bg-red-600 flex items-center justify-center text-white shadow-xl scale-90 group-hover:scale-100 transition-transform"
+          class="flex items-center gap-2.5 sm:px-6 sm:py-3 sm:rounded-2xl sm:bg-white/10 sm:backdrop-blur-md sm:border sm:border-white/20 text-white sm:shadow-[0_0_40px_rgba(0,0,0,0.5)] transform translate-y-4 group-hover/thumb:translate-y-0 transition-all duration-500 scale-90 group-hover/thumb:scale-100"
         >
-          <UIcon name="i-heroicons-play-solid" class="w-6 h-6" />
+          <div class="relative flex items-center justify-center">
+            <div class="absolute inset-0 bg-red-500/20 blur-lg rounded-full animate-pulse"></div>
+            <UIcon name="i-heroicons-play-circle-solid" class="w-7 h-7 text-red-500 relative z-10" />
+          </div>
+          <span class="hidden sm:inline text-[10px] font-black uppercase tracking-[0.2em] drop-shadow-md">
+            {{ $t('video_card.watch_on_youtube') }}
+          </span>
         </div>
       </div>
 
@@ -128,7 +134,7 @@ const formatNumber = (n: number | null | undefined) => {
     <!-- Content Section -->
     <div class="p-3 flex flex-col flex-1">
       <p
-        class="text-xs font-black text-slate-200 line-clamp-3 group-hover:text-indigo-300 transition-colors mb-3 leading-snug h-12"
+        class="text-xs font-black text-slate-200 line-clamp-3 group-hover/card:text-indigo-300 transition-colors mb-3 leading-snug h-12"
       >
         {{ title }}
       </p>

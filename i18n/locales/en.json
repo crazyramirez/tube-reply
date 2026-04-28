@@ -458,6 +458,9 @@
     "view_comments": "View Comments",
     "no_videos": "No videos found",
     "stats": "{views} views · {comments} comments"
+  },
+  "video_card": {
+    "watch_on_youtube": "Watch on YouTube"
   }
 }
 

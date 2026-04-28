@@ -637,7 +637,7 @@ async function confirmUnban() {
 }
 </script>
 
-<style scoped>
+<style scoped lang="postcss">
 .premium-btn-primary {
   @apply relative overflow-hidden px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-300 cursor-pointer;
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);

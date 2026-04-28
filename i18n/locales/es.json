@@ -460,6 +460,9 @@
     "view_comments": "Ver Comentarios",
     "no_videos": "No se encontraron vídeos",
     "stats": "{views} visualizaciones · {comments} comentarios"
+  },
+  "video_card": {
+    "watch_on_youtube": "Ver en YouTube"
   }
 }
 

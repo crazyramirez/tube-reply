@@ -379,38 +379,7 @@ const statCards = computed(() => [
 
         <!-- Content -->
         <div class="p-3 sm:p-5 flex flex-col flex-1 gap-2 sm:gap-4">
-          <a
-            v-if="comment.authorChannelId"
-            :href="`https://youtube.com/channel/${comment.authorChannelId}`"
-            target="_blank"
-            rel="noreferrer"
-            class="flex items-center gap-2 sm:gap-3 group/author"
-          >
-            <UAvatar
-              :src="
-                comment.authorProfileImageUrl ||
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.authorName || 'User')}&background=6366f1&color=fff`
-              "
-              size="sm"
-              class="ring-1 ring-white/10 group-hover/author:ring-indigo-500/50 transition-all"
-              :alt="comment.authorName"
-              :img-attributes="{
-                referrerpolicy: 'no-referrer',
-                crossorigin: 'anonymous',
-              }"
-            />
-            <div class="flex flex-col min-w-0">
-              <span
-                class="font-bold text-[10px] sm:text-sm text-white truncate group-hover/author:text-indigo-400 transition-colors"
-                >{{ comment.authorName }}</span
-              >
-              <span
-                class="mt-0.5 text-[8px] sm:text-[12px] text-slate-500 font-medium"
-                >{{ isMounted ? timeAgo(comment.publishedAt) : "..." }}</span
-              >
-            </div>
-          </a>
-          <div v-else class="flex items-center gap-2 sm:gap-3">
+          <div class="flex items-center gap-2 sm:gap-3">
             <UAvatar
               :src="
                 comment.authorProfileImageUrl ||
@@ -443,11 +412,14 @@ const statCards = computed(() => [
             <p
               class="text-[10px] sm:text-sm text-slate-300 leading-relaxed line-clamp-2 italic"
             >
-              "{{
-                comment.isLastAuthorOwner
-                  ? comment.text
-                  : comment.lastText || comment.text
-              }}"
+              "<span
+                v-html="
+                  comment.isLastAuthorOwner
+                    ? comment.text
+                    : comment.lastText || comment.text
+                "
+              ></span
+              >"
             </p>
           </NuxtLink>
 
@@ -468,9 +440,8 @@ const statCards = computed(() => [
             </div>
             <p
               class="text-[9px] sm:text-xs text-slate-400 line-clamp-1 sm:line-clamp-2 italic"
-            >
-              {{ comment.lastText }}
-            </p>
+              v-html="comment.lastText"
+            ></p>
           </div>
 
           <div class="flex items-center justify-between pt-1 sm:pt-2">

@@ -296,7 +296,7 @@ function actionSummary(rule: AutomationRule): string {
             <UButton
               size="xs"
               variant="ghost"
-              color="slate"
+              color="gray"
               icon="i-heroicons-plus"
               class="rounded-lg"
               @click="addCondition"
@@ -410,7 +410,7 @@ function actionSummary(rule: AutomationRule): string {
         >
           <UButton
             variant="ghost"
-            color="slate"
+            color="gray"
             size="sm"
             class="rounded-xl"
             @click="showBuilder = false"

@@ -361,7 +361,7 @@ watch(messages, () => {
 });
 </script>
 
-<style scoped>
+<style scoped lang="postcss">
 .chat-sidebar {
   @apply bg-white/[0.02] border-r border-white/[0.06] h-full flex flex-col;
 }

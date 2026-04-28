@@ -39,6 +39,7 @@ export interface CommentContext {
   knowledgeBaseEntries: Array<{ type: string; title: string; content: string; tags: string[] }>
   channelStyle: string | null
   recentVideos: Array<{ id: string; title: string; thumbnailUrl: string | null; isShort: boolean }>
+  friendlyName: string | null
   additionalContext: string | null
 }
 
@@ -109,6 +110,39 @@ function normalizeForScoring(text: string): string {
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+/**
+ * Extracts a likely first name from a YouTube handle or display name.
+ */
+function extractFriendlyName(name: string): string {
+  if (!name) return ''
+  
+  // Remove @ handle prefix
+  let clean = name.startsWith('@') ? name.substring(1) : name
+  
+  // Case 1: "John Doe" -> "John"
+  if (clean.includes(' ')) {
+    return clean.split(' ')[0]
+  }
+  
+  // Case 2: "john_doe" or "john.doe" -> "john"
+  const separators = ['_', '.', '-']
+  for (const sep of separators) {
+    if (clean.includes(sep)) {
+      return clean.split(sep)[0]
+    }
+  }
+
+  // Case 3: "JohnSanchez" (CamelCase) -> "John"
+  const camelMatch = clean.match(/^([A-Z][a-z]+)/)
+  if (camelMatch) return camelMatch[1]
+
+  // Case 4: "anasanchez4431" -> we keep it as is and let AI decode it
+  // or we could try to strip numbers at the end
+  const noNumbers = clean.replace(/\d+$/, '')
+  
+  return noNumbers || clean
 }
 
 /**
@@ -299,6 +333,7 @@ export async function buildContext(commentId: string, langOverride: string | nul
       thumbnailUrl: v.thumbnailUrl,
       isShort: isYouTubeShort(v.duration),
     })),
+    friendlyName: extractFriendlyName(comment.authorName),
     additionalContext,
   }
 }
@@ -367,6 +402,12 @@ ABSOLUTE RULES — NEVER VIOLATE:
 12. VIDEO FAQs are pre-analyzed Q&A pairs extracted from the video. Use them to answer questions directly when they match — this is the most accurate source for video-specific answers.
 13. FORCED LANGUAGE: The "verification_translation" MUST BE IN ${userLang.toUpperCase()}. This is for the channel owner who speaks ${userLang.toUpperCase()}. NEVER return this field in English unless ${userLang.toUpperCase()} is English.
 14. ANTI-HALLUCINATION: NEVER assume or mention the existence of subtitles, translations, or technical features (like "Czech subtitles" or "translated description") unless they are explicitly mentioned in the VIDEO SUMMARY or DESCRIPTION above. If a user writes in another language, just respond in that language without explaining why or mentioning subtitles.
+15. PERSONALIZATION (FIRST REPLY): If this is the FIRST response in the thread (existing_replies_count is 0), you SHOULD start your response by greeting the user by their first name to create a warm, personalized feel.
+    - Use the "Author Name" and "Likely First Name" provided below.
+    - Decode the first name if it's a composite handle (e.g., "@anasanchez4431" -> "Ana", "Juan_Perez" -> "Juan").
+    - Only use the FIRST NAME (no surnames).
+    - Example: "Hola Ana, ..." instead of "Hola @anasanchez4431, ...".
+    - If you cannot decode a clear name, just use a general greeting.
 
 INTENT-BASED GUIDANCE (comment intent: ${ctx.comment.intent}):
 ${intentGuide[ctx.comment.intent]}
@@ -388,6 +429,7 @@ Return ONLY valid JSON matching this exact schema. No markdown, no explanation o
     "existing_replies_checked": boolean,
     "existing_replies_count": number
   },
+  "friendly_name_used": "the name you decoded and used, or null",
   "confidence": 0.0,
   "needs_confirmation": false,
   "confirmation_reason": null,
@@ -437,8 +479,10 @@ Return ONLY valid JSON matching this exact schema. No markdown, no explanation o
 
   const userPrompt = `CONVERSATION CONTEXT:
 The following is a thread. You must respond to the LATEST message (either the original comment if there are no replies, or the most recent reply listed below).
+Existing Replies Count: ${ctx.existingReplies.length}
 
 Author of Original Comment: ${ctx.comment.authorName}
+Likely First Name: ${ctx.friendlyName || 'unknown'}
 Intent of Original Comment: ${ctx.comment.intent}
 Language detected: ${ctx.comment.detectedLang} (confidence: ${ctx.comment.langConfidence.toFixed(2)})
 Importance: ${importanceLabel}
