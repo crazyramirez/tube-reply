@@ -6,7 +6,7 @@
 
 _🇪🇸 [Leer en Español](./README.es.md)_
 
-AI-powered YouTube comment management tool and Channel Assistant. Syncs comments from your channel, generates AI reply suggestions via Google Gemini, and features a dedicated AI Agent to assist with channel queries and strategy — all from a single private dashboard.
+Tube Reply is the ultimate command center for YouTube creators looking to scale their community with artificial intelligence. It's not just a comment manager; it's a complete **strategy and analytics ecosystem** that syncs your channel in real-time, generates smart suggestions based on your own **Knowledge Base**, and provides **deep audience insights**. From sentiment tracking and "Superfan" identification to the creation of **Strategic Content Blueprints** for your next videos, Tube Reply transforms channel management into a competitive advantage—all centralized in a premium, private, and secure dashboard.
 
 ---
 
@@ -19,6 +19,7 @@ AI-powered YouTube comment management tool and Channel Assistant. Syncs comments
 - **Knowledge Base** — train the AI with channel style guides, FAQs, personas, topics, and custom rules. **Now with AI-powered auto-generation** based on your channel's real data
 - **Video Insights & Blueprints** — AI-powered analysis of comment patterns to generate viral video ideas and strategic content blueprints
 - **Advanced Analytics** — monitor sentiment trends, language distribution, and identify your "Superfans" (top commenters)
+- **High-End Visualization** — Experience a premium, glassmorphic dashboard with real-time data visualizations, animated transitions, and deep-dive analytics for every video
 - **One-click publish** — approve and post replies directly to YouTube without leaving the app
 - **User Banning** — Block problematic users from your channel with one click
 - **Bulk Moderation** — Approve, dismiss, or skip multiple comments at once

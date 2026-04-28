@@ -6,7 +6,7 @@
 
 _🌍 [Read this in English](./README.md)_
 
-Herramienta de gestión de comentarios y Asistente de YouTube impulsado por IA. Sincroniza comentarios de tu canal, genera sugerencias de respuesta, e incluye un Agente de IA dedicado para realizar consultas y asistir al creador en la estrategia del canal — todo desde un único panel privado.
+Tube Reply es el centro de mando definitivo para creadores de YouTube que buscan escalar su comunidad con inteligencia artificial. No es solo un gestor de comentarios; es un ecosistema completo de **estrategia y analítica** que sincroniza tu canal en tiempo real, genera respuestas inteligentes basadas en tu propia **Base de Conocimientos** y ofrece **insights profundos** sobre tu audiencia. Desde el seguimiento de sentimientos y la identificación de "Superfans" hasta la creación de **Blueprints Estratégicos** para tus próximos vídeos, Tube Reply transforma la gestión de tu canal en una ventaja competitiva, todo centralizado en un panel premium privado y seguro.
 
 ---
 
@@ -19,6 +19,7 @@ Herramienta de gestión de comentarios y Asistente de YouTube impulsado por IA. 
 - **Base de Conocimientos** — entrena a la IA con guías de estilo, FAQs, personas, temas y reglas personalizadas. **Ahora con auto-generación impulsada por IA** basada en los datos reales de tu canal.
 - **Insights de Vídeo y Blueprints** — análisis impulsado por IA de los patrones de comentarios para generar ideas de vídeos virales y planos de contenido estratégico.
 - **Analíticas Avanzadas** — monitoriza tendencias de sentimiento, distribución de idiomas e identifica a tus "Superfans" (comentaristas más activos).
+- **Visualización de Alto Nivel** — disfruta de un panel premium con estética glassmorphic, visualizaciones de datos en tiempo real, transiciones animadas y analíticas detalladas para cada vídeo.
 - **Publicación en un clic** — aprueba y publica respuestas directamente en YouTube sin salir de la aplicación.
 - **Baneo de usuarios** — bloquea usuarios problemáticos directamente desde la vista de comentarios.
 - **Moderación masiva** — aprueba, descarta u omite múltiples comentarios a la vez desde la lista.
