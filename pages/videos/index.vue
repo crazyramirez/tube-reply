@@ -20,6 +20,24 @@ const searchInput = ref((route.query.search as string) || "");
 const search = ref(searchInput.value);
 const type = ref((route.query.type as string) || lastType.value);
 const page = ref(Number(route.query.page || 1));
+
+// Sync query params back to refs (important for keepalive)
+watch(
+  () => route.query,
+  (newQuery) => {
+    if (newQuery.search !== undefined && newQuery.search !== search.value) {
+      searchInput.value = (newQuery.search as string) || "";
+      search.value = searchInput.value;
+    } else if (newQuery.search === undefined) {
+      searchInput.value = "";
+      search.value = "";
+    }
+    type.value = (newQuery.type as string) || lastType.value;
+    page.value = Number(newQuery.page || 1);
+  },
+  { deep: true },
+);
+
 const mobileColumns = useCookie<number>("video-mobile-columns", {
   default: () => 2,
 });

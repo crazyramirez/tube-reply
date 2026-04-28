@@ -260,8 +260,11 @@ const statCards = computed(() => [
         class="group relative glass-card p-3 sm:p-6 rounded-xl overflow-hidden hover:-translate-y-1 transition-all duration-500 hover:shadow-2xl animate-slide-up"
         :class="`stagger-${idx + 1}`"
       >
-        <div class="absolute top-0 left-0 right-0 h-1 transition-all duration-500 group-hover:h-1.5" :class="card.accent"></div>
-        
+        <div
+          class="absolute top-0 left-0 right-0 h-1 transition-all duration-500 group-hover:h-1.5"
+          :class="card.accent"
+        ></div>
+
         <div class="flex items-start justify-between mb-2 sm:mb-4">
           <div
             class="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center border border-white/5 shadow-inner"
@@ -377,7 +380,7 @@ const statCards = computed(() => [
             <div
               class="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent"
             />
-            
+
             <div class="absolute top-3 left-3 sm:top-4 sm:left-4 z-20">
               <UBadge
                 :color="statusColor(c.status)"
@@ -387,9 +390,13 @@ const statCards = computed(() => [
                 {{ $t("status." + c.status) }}
               </UBadge>
             </div>
-            
-            <div class="absolute bottom-3 left-4 right-4 sm:bottom-4 sm:left-5 sm:right-5">
-              <p class="text-[10px] font-black text-slate-400 line-clamp-1 uppercase tracking-widest">
+
+            <div
+              class="absolute bottom-3 left-4 right-4 sm:bottom-4 sm:left-5 sm:right-5"
+            >
+              <p
+                class="text-[10px] font-black text-slate-400 line-clamp-1 uppercase tracking-widest"
+              >
                 {{ c.videoTitle }}
               </p>
             </div>
@@ -411,35 +418,58 @@ const statCards = computed(() => [
                 }"
               />
               <div class="flex flex-col min-w-0">
-                <span class="font-black text-sm text-white truncate leading-none">{{ c.authorName }}</span>
-                <span class="mt-1.5 text-[10px] text-slate-500 font-black uppercase tracking-widest">
+                <span
+                  class="font-black text-sm text-white truncate leading-none"
+                  >{{ c.authorName }}</span
+                >
+                <span
+                  class="mt-1.5 text-[10px] text-slate-500 font-black uppercase tracking-widest"
+                >
                   {{ isMounted ? timeAgo(c.publishedAt) : "..." }}
                 </span>
               </div>
             </div>
 
-            <div class="bg-white/5 border border-white/5 rounded-2xl p-4 flex-1 hover:bg-white/[0.08] transition-colors shadow-inner">
-              <p class="text-[13px] text-slate-300 leading-relaxed line-clamp-2 italic font-medium">
-                "<span v-html="c.isLastAuthorOwner ? c.text : c.lastText || c.text"></span>"
+            <div
+              class="bg-white/5 border border-white/5 rounded-2xl p-4 flex-1 hover:bg-white/[0.08] transition-colors shadow-inner"
+            >
+              <p
+                class="text-[13px] text-slate-300 leading-relaxed line-clamp-2 italic font-medium"
+              >
+                "<span
+                  v-html="c.isLastAuthorOwner ? c.text : c.lastText || c.text"
+                ></span
+                >"
               </p>
             </div>
 
             <div class="flex items-center justify-between pt-1">
               <div class="flex items-center gap-2 group/video">
-                <div class="w-7 h-7 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center flex-shrink-0 shadow-lg">
-                  <UIcon name="i-heroicons-film-solid" class="w-3.5 h-3.5 text-indigo-400 opacity-90" />
+                <div
+                  class="w-7 h-7 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center flex-shrink-0 shadow-lg"
+                >
+                  <UIcon
+                    name="i-heroicons-film-solid"
+                    class="w-3.5 h-3.5 text-indigo-400 opacity-90"
+                  />
                 </div>
-                <p class="text-[9px] font-black text-slate-500 line-clamp-2 uppercase tracking-widest group-hover/video:text-indigo-300 transition-colors">
+                <p
+                  class="text-[9px] font-black text-slate-500 line-clamp-2 uppercase tracking-widest group-hover/video:text-indigo-300 transition-colors"
+                >
                   {{ c.videoTitle }}
                 </p>
               </div>
-              <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black text-indigo-400 uppercase tracking-widest group-hover:bg-indigo-500 group-hover:text-white transition-all">
+              <div
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black text-indigo-400 uppercase tracking-widest group-hover:bg-indigo-500 group-hover:text-white transition-all"
+              >
                 <span>{{ $t("comments.review") }}</span>
-                <UIcon name="i-heroicons-chevron-right" class="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                <UIcon
+                  name="i-heroicons-chevron-right"
+                  class="w-3 h-3 group-hover:translate-x-1 transition-transform"
+                />
               </div>
             </div>
           </div>
-
         </NuxtLink>
       </div>
     </div>
@@ -477,10 +507,7 @@ const statCards = computed(() => [
       </p>
     </div>
 
-    <div
-      v-else
-      class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4"
-    >
+    <div v-else class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <VideoCard
         v-for="(video, idx) in stats.recentVideos"
         :key="video.id"
@@ -505,10 +532,18 @@ const statCards = computed(() => [
   animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
-.stagger-1 { animation-delay: 0.1s; }
-.stagger-2 { animation-delay: 0.2s; }
-.stagger-3 { animation-delay: 0.3s; }
-.stagger-4 { animation-delay: 0.4s; }
+.stagger-1 {
+  animation-delay: 0.1s;
+}
+.stagger-2 {
+  animation-delay: 0.2s;
+}
+.stagger-3 {
+  animation-delay: 0.3s;
+}
+.stagger-4 {
+  animation-delay: 0.4s;
+}
 
 @keyframes slideUp {
   to {

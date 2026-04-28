@@ -24,6 +24,31 @@ const intent = ref((route.query.intent as string) || "");
 const searchInput = ref((route.query.search as string) || "");
 const search = ref(searchInput.value);
 
+// Sync query params back to refs (important for keepalive)
+watch(
+  () => route.query,
+  (newQuery) => {
+    videoId.value = (newQuery.videoId as string) || "";
+    authorId.value = (newQuery.authorId as string) || "";
+    intent.value = (newQuery.intent as string) || "";
+    if (newQuery.search !== undefined && newQuery.search !== search.value) {
+      searchInput.value = (newQuery.search as string) || "";
+      search.value = searchInput.value;
+    } else if (newQuery.search === undefined) {
+      searchInput.value = "";
+      search.value = "";
+    }
+    page.value = Number(newQuery.page || 1);
+    if (newQuery.status) {
+      status.value = newQuery.status as string;
+    } else if (newQuery.videoId || newQuery.intent) {
+      status.value = "all";
+    }
+  },
+  { deep: true },
+);
+
+
 watch(status, (newVal) => {
   lastStatus.value = newVal;
 });
