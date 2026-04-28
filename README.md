@@ -6,7 +6,7 @@
 
 _🇪🇸 [Leer en Español](./README.es.md)_
 
-Tube Reply is the ultimate command center for YouTube creators looking to scale their community with artificial intelligence. It's not just a comment manager; it's a complete **strategy and analytics ecosystem** that syncs your channel in real-time, generates smart suggestions based on your own **Knowledge Base**, and provides **deep audience insights**. From sentiment tracking and "Superfan" identification to the creation of **Strategic Content Blueprints** for your next videos, Tube Reply transforms channel management into a competitive advantage—all centralized in a premium, private, and secure dashboard.
+Tube Reply is the ultimate command center for YouTube creators looking to scale their community with artificial intelligence. It's not just a comment manager; it's a complete **strategy and analytics ecosystem** that syncs your channel in real-time, generates smart suggestions based on your own **Knowledge Base**, and provides **deep audience insights**. From sentiment tracking and "Superfan" identification to the creation of **Strategic Content Blueprints** for your next videos, Tube Reply transforms channel management into a competitive advantage—all centralized in a premium, private, free and secure dashboard.
 
 ---
 
