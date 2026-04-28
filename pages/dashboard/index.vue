@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import type { DashboardStats } from "~/shared/types";
+import type { DashboardStats, YouTubeStatus } from "~/shared/types";
 
 definePageMeta({ middleware: "auth" });
 
+const toast = useToast();
 const { t } = useI18n();
 
 useHead({
@@ -12,6 +13,8 @@ useHead({
 const { data: stats, refresh } = await useFetch<DashboardStats>(
   "/api/dashboard/stats",
 );
+const { data: ytStatus, refresh: refreshStatus } =
+  await useFetch<YouTubeStatus>("/api/youtube/status");
 
 const SYNC_COOLDOWN_MINUTES = 2;
 const SYNC_QUOTA_COST = 5;
@@ -21,16 +24,16 @@ const syncWarning = ref<{ minutesAgo: number; minutesLeft: number } | null>(
   null,
 );
 
-let syncInterval: any = null;
+// Polling for sync status
+let pollInterval: any = null;
+const isMounted = ref(false);
 
-async function startPolling() {
-  if (syncInterval) return;
+function startPolling() {
+  if (pollInterval) return;
   syncLoading.value = true;
-  syncInterval = setInterval(async () => {
-    const status = await $fetch<{ lastSync: { status: string } | null }>(
-      "/api/youtube/status",
-    );
-    if (status.lastSync?.status !== "running") {
+  pollInterval = setInterval(async () => {
+    await refreshStatus();
+    if (ytStatus.value?.lastSync?.status !== "running") {
       stopPolling();
       await refresh();
     }
@@ -38,18 +41,16 @@ async function startPolling() {
 }
 
 function stopPolling() {
-  if (syncInterval) {
-    clearInterval(syncInterval);
-    syncInterval = null;
+  if (pollInterval) {
+    clearInterval(pollInterval);
+    pollInterval = null;
   }
   syncLoading.value = false;
 }
 
-onMounted(async () => {
-  const status = await $fetch<{ lastSync: { status: string } | null }>(
-    "/api/youtube/status",
-  );
-  if (status.lastSync?.status === "running") {
+onMounted(() => {
+  isMounted.value = true;
+  if (ytStatus.value?.lastSync?.status === "running") {
     startPolling();
   }
 });
@@ -59,26 +60,20 @@ onUnmounted(() => {
 });
 
 async function triggerSync(force = false) {
-  if (!force) {
-    const status = await $fetch<{
-      lastSync: { completedAt: string | null } | null;
-    }>("/api/youtube/status");
-    if (status.lastSync?.completedAt) {
-      const minutesAgo = Math.floor(
-        (Date.now() - new Date(status.lastSync.completedAt).getTime()) / 60000,
-      );
-      if (minutesAgo < SYNC_COOLDOWN_MINUTES) {
-        syncWarning.value = {
-          minutesAgo,
-          minutesLeft: SYNC_COOLDOWN_MINUTES - minutesAgo,
-        };
-        setTimeout(() => {
-          syncWarning.value = null;
-        }, 6000);
-        return;
-      }
+  if (!force && ytStatus.value?.lastSync?.completedAt) {
+    const minsAgo = Math.floor(
+      (Date.now() - new Date(ytStatus.value.lastSync.completedAt).getTime()) /
+        60000,
+    );
+    if (minsAgo < SYNC_COOLDOWN_MINUTES) {
+      syncWarning.value = {
+        minutesAgo: minsAgo,
+        minutesLeft: SYNC_COOLDOWN_MINUTES - minsAgo,
+      };
+      return;
     }
   }
+
   syncWarning.value = null;
   syncLoading.value = true;
   try {
@@ -86,9 +81,10 @@ async function triggerSync(force = false) {
       method: "POST",
       headers: useCsrfHeaders(),
     });
-
+    toast.add({ title: t("settings.sync_started"), color: "blue" });
     startPolling();
-  } catch {
+  } catch (e) {
+    toast.add({ title: t("settings.sync_failed"), color: "red" });
     syncLoading.value = false;
   }
 }
@@ -156,68 +152,27 @@ const statCards = computed(() => [
 
 <template>
   <div>
-    <div
-      class="flex flex-col sm:flex-row sm:items-end justify-between mb-6 sm:mb-8 gap-4"
-    >
-      <div>
-        <div
-          class="flex items-center gap-2 text-[10px] font-bold text-indigo-400 uppercase tracking-[0.3em] mb-1"
-        >
-          <UIcon
-            name="i-heroicons-presentation-chart-line"
-            class="w-3.5 h-3.5"
-          />
-          {{ $t("dashboard.analytics_label") }}
-        </div>
-        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tighter">
-          {{ $t("dashboard.title") }}
-        </h1>
-      </div>
-      <div class="flex items-center gap-3 flex-wrap">
-        <Transition
-          enter-active-class="transition-all duration-300 ease-out"
-          enter-from-class="opacity-0 translate-x-3 scale-95"
-          enter-to-class="opacity-100 translate-x-0 scale-100"
-          leave-active-class="transition-all duration-200 ease-in"
-          leave-from-class="opacity-100 translate-x-0 scale-100"
-          leave-to-class="opacity-0 translate-x-3 scale-95"
-        >
+    <div class="mb-6 sm:mb-8">
+      <div class="flex flex-row items-center justify-between gap-4">
+        <div>
           <div
-            v-if="syncWarning"
-            class="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-xs"
+            class="flex items-center gap-2 text-[10px] font-bold text-indigo-400 uppercase tracking-[0.3em] mb-1"
           >
             <UIcon
-              name="i-heroicons-exclamation-triangle"
-              class="w-4 h-4 text-amber-400 shrink-0"
+              name="i-heroicons-presentation-chart-line"
+              class="w-3.5 h-3.5"
             />
-            <div>
-              <p class="text-amber-300 font-semibold">
-                {{
-                  $t("dashboard.sync_warning_title", {
-                    m: syncWarning.minutesAgo,
-                  })
-                }}
-              </p>
-              <p class="text-amber-500/80">
-                {{
-                  $t("dashboard.sync_warning_cost", {
-                    cost: SYNC_QUOTA_COST,
-                    m: syncWarning.minutesLeft,
-                  })
-                }}
-              </p>
-            </div>
-            <button
-              class="shrink-0 text-amber-400 hover:text-white font-bold cursor-pointer transition-colors ml-1"
-              @click="triggerSync(true)"
-            >
-              {{ $t("dashboard.force") }}
-            </button>
+            {{ $t("dashboard.analytics_label") }}
           </div>
-        </Transition>
+          <h1
+            class="text-2xl sm:text-3xl font-black text-white tracking-tighter"
+          >
+            {{ $t("dashboard.title") }}
+          </h1>
+        </div>
 
         <button
-          class="flex items-center gap-2 px-6 py-3 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-sm font-bold transition-all duration-300 cursor-pointer disabled:opacity-50 group"
+          class="flex items-center gap-2 px-6 py-3 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-sm font-bold transition-all duration-300 cursor-pointer disabled:opacity-50 group shrink-0"
           :disabled="syncLoading"
           @click="triggerSync()"
         >
@@ -226,13 +181,61 @@ const statCards = computed(() => [
             class="w-4 h-4 transition-transform duration-500"
             :class="syncLoading ? 'animate-spin' : 'group-hover:rotate-180'"
           />
-          {{
+          <span class="hidden sm:inline">{{
             syncLoading
               ? $t("dashboard.synchronizing")
               : $t("dashboard.force_sync")
-          }}
+          }}</span>
+          <span v-if="syncLoading" class="sm:hidden">{{
+            $t("dashboard.synchronizing")
+          }}</span>
         </button>
       </div>
+
+      <Transition
+        enter-active-class="transition-all duration-300 ease-out"
+        enter-from-class="opacity-0 -translate-y-2 scale-95"
+        enter-to-class="opacity-100 translate-y-0 scale-100"
+        leave-active-class="transition-all duration-200 ease-in"
+        leave-from-class="opacity-100 translate-y-0 scale-100"
+        leave-to-class="opacity-0 -translate-y-2 scale-95"
+      >
+        <div
+          v-if="syncWarning"
+          class="mt-4 flex items-center gap-3 px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-xs animate-in fade-in slide-in-from-top-2"
+        >
+          <UIcon
+            name="i-heroicons-exclamation-triangle"
+            class="w-5 h-5 text-amber-400 shrink-0"
+          />
+          <div class="flex-1">
+            <p class="text-amber-300 font-bold">
+              {{
+                $t("dashboard.sync_warning_title", {
+                  m: syncWarning.minutesAgo,
+                })
+              }}
+            </p>
+            <p class="text-amber-500/80">
+              {{
+                $t("dashboard.sync_warning_cost", {
+                  cost: SYNC_QUOTA_COST,
+                  m: syncWarning.minutesLeft,
+                })
+              }}
+            </p>
+          </div>
+          <UButton
+            color="amber"
+            variant="soft"
+            size="xs"
+            class="font-black uppercase tracking-widest px-4"
+            @click="triggerSync(true)"
+          >
+            {{ $t("dashboard.force") }}
+          </UButton>
+        </div>
+      </Transition>
     </div>
 
     <!-- Stats -->
@@ -240,25 +243,25 @@ const statCards = computed(() => [
       <div
         v-for="(card, idx) in statCards"
         :key="card.label"
-        class="glass-card p-6 animate-slide-up"
+        class="glass-card p-4 sm:p-6 animate-slide-up"
         :class="`stagger-${idx + 1}`"
       >
-        <div class="flex items-start justify-between mb-4">
+        <div class="flex items-start justify-between mb-2 sm:mb-4">
           <div
-            class="w-12 h-12 rounded-2xl flex items-center justify-center border border-white/5 shadow-inner"
+            class="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-2xl flex items-center justify-center border border-white/5 shadow-inner"
             :class="card.bg"
           >
-            <UIcon :name="card.icon" class="w-6 h-6" :class="card.text" />
+            <UIcon :name="card.icon" class="w-4 h-4 sm:w-6 sm:h-6" :class="card.text" />
           </div>
         </div>
         <div
-          class="text-4xl font-black bg-gradient-to-br bg-clip-text text-transparent tracking-tighter"
+          class="text-2xl sm:text-4xl font-black bg-gradient-to-br bg-clip-text text-transparent tracking-tighter"
           :class="card.glow"
         >
           {{ card.value }}
         </div>
         <div
-          class="text-[10px] font-bold text-slate-500 mt-2 uppercase tracking-[0.2em]"
+          class="text-[8px] sm:text-[10px] font-bold text-slate-500 mt-1 sm:mt-2 uppercase tracking-[0.1em] sm:tracking-[0.2em] line-clamp-1"
         >
           {{ card.label }}
         </div>
@@ -372,7 +375,7 @@ const statCards = computed(() => [
               {{ $t('nav.comments') }}
             </span>
             <span class="text-[9px] font-bold text-slate-600">
-              {{ timeAgo(video.publishedAt) }}
+              {{ isMounted ? timeAgo(video.publishedAt) : '...' }}
             </span>
           </div>
         </div>
@@ -499,7 +502,7 @@ const statCards = computed(() => [
               >
               <span
                 class="mt-0.5 text-[8px] sm:text-[12px] text-slate-500 font-medium"
-                >{{ timeAgo(comment.publishedAt) }}</span
+                >{{ isMounted ? timeAgo(comment.publishedAt) : '...' }}</span
               >
             </div>
           </a>
@@ -524,7 +527,7 @@ const statCards = computed(() => [
               >
               <span
                 class="mt-0.5 text-[8px] sm:text-[12px] text-slate-500 font-medium"
-                >{{ timeAgo(comment.publishedAt) }}</span
+                >{{ isMounted ? timeAgo(comment.publishedAt) : '...' }}</span
               >
             </div>
           </div>

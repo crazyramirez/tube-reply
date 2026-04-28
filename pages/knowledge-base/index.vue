@@ -45,7 +45,6 @@ const { data, refresh } = await useFetch<{ items: KnowledgeBaseEntry[] }>(
   },
 );
 
-
 const paginatedItems = computed(() => {
   if (!data.value?.items) return [];
   const start = (page.value - 1) * itemsPerPage;
@@ -65,8 +64,6 @@ watch(
     }
   },
 );
-
-
 
 function openNew() {
   editingEntry.value = null;
@@ -173,7 +170,6 @@ function openDelete(entry: KnowledgeBaseEntry) {
   showConfirm.value = true;
 }
 
-
 async function confirmDelete() {
   if (!entryToDelete.value) return;
   deleting.value = true;
@@ -198,7 +194,6 @@ async function confirmDelete() {
 }
 
 // ─── AI Generate ──────────────────────────────────────────────────────────────
-
 
 async function generateWithAI() {
   generating.value = true;
@@ -268,20 +263,6 @@ async function saveBulkEntries() {
 </script>
 
 <style scoped>
-.glass-card {
-  @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-3xl transition-all duration-300;
-  box-shadow:
-    0 4px 24px -1px rgba(0, 0, 0, 0.2),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.glass-card:hover {
-  @apply border-white/[0.12] bg-white/[0.04] -translate-y-1;
-  box-shadow:
-    0 12px 40px -4px rgba(0, 0, 0, 0.3),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.08);
-}
-
 .premium-btn-primary {
   @apply relative overflow-hidden px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-300 cursor-pointer;
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
@@ -365,7 +346,9 @@ async function saveBulkEntries() {
 
 <template>
   <div>
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 animate-fade-in gap-4">
+    <div
+      class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 animate-fade-in gap-4"
+    >
       <div class="flex flex-col">
         <div
           class="flex items-center gap-2 text-[10px] font-bold text-indigo-400 uppercase tracking-[0.3em]"

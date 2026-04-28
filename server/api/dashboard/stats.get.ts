@@ -52,7 +52,7 @@ export default defineEventHandler(async (event) => {
       .from(comments)
       .leftJoin(videos, eq(comments.videoId, videos.id))
       .where(needsAttentionWhere)
-      .orderBy(desc(comments.publishedAt))
+      .orderBy(desc(comments.publishedAt), desc(comments.id))
       .limit(COMMENT_PAGE_SIZE)
       .offset(commentOffset),
 
@@ -70,7 +70,7 @@ export default defineEventHandler(async (event) => {
       commentCount: videos.commentCount,
     })
       .from(videos)
-      .orderBy(desc(videos.publishedAt))
+      .orderBy(desc(videos.publishedAt), desc(videos.id))
       .limit(4),
   ])
 

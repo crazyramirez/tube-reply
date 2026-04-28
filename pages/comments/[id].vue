@@ -16,11 +16,11 @@ const { t, locale } = useI18n();
 function handleBack() {
   const backState = window.history.state?.back;
   // If we have history and it's not the login page, go back natively
-  if (backState && !backState.includes('/login') && backState !== '/') {
+  if (backState && !backState.includes("/login") && backState !== "/") {
     router.back();
   } else {
     // Default safe fallback
-    router.push('/comments');
+    router.push("/comments");
   }
 }
 
@@ -434,7 +434,8 @@ async function publishReply() {
   }
 }
 
-const { failedThumbnails, getCleanThumbnailUrl, handleThumbnailError } = useYouTubeThumbnail();
+const { failedThumbnails, getCleanThumbnailUrl, handleThumbnailError } =
+  useYouTubeThumbnail();
 
 const finalText = computed(
   () =>
@@ -631,20 +632,6 @@ async function confirmUnban() {
 </script>
 
 <style scoped>
-.glass-card {
-  @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-3xl transition-all duration-300;
-  box-shadow:
-    0 4px 24px -1px rgba(0, 0, 0, 0.2),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.glass-card:hover {
-  @apply border-white/[0.12] bg-white/[0.04];
-  box-shadow:
-    0 12px 40px -4px rgba(0, 0, 0, 0.3),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.08);
-}
-
 .premium-btn-primary {
   @apply relative overflow-hidden px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-300 cursor-pointer;
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
@@ -843,7 +830,9 @@ async function confirmUnban() {
                   n: data.replies?.length + 1,
                 })
               }}</span>
-              <span class="text-[8px] text-slate-600 ml-2">({{ userLangName }})</span>
+              <span class="text-[8px] text-slate-600 ml-2"
+                >({{ userLangName }})</span
+              >
             </div>
             <UBadge
               :color="confidenceColor"
@@ -870,11 +859,22 @@ async function confirmUnban() {
                 >
                   <img
                     v-if="!failedThumbnails['video-' + data.video.id]"
-                    :src="getCleanThumbnailUrl(data.video.id, data.video.thumbnailUrl)"
+                    :src="
+                      getCleanThumbnailUrl(
+                        data.video.id,
+                        data.video.thumbnailUrl,
+                      )
+                    "
                     class="w-full h-full object-cover opacity-60 group-hover/video:opacity-100 transition-opacity"
                     referrerpolicy="no-referrer"
                     crossorigin="anonymous"
-                    @error="handleThumbnailError('video-' + data.video.id, data.video.id, $event)"
+                    @error="
+                      handleThumbnailError(
+                        'video-' + data.video.id,
+                        data.video.id,
+                        $event,
+                      )
+                    "
                   />
                   <div
                     class="absolute inset-0 flex items-center justify-center"
@@ -949,7 +949,7 @@ async function confirmUnban() {
                   v-if="selectedLang"
                   class="flex items-center gap-1.5 px-1.5 py-0.5 rounded border text-[8px] font-black uppercase text-indigo-300 bg-indigo-500/10 border-white/10"
                 >
-                  <span>{{ langFlag[selectedLang] || '🌐' }}</span>
+                  <span>{{ langFlag[selectedLang] || "🌐" }}</span>
                   <span>{{ languageNames[selectedLang] || selectedLang }}</span>
                 </span>
                 <!-- Return commenter badge -->
@@ -976,12 +976,24 @@ async function confirmUnban() {
                 class="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl rounded-tl-none p-4 text-sm text-slate-200 leading-relaxed shadow-sm max-w-[85%]"
               >
                 <div v-html="renderCommentHtml(data.comment.text)"></div>
-                
+
                 <!-- Translation -->
-                <div v-if="data.comment.translatedText && data.comment.translatedText !== data.comment.text" class="mt-3 pt-3 border-t border-white/5 opacity-80">
+                <div
+                  v-if="
+                    data.comment.translatedText &&
+                    data.comment.translatedText !== data.comment.text
+                  "
+                  class="mt-3 pt-3 border-t border-white/5 opacity-80"
+                >
                   <div class="flex items-center gap-1.5 mb-1.5">
-                    <UIcon name="i-heroicons-language" class="w-3 h-3 text-indigo-400" />
-                    <span class="text-[9px] font-black uppercase tracking-widest text-indigo-400">TRADUCCIÓN</span>
+                    <UIcon
+                      name="i-heroicons-language"
+                      class="w-3 h-3 text-indigo-400"
+                    />
+                    <span
+                      class="text-[9px] font-black uppercase tracking-widest text-indigo-400"
+                      >TRADUCCIÓN</span
+                    >
                   </div>
                   <p class="text-xs italic text-slate-300 leading-relaxed">
                     {{ data.comment.translatedText }}
@@ -1079,7 +1091,7 @@ async function confirmUnban() {
                     v-if="reply.detectedLang && !reply.isOwner"
                     class="flex items-center gap-1 px-1 py-0.5 rounded bg-white/[0.03] border border-white/5 text-[7px] font-black uppercase text-slate-500"
                   >
-                    <span>{{ langFlag[reply.detectedLang] || '🌐' }}</span>
+                    <span>{{ langFlag[reply.detectedLang] || "🌐" }}</span>
                     <span>{{ reply.detectedLang }}</span>
                   </span>
                 </div>
@@ -1092,12 +1104,24 @@ async function confirmUnban() {
                   "
                 >
                   <div v-html="renderCommentHtml(reply.text)"></div>
-                  
+
                   <!-- Translation for replies -->
-                  <div v-if="reply.translatedText && reply.translatedText !== reply.text" class="mt-3 pt-3 border-t border-white/5 opacity-80">
+                  <div
+                    v-if="
+                      reply.translatedText &&
+                      reply.translatedText !== reply.text
+                    "
+                    class="mt-3 pt-3 border-t border-white/5 opacity-80"
+                  >
                     <div class="flex items-center gap-1.5 mb-1.5">
-                      <UIcon name="i-heroicons-language" class="w-3 h-3 text-indigo-400" />
-                      <span class="text-[9px] font-black uppercase tracking-widest text-indigo-400">TRADUCCIÓN</span>
+                      <UIcon
+                        name="i-heroicons-language"
+                        class="w-3 h-3 text-indigo-400"
+                      />
+                      <span
+                        class="text-[9px] font-black uppercase tracking-widest text-indigo-400"
+                        >TRADUCCIÓN</span
+                      >
                     </div>
                     <p class="text-xs italic text-slate-300 leading-relaxed">
                       {{ reply.translatedText }}
@@ -1500,10 +1524,22 @@ async function confirmUnban() {
                   :src="getCleanThumbnailUrl(link.video_id, link.thumbnail_url)"
                   class="w-16 aspect-video object-cover rounded shadow-lg"
                   referrerpolicy="no-referrer"
-                  @error="handleThumbnailError('link-' + link.video_id, link.video_id, $event)"
+                  @error="
+                    handleThumbnailError(
+                      'link-' + link.video_id,
+                      link.video_id,
+                      $event,
+                    )
+                  "
                 />
-                <div v-else class="w-16 aspect-video rounded bg-slate-800 flex items-center justify-center">
-                  <UIcon name="i-heroicons-video-camera" class="w-4 h-4 text-slate-600" />
+                <div
+                  v-else
+                  class="w-16 aspect-video rounded bg-slate-800 flex items-center justify-center"
+                >
+                  <UIcon
+                    name="i-heroicons-video-camera"
+                    class="w-4 h-4 text-slate-600"
+                  />
                 </div>
                 <a
                   :href="link.url"
@@ -1609,10 +1645,22 @@ async function confirmUnban() {
                   :src="getCleanThumbnailUrl(link.video_id, link.thumbnail_url)"
                   class="w-16 aspect-video object-cover rounded shadow-lg"
                   referrerpolicy="no-referrer"
-                  @error="handleThumbnailError('link-' + link.video_id, link.video_id, $event)"
+                  @error="
+                    handleThumbnailError(
+                      'link-' + link.video_id,
+                      link.video_id,
+                      $event,
+                    )
+                  "
                 />
-                <div v-else class="w-16 aspect-video rounded bg-slate-800 flex items-center justify-center">
-                  <UIcon name="i-heroicons-video-camera" class="w-4 h-4 text-slate-600" />
+                <div
+                  v-else
+                  class="w-16 aspect-video rounded bg-slate-800 flex items-center justify-center"
+                >
+                  <UIcon
+                    name="i-heroicons-video-camera"
+                    class="w-4 h-4 text-slate-600"
+                  />
                 </div>
                 <a
                   :href="link.url"
@@ -1707,7 +1755,11 @@ async function confirmUnban() {
 
           <!-- Translation Verification in Modal -->
           <div
-            v-if="activeSuggestion?.verificationTranslation && activeSuggestion.verificationTranslation !== activeSuggestion.responseText"
+            v-if="
+              activeSuggestion?.verificationTranslation &&
+              activeSuggestion.verificationTranslation !==
+                activeSuggestion.responseText
+            "
             class="mt-6 p-5 rounded-2xl bg-white/[0.02] border border-white/5 animate-fade-in"
           >
             <div class="flex items-center gap-2 mb-3 opacity-50">

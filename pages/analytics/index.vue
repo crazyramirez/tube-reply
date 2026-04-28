@@ -89,74 +89,74 @@ function replyRateColor(rate: number) {
 
     <!-- Overview Cards -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-      <div class="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-5">
+      <div class="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-3 sm:p-5">
         <p
-          class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2"
+          class="text-[9px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 sm:mb-2"
         >
           {{ $t("analytics.reply_rate") }}
         </p>
         <p
-          class="text-4xl font-black"
+          class="text-2xl sm:text-4xl font-black"
           :class="replyRateColor(overview?.replyRate ?? 0)"
         >
-          {{ overview?.replyRate ?? "—" }}<span class="text-xl">%</span>
+          {{ overview?.replyRate ?? "—" }}<span class="text-base sm:text-xl">%</span>
         </p>
-        <p class="text-[11px] text-slate-600 mt-1">
+        <p class="text-[9px] sm:text-[11px] text-slate-600 mt-0.5 sm:mt-1 line-clamp-1">
           {{ $t("analytics.reply_rate_desc") }}
         </p>
       </div>
-      <div class="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-5">
+      <div class="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-3 sm:p-5">
         <p
-          class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2"
+          class="text-[9px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 sm:mb-2"
         >
           {{ $t("analytics.last_30_days") }}
         </p>
-        <p class="text-4xl font-black text-white">
+        <p class="text-2xl sm:text-4xl font-black text-white">
           {{ overview?.totalCommentsLast30Days ?? "—" }}
         </p>
-        <p class="text-[11px] text-slate-600 mt-1">
+        <p class="text-[9px] sm:text-[11px] text-slate-600 mt-0.5 sm:mt-1 line-clamp-1">
           {{ $t("analytics.last_30_days_desc") }}
         </p>
       </div>
-      <div class="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-5">
+      <div class="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-3 sm:p-5">
         <p
-          class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2"
+          class="text-[9px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 sm:mb-2"
         >
           {{ $t("analytics.return_rate") }}
         </p>
-        <p class="text-4xl font-black text-violet-400">
+        <p class="text-2xl sm:text-4xl font-black text-violet-400">
           {{ overview?.returnCommenterRate ?? "—"
-          }}<span class="text-xl">%</span>
+          }}<span class="text-base sm:text-xl">%</span>
         </p>
-        <p class="text-[11px] text-slate-600 mt-1">
+        <p class="text-[9px] sm:text-[11px] text-slate-600 mt-0.5 sm:mt-1 line-clamp-1">
           {{ $t("analytics.return_rate_desc") }}
         </p>
       </div>
-      <div class="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-5">
+      <div class="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-3 sm:p-5">
         <p
-          class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2"
+          class="text-[9px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 sm:mb-2"
         >
           {{ $t("analytics.sentiment_label") }}
         </p>
-        <div class="flex flex-col gap-1 mt-2">
-          <div class="flex justify-between items-center text-sm font-black">
-            <span class="text-emerald-400 text-[12px]">{{
+        <div class="flex flex-col gap-0.5 sm:gap-1 mt-1 sm:mt-2">
+          <div class="flex justify-between items-center text-[11px] sm:text-sm font-black">
+            <span class="text-emerald-400 text-[10px] sm:text-[12px]">{{
               $t("analytics.positive")
             }}</span>
             <span class="text-white"
               >{{ overview?.sentiment.positive ?? 0 }}%</span
             >
           </div>
-          <div class="flex justify-between items-center text-sm font-black">
-            <span class="text-blue-400 text-[12px]">{{
+          <div class="flex justify-between items-center text-[11px] sm:text-sm font-black">
+            <span class="text-blue-400 text-[10px] sm:text-[12px]">{{
               $t("analytics.curious")
             }}</span>
             <span class="text-white"
               >{{ overview?.sentiment.curious ?? 0 }}%</span
             >
           </div>
-          <div class="flex justify-between items-center text-sm font-black">
-            <span class="text-red-400 text-[12px]">{{
+          <div class="flex justify-between items-center text-[11px] sm:text-sm font-black">
+            <span class="text-red-400 text-[10px] sm:text-[12px]">{{
               $t("analytics.negative")
             }}</span>
             <span class="text-white"
@@ -164,7 +164,7 @@ function replyRateColor(rate: number) {
             >
           </div>
         </div>
-        <p class="text-[11px] text-slate-600 mt-2">
+        <p class="text-[9px] sm:text-[11px] text-slate-600 mt-1 sm:mt-2 line-clamp-1">
           {{ $t("analytics.sentiment_desc") }}
         </p>
       </div>
@@ -488,7 +488,7 @@ function replyRateColor(rate: number) {
         <div
           v-for="v in lastVideos"
           :key="v.videoId"
-          class="group relative flex flex-col bg-white/[0.03] border border-white/[0.07] rounded-2xl overflow-hidden hover:bg-white/[0.05] hover:border-indigo-500/30 transition-all duration-300"
+          class="glass-card group relative flex flex-col overflow-hidden"
         >
           <!-- Thumbnail Container (Links to YouTube) -->
           <a
@@ -558,7 +558,7 @@ function replyRateColor(rate: number) {
           <!-- Content -->
           <div class="p-3 flex flex-col flex-1">
             <p
-              class="text-xs font-black text-slate-200 line-clamp-2 group-hover:text-indigo-300 transition-colors mb-3 leading-snug h-9"
+              class="text-xs font-black text-slate-200 line-clamp-3 group-hover:text-indigo-300 transition-colors mb-3 leading-snug h-12"
             >
               {{ v.videoTitle }}
             </p>

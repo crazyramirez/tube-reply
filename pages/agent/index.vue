@@ -361,21 +361,6 @@ watch(messages, () => {
 </script>
 
 <style scoped>
-.glass-card {
-  @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] rounded-2xl;
-  box-shadow:
-    0 4px 24px -1px rgba(0, 0, 0, 0.2),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.04);
-}
-.glass-card:hover {
-  transform: none;
-  border-color: rgba(255, 255, 255, 0.08);
-  background-color: rgba(255, 255, 255, 0.03);
-  box-shadow:
-    0 4px 24px -1px rgba(0, 0, 0, 0.2),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.04);
-}
-
 .chat-sidebar {
   @apply bg-white/[0.02] border-r border-white/[0.06] h-full flex flex-col;
 }
@@ -695,12 +680,19 @@ watch(messages, () => {
                   class="w-6 h-6 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center"
                 >
                   <UIcon
-                    :name="statusData?.provider === 'openai' ? 'i-simple-icons-openai' : 'i-heroicons-sparkles'"
+                    :name="
+                      statusData?.provider === 'openai'
+                        ? 'i-simple-icons-openai'
+                        : 'i-heroicons-sparkles'
+                    "
                     class="w-3.5 h-3.5 text-indigo-400"
                   />
                 </div>
                 <span class="text-[10px] text-slate-600 font-medium"
-                  >AI · {{ statusData?.provider === 'openai' ? 'OpenAI' : 'Gemini' }}</span
+                  >AI ·
+                  {{
+                    statusData?.provider === "openai" ? "OpenAI" : "Gemini"
+                  }}</span
                 >
               </div>
             </div>

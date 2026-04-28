@@ -18,7 +18,9 @@ body {
 }
 
 /* Form Elements Reset */
-input, select, textarea {
+input,
+select,
+textarea {
   background-color: #0b0f1a;
   color: #f1f5f9;
   font-size: 16px; /* Prevent iOS auto-zoom */
@@ -54,6 +56,7 @@ option {
   box-shadow:
     0 4px 24px -1px rgba(0, 0, 0, 0.2),
     inset 0 1px 1px 0 rgba(255, 255, 255, 0.05);
+  border-radius: 0.5rem !important;
 }
 
 .glass-card:hover {
@@ -190,7 +193,7 @@ option {
 
 /* Global mobile button optimization */
 @media (max-width: 639px) {
-  button, 
+  button,
   .u-button,
   .u-button-label,
   button span,
@@ -205,12 +208,14 @@ option {
 /* Premium Components */
 .premium-textarea-container {
   @apply relative rounded-2xl bg-black/20 border border-white/5 transition-all duration-500 overflow-hidden;
-  box-shadow: inset 0 2px 12px rgba(0,0,0,0.4);
+  box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
 .premium-textarea-container:focus-within {
   @apply border-indigo-500/30 bg-black/30;
-  box-shadow: inset 0 2px 12px rgba(0,0,0,0.5), 0 0 40px rgba(79,70,229,0.1);
+  box-shadow:
+    inset 0 2px 12px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(79, 70, 229, 0.1);
 }
 
 .premium-textarea {
@@ -219,12 +224,12 @@ option {
 
 .premium-btn-primary {
   @apply rounded-xl bg-indigo-600 text-white font-bold transition-all duration-300 hover:bg-indigo-500 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
-  box-shadow: 0 4px 15px rgba(79,70,229,0.3);
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
 }
 
 .premium-btn-success {
   @apply rounded-2xl bg-emerald-500 text-emerald-950 font-black transition-all duration-500 hover:bg-emerald-400 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
-  box-shadow: 0 4px 20px rgba(16,185,129,0.3);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
 }
 
 .premium-btn-ghost {
@@ -237,5 +242,7 @@ option {
 }
 
 @keyframes fadeIn {
-  to { opacity: 1; }
+  to {
+    opacity: 1;
+  }
 }

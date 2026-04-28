@@ -81,7 +81,8 @@ function setStatus(s: string) {
 
 function setPage(p: number) {
   page.value = p;
-  router.replace({ query: { status: status.value, page: p } });
+  router.replace({ query: { ...route.query, page: p } });
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 async function undismiss(commentId: string) {
@@ -176,6 +177,10 @@ const viewMode = useCookie<"grid" | "list">("comment-view-mode", {
   default: () => "grid",
 });
 
+const mobileColumns = useCookie<number>("comment-mobile-columns", {
+  default: () => 2,
+});
+
 
 const statusTabs = computed(() => [
   { label: t("status.all"), value: "all", icon: "i-heroicons-list-bullet" },
@@ -260,14 +265,17 @@ onBeforeRouteLeave((to, from) => {
 
 onActivated(() => {
   refresh();
+  if (window.innerWidth < 1024 && viewMode.value === "list") {
+    viewMode.value = "grid";
+  }
   if (savedScrollPos.value > 0) {
     // Forzamos una altura mínima temporal para evitar que el navegador resetee el scroll a 0
     // si el contenido aún no se ha renderizado completamente o la página ha encogido.
     const originalMinHeight = document.documentElement.style.minHeight;
-    document.documentElement.style.minHeight = '5000px'; 
-    
+    document.documentElement.style.minHeight = "5000px";
+
     setTimeout(() => {
-      window.scrollTo({ top: savedScrollPos.value, behavior: 'instant' });
+      window.scrollTo({ top: savedScrollPos.value, behavior: "instant" });
       document.documentElement.style.minHeight = originalMinHeight;
     }, 100);
   }
@@ -280,12 +288,12 @@ watch(justAutoSuggestCompleted, (done) => {
   if (done) refresh();
 });
 
-// Solo hacer scroll al principio si cambian REALMENTE los filtros o página
-watch([status, page], (newVals, oldVals) => {
-  const [newS, newP] = newVals;
-  const [oldS, oldP] = oldVals;
+// Solo hacer scroll al principio si cambian REALMENTE los filtros
+watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
+  const hasOldValues = oldVals.some(v => v !== undefined);
+  const hasChanged = newVals.some((v, i) => v !== oldVals[i]);
   
-  if (oldS !== undefined && (newS !== oldS || newP !== oldP)) {
+  if (hasOldValues && hasChanged) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 });
@@ -320,8 +328,9 @@ watch([status, page], (newVals, oldVals) => {
       <div
         class="flex items-center gap-1 p-1 bg-white/[0.03] border border-white/[0.07] rounded-xl"
       >
+        <!-- Desktop: List view -->
         <button
-          class="flex p-2 rounded-lg transition-all duration-200 cursor-pointer"
+          class="hidden lg:flex p-2 rounded-lg transition-all duration-200 cursor-pointer"
           :class="
             viewMode === 'list'
               ? 'bg-white/10 text-white shadow-sm'
@@ -332,8 +341,9 @@ watch([status, page], (newVals, oldVals) => {
         >
           <UIcon name="i-heroicons-bars-3" class="w-5 h-5" />
         </button>
+        <!-- Desktop: Grid view -->
         <button
-          class="flex p-2 rounded-lg transition-all duration-200 cursor-pointer"
+          class="hidden lg:flex p-2 rounded-lg transition-all duration-200 cursor-pointer"
           :class="
             viewMode === 'grid'
               ? 'bg-white/10 text-white shadow-sm'
@@ -341,6 +351,36 @@ watch([status, page], (newVals, oldVals) => {
           "
           @click="viewMode = 'grid'"
           :title="$t('comments.grid_view')"
+        >
+          <UIcon name="i-heroicons-squares-2x2" class="w-5 h-5" />
+        </button>
+
+        <!-- Mobile: Column switcher -->
+        <button
+          class="lg:hidden flex p-2 rounded-lg transition-all duration-200 cursor-pointer"
+          :class="
+            mobileColumns === 1
+              ? 'bg-white/10 text-white shadow-sm'
+              : 'text-slate-500 hover:text-slate-300'
+          "
+          @click="
+            mobileColumns = 1;
+            viewMode = 'grid';
+          "
+        >
+          <UIcon name="i-heroicons-stop" class="w-5 h-5" />
+        </button>
+        <button
+          class="lg:hidden flex p-2 rounded-lg transition-all duration-200 cursor-pointer"
+          :class="
+            mobileColumns === 2
+              ? 'bg-white/10 text-white shadow-sm'
+              : 'text-slate-500 hover:text-slate-300'
+          "
+          @click="
+            mobileColumns = 2;
+            viewMode = 'grid';
+          "
         >
           <UIcon name="i-heroicons-squares-2x2" class="w-5 h-5" />
         </button>
@@ -489,7 +529,14 @@ watch([status, page], (newVals, oldVals) => {
     <!-- Loading - Only show skeletons if we have no data and it's pending -->
     <div v-if="pending && !data?.items?.length">
       <!-- Grid Loading -->
-      <div v-if="viewMode === 'grid'" class="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2 sm:gap-3">
+      <div
+        v-if="viewMode === 'grid'"
+        class="grid gap-2 sm:gap-3"
+        :class="[
+          mobileColumns === 1 ? 'grid-cols-1' : 'grid-cols-2',
+          'sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4',
+        ]"
+      >
         <div
           v-for="i in 8"
           :key="i"
@@ -546,7 +593,11 @@ watch([status, page], (newVals, oldVals) => {
     <!-- Grid View -->
     <div
       v-else-if="viewMode === 'grid'"
-      class="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-2 sm:gap-3"
+      class="grid gap-2 sm:gap-3"
+      :class="[
+        mobileColumns === 1 ? 'grid-cols-1' : 'grid-cols-2',
+        'sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4',
+      ]"
     >
       <div v-for="(c, idx) in data.items" :key="c.id" class="flex flex-col">
         <NuxtLink

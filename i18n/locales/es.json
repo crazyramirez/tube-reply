@@ -444,7 +444,8 @@
     "kb_hook": "Hook Viral",
     "kb_pillars": "Pilares del Contenido",
     "kb_tips": "Tips de Producción",
-    "kb_questions": "Preguntas de la Audiencia"
+    "kb_questions": "Preguntas de la Audiencia",
+    "already_generating": "Ya hay un análisis en curso. Por favor espera."
   },
   "videos": {
     "title": "Vídeos",

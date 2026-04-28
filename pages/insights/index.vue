@@ -9,17 +9,30 @@ const generating = ref(false);
 const copiedHook = ref(false);
 const selectedIdea = ref<VideoIdeaCluster | null>(null);
 
-const { data: ideas, refresh, pending } = useFetch<VideoIdeaCluster[]>(
+const { data: ideas, refresh, pending, error } = useFetch<VideoIdeaCluster[]>(
   "/api/insights/video-ideas",
   { lazy: true },
 );
 
-const isAnalyzing = computed(() => generating.value || (pending.value && !ideas.value));
+const isAnalyzing = computed(() => 
+  generating.value || 
+  pending.value || 
+  error.value?.statusCode === 429
+);
+
+// Auto-refresh if there's a conflict (another process is running)
+watch(error, (err) => {
+  if (err?.statusCode === 429 && import.meta.client) {
+    setTimeout(() => {
+      if (error.value?.statusCode === 429) refresh();
+    }, 10000); // Check every 10s
+  }
+});
 
 watch(
-  ideas,
-  (val) => {
-    if (val?.length) {
+  [ideas, isAnalyzing],
+  ([val, analyzing]) => {
+    if (val?.length && !analyzing && !selectedIdea.value) {
       const stillExists = val.find((i) => i.id === selectedIdea.value?.id);
       selectedIdea.value = stillExists ?? val[0];
     }
@@ -32,6 +45,10 @@ watch(selectedIdea, () => {
 });
 
 async function regenerate() {
+  if (generating.value) {
+    toast.add({ title: t("insights.already_generating"), color: "orange" });
+    return;
+  }
   generating.value = true;
   selectedIdea.value = null;
   try {
@@ -41,8 +58,12 @@ async function regenerate() {
     });
     await refresh();
     toast.add({ title: t("insights.refreshed"), color: "green" });
-  } catch {
-    toast.add({ title: t("insights.failed_refresh"), color: "red" });
+  } catch (err: any) {
+    if (err.statusCode === 429) {
+      toast.add({ title: t("insights.already_generating"), color: "orange" });
+    } else {
+      toast.add({ title: t("insights.failed_refresh"), color: "red" });
+    }
   } finally {
     generating.value = false;
   }
@@ -121,8 +142,9 @@ const activeStep = ref(0);
 let _stepTimer: ReturnType<typeof setInterval> | null = null;
 
 watch(isAnalyzing, (val) => {
-  if (val) {
+  if (val && import.meta.client) {
     activeStep.value = 0;
+    if (_stepTimer) clearInterval(_stepTimer);
     _stepTimer = setInterval(() => {
       if (activeStep.value < STEPS.length - 1) activeStep.value++;
     }, 1300);
@@ -223,7 +245,7 @@ onUnmounted(() => {
     >
       <!-- LEFT · Mission List -->
       <div class="flex flex-col gap-2.5">
-        <template v-if="!ideas">
+        <template v-if="!ideas || isAnalyzing">
           <div
             v-for="i in 4"
             :key="i"
@@ -333,7 +355,7 @@ onUnmounted(() => {
       <Transition name="blueprint" mode="out-in">
         <!-- ── AI Generating State ─────────────────────────────────────── -->
         <div
-          v-if="isAnalyzing && !selectedIdea"
+          v-if="isAnalyzing"
           key="ai-generating"
           class="rounded-3xl overflow-hidden border border-indigo-500/20 bg-[#0b1120]/80 backdrop-blur-xl"
         >
