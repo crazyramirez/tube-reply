@@ -273,20 +273,7 @@ onActivated(() => {
   }
 });
 
-const failedThumbnails = ref<Record<string, boolean>>({});
-
-function handleThumbnailError(commentId: string, videoId: string, event: Event) {
-  const img = event.target as HTMLImageElement;
-  const max = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-  const mq = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
-  if (!img.src.includes('img.youtube.com/vi/')) {
-    img.src = max;
-  } else if (img.src === max) {
-    img.src = mq;
-  } else {
-    failedThumbnails.value[commentId] = true;
-  }
-}
+const { failedThumbnails, getCleanThumbnailUrl, handleThumbnailError } = useYouTubeThumbnail();
 
 const { justAutoSuggestCompleted } = useSyncStatus();
 watch(justAutoSuggestCompleted, (done) => {
@@ -571,7 +558,7 @@ watch([status, page], (newVals, oldVals) => {
           <div class="relative aspect-video bg-slate-900 overflow-hidden">
             <img
               v-if="c.videoThumbnail && !failedThumbnails[c.id]"
-              :src="c.videoThumbnail ?? undefined"
+              :src="getCleanThumbnailUrl(c.videoId, c.videoThumbnail)"
               :alt="c.videoTitle ?? ''"
               class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               loading="lazy"
@@ -787,7 +774,7 @@ watch([status, page], (newVals, oldVals) => {
           >
             <img
               v-if="c.videoThumbnail && !failedThumbnails[c.id]"
-              :src="c.videoThumbnail ?? undefined"
+              :src="getCleanThumbnailUrl(c.videoId, c.videoThumbnail)"
               :alt="c.videoTitle ?? ''"
               class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
               loading="lazy"

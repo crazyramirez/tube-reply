@@ -434,27 +434,7 @@ async function publishReply() {
   }
 }
 
-const failedThumbnails = ref<Record<string, boolean>>({});
-
-function highResThumbnail(url: string | null | undefined): string | undefined {
-  if (!url) return undefined;
-  const match = url.match(/\/vi\/([^\/\?]+)/);
-  if (match) return `https://img.youtube.com/vi/${match[1]}/maxresdefault.jpg`;
-  return url.replace("mqdefault.jpg", "maxresdefault.jpg");
-}
-
-function handleThumbnailError(key: string, videoId: string, event: Event) {
-  const img = event.target as HTMLImageElement;
-  const max = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-  const mq = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
-  if (!img.src.includes('img.youtube.com/vi/')) {
-    img.src = max;
-  } else if (img.src.includes('maxresdefault')) {
-    img.src = mq;
-  } else {
-    failedThumbnails.value[key] = true;
-  }
-}
+const { failedThumbnails, getCleanThumbnailUrl, handleThumbnailError } = useYouTubeThumbnail();
 
 const finalText = computed(
   () =>
@@ -540,7 +520,7 @@ const effectiveVideoLinks = computed(() => {
       video_id: id,
       video_title: `ID: ${id}`,
       url: `https://youtu.be/${id}`,
-      thumbnail_url: `https://img.youtube.com/vi/${id}/mqdefault.jpg`,
+      thumbnail_url: `https://i.ytimg.com/vi/${id}/mqdefault.jpg`,
     };
   });
 });
@@ -890,7 +870,7 @@ async function confirmUnban() {
                 >
                   <img
                     v-if="!failedThumbnails['video-' + data.video.id]"
-                    :src="highResThumbnail(data.video.thumbnailUrl)"
+                    :src="getCleanThumbnailUrl(data.video.id, data.video.thumbnailUrl)"
                     class="w-full h-full object-cover opacity-60 group-hover/video:opacity-100 transition-opacity"
                     referrerpolicy="no-referrer"
                     crossorigin="anonymous"
@@ -1517,7 +1497,7 @@ async function confirmUnban() {
               >
                 <img
                   v-if="!failedThumbnails['link-' + link.video_id]"
-                  :src="highResThumbnail(link.thumbnail_url)"
+                  :src="getCleanThumbnailUrl(link.video_id, link.thumbnail_url)"
                   class="w-16 aspect-video object-cover rounded shadow-lg"
                   referrerpolicy="no-referrer"
                   @error="handleThumbnailError('link-' + link.video_id, link.video_id, $event)"
@@ -1626,7 +1606,7 @@ async function confirmUnban() {
               >
                 <img
                   v-if="!failedThumbnails['link-' + link.video_id]"
-                  :src="highResThumbnail(link.thumbnail_url)"
+                  :src="getCleanThumbnailUrl(link.video_id, link.thumbnail_url)"
                   class="w-16 aspect-video object-cover rounded shadow-lg"
                   referrerpolicy="no-referrer"
                   @error="handleThumbnailError('link-' + link.video_id, link.video_id, $event)"

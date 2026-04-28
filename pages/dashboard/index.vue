@@ -112,24 +112,7 @@ const statusColor = (s: string) =>
         ? "gray"
         : "yellow";
 
-const failedThumbnails = ref<Record<string, boolean>>({});
-
-function handleThumbnailError(
-  commentId: string,
-  videoId: string,
-  event: Event,
-) {
-  const img = event.target as HTMLImageElement;
-  const max = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-  const mq = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
-  if (!img.src.includes("img.youtube.com/vi/")) {
-    img.src = max;
-  } else if (img.src.includes("maxresdefault")) {
-    img.src = mq;
-  } else {
-    failedThumbnails.value[commentId] = true;
-  }
-}
+const { failedThumbnails, getCleanThumbnailUrl, handleThumbnailError } = useYouTubeThumbnail();
 
 const statCards = computed(() => [
   {
@@ -328,12 +311,17 @@ const statCards = computed(() => [
       >
         <div class="relative aspect-video bg-slate-900 overflow-hidden">
           <img
-            :src="video.thumbnailUrl || undefined"
+            v-if="video.thumbnailUrl && !failedThumbnails[video.id]"
+            :src="getCleanThumbnailUrl(video.id, video.thumbnailUrl)"
             :alt="video.title"
             class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
             loading="lazy"
             referrerpolicy="no-referrer"
+            @error="handleThumbnailError(video.id, video.id, $event)"
           />
+          <div v-else class="w-full h-full flex items-center justify-center bg-slate-900">
+            <UIcon name="i-heroicons-video-camera" class="w-8 h-8 text-slate-800" />
+          </div>
           <div
             class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
           />
@@ -446,7 +434,7 @@ const statCards = computed(() => [
         <div class="relative aspect-video bg-slate-900 overflow-hidden">
           <img
             v-if="comment.videoThumbnail && !failedThumbnails[comment.id]"
-            :src="comment.videoThumbnail ?? undefined"
+            :src="getCleanThumbnailUrl(comment.videoId, comment.videoThumbnail)"
             :alt="comment.videoTitle ?? ''"
             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
             loading="lazy"
