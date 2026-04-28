@@ -572,12 +572,11 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
       </div>
     </div>
 
-    <!-- Loading - Only show skeletons if we have no data and it's pending -->
+    <!-- Loading -->
     <div v-if="pending && !data?.items?.length">
-      <!-- Grid Loading -->
       <div
         v-if="viewMode === 'grid'"
-        class="grid gap-2 sm:gap-3"
+        class="grid gap-3 sm:gap-4"
         :class="[
           mobileColumns === 1 ? 'grid-cols-1' : 'grid-cols-2',
           'sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4',
@@ -589,12 +588,11 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
           class="aspect-[4/5] rounded-3xl bg-white/[0.03] border border-white/[0.06] animate-pulse"
         />
       </div>
-      <!-- List Loading -->
-      <div v-else class="space-y-3">
+      <div v-else class="space-y-4">
         <div
           v-for="i in 6"
           :key="i"
-          class="h-24 rounded-2xl bg-white/[0.03] border border-white/[0.06] animate-pulse"
+          class="h-32 rounded-2xl bg-white/[0.03] border border-white/[0.06] animate-pulse"
         />
       </div>
     </div>
@@ -639,7 +637,7 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
     <!-- Grid View -->
     <div
       v-else-if="viewMode === 'grid'"
-      class="grid gap-2 sm:gap-3"
+      class="grid gap-3 sm:gap-4"
       :class="[
         mobileColumns === 1 ? 'grid-cols-1' : 'grid-cols-2',
         'sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4',
@@ -648,133 +646,198 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
       <div v-for="(c, idx) in data?.items" :key="c.id" class="flex flex-col">
         <NuxtLink
           :to="`/comments/${c.id}`"
-          class="glass-card overflow-hidden flex flex-col h-full group animate-slide-up"
+          class="comment-card-premium group relative flex flex-col h-full rounded-xl overflow-hidden bg-slate-900/40 border border-white/5 backdrop-blur-xl transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8),0_0_20px_rgba(99,102,241,0.08)] animate-slide-up"
           :class="`stagger-${(idx % 5) + 1}`"
         >
-          <!-- Video Preview -->
-          <div class="relative aspect-video bg-slate-900 overflow-hidden">
+          <!-- Premium Border Glow -->
+          <div
+            class="absolute inset-0 border border-white/10 rounded-xl group-hover:border-indigo-500/30 transition-colors duration-700 z-10 pointer-events-none"
+          />
+
+          <!-- Status Accent Glow (Dynamic) -->
+          <div
+            class="absolute top-0 left-0 right-0 h-1.5 transition-all duration-500 z-20"
+            :class="{
+              'bg-indigo-500 shadow-[0_4px_15px_rgba(99,102,241,0.5)]':
+                c.status === 'pending' || c.status === 'inbox',
+              'bg-emerald-500 shadow-[0_4px_15px_rgba(16,185,129,0.5)]':
+                c.status === 'published',
+              'bg-orange-500 shadow-[0_4px_15px_rgba(245,158,11,0.5)]':
+                c.status === 'suggested',
+              'bg-rose-500 shadow-[0_4px_15px_rgba(244,63,94,0.5)]':
+                c.status === 'dismissed',
+              'bg-blue-500 shadow-[0_4px_15px_rgba(59,130,246,0.5)]':
+                c.status === 'skipped',
+            }"
+          />
+
+          <!-- Thumbnail / Video Header -->
+          <div class="relative aspect-[16/10] overflow-hidden bg-slate-950">
             <img
               v-if="c.videoThumbnail && !failedThumbnails[c.id]"
               :src="getCleanThumbnailUrl(c.videoId, c.videoThumbnail)"
               :alt="c.videoTitle ?? ''"
-              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+              class="w-full h-full object-cover group-hover:scale-105 transition-all duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] opacity-60 group-hover:opacity-80 will-change-transform"
               loading="lazy"
               referrerpolicy="no-referrer"
               @error="handleThumbnailError(c.id, c.videoId, $event)"
             />
-            <div v-else class="w-full h-full flex items-center justify-center">
-              <UIcon
-                name="i-heroicons-video-camera"
-                class="text-slate-800 w-12 h-12"
-              />
-            </div>
             <div
-              class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60"
+              class="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent"
             />
 
+            <!-- Custom Selection Checkbox -->
             <div
               v-if="status !== 'published'"
-              class="absolute top-2 right-2 sm:top-3 sm:right-3 z-10"
+              class="absolute top-3 right-3 sm:top-4 sm:right-4 z-30"
               @click.stop.prevent="toggleSelection(c.id)"
             >
               <div
-                class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg border-2 flex items-center justify-center transition-all duration-200"
+                class="w-8 h-8 rounded-2xl border flex items-center justify-center transition-all duration-500"
                 :class="
                   selectedIds.includes(c.id)
-                    ? 'bg-indigo-500 border-indigo-400 text-white scale-110 shadow-lg shadow-indigo-500/50'
-                    : 'bg-black/30 border-white/20 hover:border-white/40'
+                    ? 'bg-indigo-500 border-indigo-400 text-white scale-110 rotate-6 shadow-[0_0_25px_rgba(99,102,241,0.7)]'
+                    : 'bg-black/50 border-white/10 hover:border-white/30 backdrop-blur-xl'
                 "
               >
                 <UIcon
                   v-if="selectedIds.includes(c.id)"
-                  name="i-heroicons-check"
-                  class="w-3 h-3 sm:w-4 sm:h-4"
+                  name="i-heroicons-check-badge-solid"
+                  class="w-5 h-5"
                 />
+                <div v-else class="w-2.5 h-2.5 rounded-full bg-white/20"></div>
               </div>
             </div>
 
+            <!-- Floating Badges -->
             <div
-              class="absolute top-2 left-2 sm:top-3 sm:left-3 flex gap-1 sm:gap-2 flex-wrap"
+              class="absolute top-3 left-3 sm:top-4 sm:left-4 flex flex-wrap gap-1.5 sm:gap-2 z-20"
             >
-              <UBadge
-                :color="statusColor(c.status)"
-                variant="solid"
-                size="xs"
-                class="font-black tracking-tighter rounded-md text-[8px] sm:text-[10px] px-1 sm:px-1.5"
+              <div
+                class="flex items-center gap-1 sm:gap-1.5 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl"
               >
-                {{ $t("status." + c.status).toUpperCase() }}
-              </UBadge>
-              <UBadge
-                v-if="!c.isLive"
-                color="red"
-                variant="solid"
-                size="xs"
-                class="font-black tracking-tighter rounded-md text-[8px] sm:text-[10px] px-1 sm:px-1.5"
-              >
-                {{ $t("status.not_live").toUpperCase() }}
-              </UBadge>
-              <!-- Opportunity flag -->
-              <span
-                v-if="parseOpportunityFlags(c.opportunityFlags).length > 0"
-                class="flex items-center gap-0.5 px-1 sm:px-1.5 py-0.5 rounded border text-[8px] sm:text-[9px] font-black uppercase backdrop-blur-md text-yellow-400 bg-yellow-500/10 border-yellow-500/20"
-              >
-                <UIcon name="i-heroicons-star" class="w-2.5 h-2.5" />
-                {{ parseOpportunityFlags(c.opportunityFlags)[0] }}
-              </span>
-              <!-- Language badge -->
-              <span
+                <div
+                  class="w-1.5 h-1.5 rounded-full animate-pulse"
+                  :class="{
+                    'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.8)]':
+                      c.status === 'pending' || c.status === 'inbox',
+                    'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]':
+                      c.status === 'published',
+                    'bg-orange-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]':
+                      c.status === 'suggested',
+                    'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]':
+                      c.status === 'dismissed',
+                    'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]':
+                      c.status === 'skipped',
+                  }"
+                ></div>
+                <span
+                  class="text-[9px] font-black uppercase tracking-[0.2em] text-white/90"
+                >
+                  {{ $t("status." + c.status) }}
+                </span>
+              </div>
+
+              <!-- Language / Country -->
+              <div
                 v-if="c.detectedLang"
-                class="flex items-center gap-1 bg-black/60 backdrop-blur-md px-1.5 sm:px-2 py-0.5 rounded border border-white/10 text-[8px] sm:text-[10px] font-black uppercase text-white shadow-lg"
+                class="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 text-xs shadow-xl"
+                :title="languageNames[c.detectedLang] || c.detectedLang"
               >
-                <span>{{ langFlag[c.detectedLang] || "🌐" }}</span>
-                <span class="hidden sm:inline">{{
-                  languageNames[c.detectedLang] || c.detectedLang
-                }}</span>
-                <span class="sm:hidden">{{ c.detectedLang }}</span>
-              </span>
+                {{ langFlag[c.detectedLang] || "🌐" }}
+              </div>
             </div>
 
-            <div class="absolute bottom-3 left-3 right-3">
-              <p
-                class="text-[10px] font-bold text-slate-300 line-clamp-1 uppercase tracking-wider mb-1"
-              >
-                {{ c.videoTitle }}
-              </p>
+            <!-- Video Context -->
+            <div
+              class="absolute bottom-3 left-4 right-4 sm:bottom-4 sm:left-5 sm:right-5"
+            >
+              <div class="flex items-center gap-2 group/video">
+                <div
+                  class="w-7 h-7 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center flex-shrink-0 shadow-lg"
+                >
+                  <UIcon
+                    name="i-heroicons-film-solid"
+                    class="w-3.5 h-3.5 text-indigo-400 opacity-90"
+                  />
+                </div>
+                <p
+                  class="text-[10px] font-black text-slate-300 line-clamp-2 uppercase tracking-widest opacity-80 group-hover/video:opacity-100 transition-opacity"
+                >
+                  {{ c.videoTitle }}
+                </p>
+              </div>
             </div>
           </div>
 
-          <div class="p-3 sm:p-5 flex flex-col flex-1 gap-2 sm:gap-4">
-            <div class="flex items-center gap-2 sm:gap-3 group/author">
-              <UAvatar
-                :src="
-                  c.authorProfileImageUrl ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(c.authorName || '')}&background=6366f1&color=fff`
-                "
-                size="sm"
-                class="ring-1 ring-white/10 shrink-0 shadow-sm"
-                :img-attributes="{
-                  referrerpolicy: 'no-referrer',
-                  crossorigin: 'anonymous',
-                }"
-              />
+          <!-- Main Content Area -->
+          <div class="p-4 sm:p-6 flex flex-col flex-1 gap-5">
+            <!-- Author Header -->
+            <div class="flex items-center gap-4">
+              <div class="relative group/avatar">
+                <div
+                  class="absolute -inset-1 bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-600 rounded-full opacity-0 group-hover/avatar:opacity-100 transition-all duration-700 blur-md scale-110"
+                ></div>
+                <UAvatar
+                  :src="
+                    c.authorProfileImageUrl ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(c.authorName || '')}&background=6366f1&color=fff`
+                  "
+                  size="md"
+                  class="relative ring-4 ring-slate-900 shrink-0 shadow-2xl"
+                  :img-attributes="{
+                    referrerpolicy: 'no-referrer',
+                    crossorigin: 'anonymous',
+                  }"
+                />
+                <div
+                  v-if="c.isLastAuthorOwner"
+                  class="absolute -bottom-1 -right-1 bg-indigo-500 rounded-full p-0.5 border-2 border-slate-900 shadow-lg"
+                >
+                  <UIcon
+                    name="i-heroicons-check-badge-solid"
+                    class="w-3 h-3 text-white"
+                  />
+                </div>
+              </div>
 
               <div class="flex flex-col min-w-0">
                 <span
-                  class="font-bold text-[10px] sm:text-sm text-white truncate transition-colors"
-                  >{{ c.authorName }}</span
+                  class="font-black text-base text-white truncate tracking-tight leading-none"
                 >
-                <span
-                  class="mt-0.5 text-[8px] sm:text-[12px] text-slate-500 font-medium"
-                  >{{ timeAgo(c.publishedAt) }}</span
-                >
+                  {{ c.authorName }}
+                </span>
+                <div class="flex items-center gap-2 mt-1.5">
+                  <span
+                    class="text-[10px] text-slate-500 font-black uppercase tracking-widest"
+                  >
+                    {{ timeAgo(c.publishedAt) }}
+                  </span>
+                  <div class="w-1 h-1 rounded-full bg-slate-700"></div>
+                  <div class="flex items-center gap-1">
+                    <UIcon
+                      name="i-heroicons-hand-thumb-up-solid"
+                      class="w-3 h-3 text-indigo-500/60"
+                    />
+                    <span class="text-[10px] font-black text-slate-500">{{
+                      c.likeCount || 0
+                    }}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
+            <!-- Comment Bubble -->
             <div
-              class="bg-white/5 border border-white/5 rounded-lg sm:rounded-xl p-2 sm:p-4 flex-1"
+              class="relative bg-white/[0.03] rounded-xl p-4 sm:p-5 flex-1 border border-white/[0.05] group-hover:bg-white/[0.05] group-hover:border-white/[0.08] transition-all duration-500 shadow-inner"
             >
-              <p
-                class="text-[10px] sm:text-sm text-slate-300 leading-relaxed line-clamp-2 sm:line-clamp-3 italic"
+              <UIcon
+                name="i-heroicons-chat-bubble-left-right-solid"
+                class="absolute -top-3 -left-3 w-8 h-8 text-indigo-500/10 group-hover:text-indigo-500/20 transition-colors"
+              />
+
+              <div
+                class="text-xs text-slate-200 leading-relaxed italic font-medium"
               >
                 "<span
                   v-html="
@@ -784,92 +847,98 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
                   "
                 ></span
                 >"
-              </p>
-            </div>
+              </div>
 
-            <!-- Published reply preview -->
-            <div
-              v-if="c.replyText || (c.isLastAuthorOwner && c.lastText)"
-              class="mt-1 pl-2 sm:pl-4 border-l-2 border-emerald-500/30"
-            >
-              <div class="flex items-center gap-1 sm:gap-1.5 mb-0.5 sm:mb-1">
-                <UIcon
-                  name="i-heroicons-chat-bubble-left-right"
-                  class="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-400"
-                />
-                <span
-                  class="text-[8px] sm:text-[10px] font-bold text-emerald-400 uppercase tracking-wider truncate"
-                  >{{ $t("comments.your_response") }}</span
-                >
-              </div>
-              <p
-                class="text-[9px] sm:text-xs text-slate-400 line-clamp-1 sm:line-clamp-2 italic"
-              >
-                {{ c.replyText || c.lastText }}
-              </p>
-            </div>
-            <!-- AI suggestion preview (inbox) -->
-            <div
-              v-else-if="c.suggestedReplyText"
-              class="mt-1 pl-2 sm:pl-4 border-l-2 border-indigo-500/30"
-            >
-              <div class="flex items-center gap-1 sm:gap-1.5 mb-0.5 sm:mb-1">
-                <UIcon
-                  name="i-heroicons-sparkles"
-                  class="w-2.5 h-2.5 sm:w-3 sm:h-3 text-indigo-400"
-                />
-                <span
-                  class="text-[8px] sm:text-[10px] font-bold text-indigo-400 uppercase tracking-wider truncate"
-                  >{{ $t("comments.ai_suggestion") }}</span
-                >
-              </div>
-              <p
-                class="text-[9px] sm:text-xs text-slate-400 line-clamp-1 sm:line-clamp-2 italic"
-              >
-                {{ c.suggestedReplyText }}
-              </p>
-            </div>
-            <!-- Pending — no suggestion yet -->
-            <div
-              v-else-if="status === 'inbox'"
-              class="mt-1 pl-2 sm:pl-4 border-l-2 border-white/10"
-            >
-              <span
-                class="text-[8px] sm:text-[10px] font-bold text-slate-700 uppercase tracking-wider truncate"
-                >{{ $t("comments.awaiting_ai") }}</span
-              >
-            </div>
-
-            <div class="flex items-center justify-between pt-1 sm:pt-2">
-              <div class="flex items-center gap-2 sm:gap-3">
-                <span
-                  v-if="c.likeCount"
-                  class="text-[8px] sm:text-[10px] font-bold text-slate-500 flex items-center gap-1"
-                >
-                  <UIcon
-                    name="i-heroicons-hand-thumb-up"
-                    class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-500"
-                  />
-                  {{ c.likeCount }}
-                </span>
-              </div>
+              <!-- Opportunity Tag -->
               <div
-                class="flex items-center gap-1 text-[10px] font-bold text-indigo-400 group-hover:translate-x-1 transition-transform"
+                v-if="parseOpportunityFlags(c.opportunityFlags).length > 0"
+                class="absolute -bottom-3 -right-2 px-4 py-1.5 rounded-full bg-indigo-500 text-[10px] font-black text-white shadow-[0_10px_20px_rgba(99,102,241,0.4)] flex items-center gap-2 border border-indigo-400 group-hover:scale-105 transition-transform"
               >
-                <span class="hidden sm:inline">{{
-                  $t("comments.review")
-                }}</span>
-                <UIcon name="i-heroicons-arrow-right" class="w-3 h-3" />
+                <UIcon
+                  name="i-heroicons-sparkles-solid"
+                  class="w-3.5 h-3.5 animate-pulse"
+                />
+                {{ parseOpportunityFlags(c.opportunityFlags)[0].toUpperCase() }}
+              </div>
+            </div>
+
+            <!-- Footer / Interaction -->
+            <div class="mt-auto">
+              <!-- Reply Indicator / Preview -->
+              <div
+                v-if="
+                  c.replyText ||
+                  (c.isLastAuthorOwner && c.lastText) ||
+                  c.suggestedReplyText
+                "
+                class="group/reply relative pl-4 sm:pl-5 py-2"
+              >
+                <div
+                  class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500/40 via-purple-500/40 to-transparent rounded-full"
+                ></div>
+
+                <div class="flex items-center gap-2 mb-1.5">
+                  <UIcon
+                    :name="
+                      c.replyText || (c.isLastAuthorOwner && c.lastText)
+                        ? 'i-heroicons-arrow-uturn-left-solid'
+                        : 'i-heroicons-sparkles-solid'
+                    "
+                    class="w-3.5 h-3.5"
+                    :class="
+                      c.replyText || (c.isLastAuthorOwner && c.lastText)
+                        ? 'text-emerald-400'
+                        : 'text-indigo-400'
+                    "
+                  />
+                  <span
+                    class="text-[10px] font-black uppercase tracking-[0.15em]"
+                    :class="
+                      c.replyText || (c.isLastAuthorOwner && c.lastText)
+                        ? 'text-emerald-400'
+                        : 'text-indigo-400'
+                    "
+                  >
+                    {{
+                      c.replyText || (c.isLastAuthorOwner && c.lastText)
+                        ? $t("comments.your_response")
+                        : $t("comments.ai_suggestion")
+                    }}
+                  </span>
+                </div>
+
+                <p
+                  class="text-xs text-slate-400 line-clamp-1 opacity-70 italic font-medium"
+                >
+                  {{
+                    c.replyText ||
+                    (c.isLastAuthorOwner ? c.text : c.lastText) ||
+                    c.suggestedReplyText
+                  }}
+                </p>
               </div>
             </div>
           </div>
+
+          <!-- Integrated Action Bar (Premium Footer) -->
+          <div
+            class="mt-auto flex items-center justify-center gap-2 w-full py-3 bg-white/[0.01] border-t border-white/[0.05] text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] transition-all duration-300 group-hover:bg-indigo-500/10 group-hover:text-indigo-400"
+          >
+            <UIcon
+              name="i-heroicons-chat-bubble-left-right-solid"
+              class="w-3.5 h-3.5 opacity-30 group-hover:opacity-100 transition-opacity"
+            />
+            <span>{{ $t("comments.review") }}</span>
+          </div>
         </NuxtLink>
-        <div v-if="status === 'dismissed'" class="mt-2 flex justify-center">
+
+        <!-- Undismiss Action (Outside Link) -->
+        <div v-if="status === 'dismissed'" class="mt-4 flex justify-center">
           <button
-            class="flex items-center gap-1.5 text-[10px] font-bold text-emerald-500 uppercase tracking-widest hover:text-emerald-400 transition-colors cursor-pointer px-3 py-1 bg-emerald-500/5 border border-emerald-500/10 rounded-lg"
+            class="flex items-center gap-2 px-6 py-2 text-[10px] font-black text-emerald-500 uppercase tracking-widest hover:text-emerald-400 transition-all cursor-pointer bg-emerald-500/5 border border-emerald-500/10 rounded-xl hover:bg-emerald-500/10"
             @click.prevent="undismiss(c.id)"
           >
-            <UIcon name="i-heroicons-arrow-uturn-left" class="w-3.5 h-3.5" />
+            <UIcon name="i-heroicons-arrow-uturn-left" class="w-4 h-4" />
             {{ $t("comments.restore") }}
           </button>
         </div>
@@ -877,7 +946,7 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
     </div>
 
     <!-- List View -->
-    <div v-else class="space-y-3">
+    <div v-else class="space-y-4">
       <div
         v-for="(c, idx) in data?.items"
         :key="c.id"
@@ -886,202 +955,187 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
       >
         <NuxtLink
           :to="`/comments/${c.id}`"
-          class="glass-card p-3 sm:p-4 flex items-stretch gap-3 sm:gap-5 group"
+          class="group relative flex items-stretch gap-4 sm:gap-6 bg-slate-900/40 border border-white/5 backdrop-blur-xl rounded-xl p-2.5 sm:p-4 hover:bg-white/[0.05] hover:border-white/10 hover:-translate-y-1 transition-all duration-500 overflow-hidden"
         >
+          <!-- Vertical Status Accent -->
           <div
-            class="flex flex-shrink-0 w-32 sm:w-56 aspect-video rounded-xl overflow-hidden border border-white/10 relative bg-slate-900"
+            class="absolute left-0 top-0 bottom-0 w-1.5 transition-all duration-500"
+            :class="{
+              'bg-indigo-500 shadow-[2px_0_15px_rgba(99,102,241,0.5)]':
+                c.status === 'pending' || c.status === 'inbox',
+              'bg-emerald-500 shadow-[2px_0_15px_rgba(16,185,129,0.5)]':
+                c.status === 'published',
+              'bg-orange-500 shadow-[2px_0_15px_rgba(245,158,11,0.5)]':
+                c.status === 'suggested',
+              'bg-rose-500 shadow-[2px_0_15px_rgba(244,63,94,0.5)]':
+                c.status === 'dismissed',
+              'bg-blue-500 shadow-[2px_0_15px_rgba(59,130,246,0.5)]':
+                c.status === 'skipped',
+            }"
+          />
+
+          <!-- Thumbnail Section -->
+          <div
+            class="flex flex-shrink-0 w-32 sm:w-64 aspect-video rounded-2xl overflow-hidden border border-white/10 relative bg-slate-950"
           >
             <img
               v-if="c.videoThumbnail && !failedThumbnails[c.id]"
               :src="getCleanThumbnailUrl(c.videoId, c.videoThumbnail)"
               :alt="c.videoTitle ?? ''"
-              class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+              class="w-full h-full object-cover group-hover:scale-105 transition-all duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] opacity-70 group-hover:opacity-90 will-change-transform"
               loading="lazy"
               referrerpolicy="no-referrer"
               @error="handleThumbnailError(c.id, c.videoId, $event)"
             />
             <div
-              v-else
-              class="w-full h-full bg-slate-900 flex items-center justify-center"
-            >
-              <UIcon
-                name="i-heroicons-video-camera"
-                class="text-slate-800 w-6 h-6"
-              />
-            </div>
-            <div
-              class="absolute inset-0 bg-indigo-900/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-            >
-              <UIcon name="i-heroicons-play" class="w-6 h-6 text-white" />
-            </div>
+              class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"
+            />
 
-            <!-- Selection Checkbox (Always over thumbnail) -->
+            <!-- Selection Checkbox -->
             <div
               v-if="status !== 'published'"
               class="absolute top-2 left-2 z-20"
               @click.stop.prevent="toggleSelection(c.id)"
             >
               <div
-                class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg border-2 flex items-center justify-center transition-all duration-200 bg-black/40 backdrop-blur-md"
+                class="w-7 h-7 rounded-xl border flex items-center justify-center transition-all duration-300"
                 :class="
                   selectedIds.includes(c.id)
-                    ? 'bg-indigo-500 border-indigo-400 text-white scale-110 shadow-lg shadow-indigo-500/50'
-                    : 'border-white/20 hover:border-white/40'
+                    ? 'bg-indigo-500 border-indigo-400 text-white scale-110 rotate-3 shadow-lg'
+                    : 'bg-black/60 border-white/20 hover:border-white/40 backdrop-blur-md'
                 "
               >
                 <UIcon
                   v-if="selectedIds.includes(c.id)"
-                  name="i-heroicons-check"
-                  class="w-3.5 h-3.5 sm:w-4 sm:h-4"
+                  name="i-heroicons-check-circle-solid"
+                  class="w-4.5 h-4.5"
                 />
+                <div v-else class="w-2 h-2 rounded-full bg-white/20"></div>
               </div>
+            </div>
+
+            <!-- Language Overlay -->
+            <div
+              v-if="c.detectedLang"
+              class="absolute bottom-2 right-2 flex items-center justify-center w-7 h-7 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 text-xs"
+            >
+              {{ langFlag[c.detectedLang] || "🌐" }}
             </div>
           </div>
 
-          <!-- Content -->
-          <div class="flex-1 min-w-0 flex flex-col">
+          <!-- Content Section -->
+          <div class="flex-1 min-w-0 flex flex-col justify-center py-1">
+            <!-- Author & Meta -->
             <div
-              class="mb-1.5 order-2 sm:order-1 flex items-center gap-2 group/author"
+              class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3"
             >
-              <UAvatar
-                :src="
-                  c.authorProfileImageUrl ||
-                  `https://ui-avatars.com/api/?name=${encodeURIComponent(c.authorName || '')}&background=6366f1&color=fff`
-                "
-                size="xs"
-                class="ring-1 ring-white/10 shrink-0 shadow-sm"
-                :img-attributes="{
-                  referrerpolicy: 'no-referrer',
-                  crossorigin: 'anonymous',
-                }"
-              />
-              <span
-                class="font-bold text-white text-sm truncate block transition-colors"
-                >{{ c.authorName }}</span
-              >
+              <div class="flex items-center gap-3">
+                <UAvatar
+                  :src="
+                    c.authorProfileImageUrl ||
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(c.authorName || '')}&background=6366f1&color=fff`
+                  "
+                  size="xs"
+                  class="ring-2 ring-slate-800 shrink-0 shadow-lg"
+                  :img-attributes="{
+                    referrerpolicy: 'no-referrer',
+                    crossorigin: 'anonymous',
+                  }"
+                />
+                <div class="flex flex-col min-w-0">
+                  <span
+                    class="font-black text-white text-sm truncate tracking-tight"
+                    >{{ c.authorName }}</span
+                  >
+                  <div class="flex items-center gap-2">
+                    <span
+                      class="text-[10px] text-slate-500 font-bold uppercase tracking-widest"
+                      >{{ timeAgo(c.publishedAt) }}</span
+                    >
+                    <div
+                      v-if="c.isReturnCommenter"
+                      class="px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-[8px] font-black text-violet-400 uppercase tracking-widest"
+                    >
+                      FAN
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+                <div
+                  class="flex items-center gap-3 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm"
+                >
+                  <div class="flex items-center gap-1">
+                    <UIcon
+                      name="i-heroicons-hand-thumb-up-solid"
+                      class="w-3.5 h-3.5 text-indigo-500"
+                    />
+                    <span class="text-[11px] font-black text-slate-400">{{
+                      c.likeCount || 0
+                    }}</span>
+                  </div>
+                  <div class="w-px h-3 bg-white/10"></div>
+                  <span
+                    class="text-[9px] font-black text-indigo-400 uppercase tracking-widest"
+                    >{{ $t("status." + c.status) }}</span
+                  >
+                </div>
+              </div>
             </div>
 
-            <div
-              class="flex items-center justify-between gap-4 mb-2 order-1 sm:order-2"
-            >
-              <div class="flex items-center gap-1.5 min-w-0 flex-wrap">
-                <UBadge
-                  :color="statusColor(c.status)"
-                  variant="soft"
-                  size="xs"
-                  class="rounded-md font-bold text-[9px] px-1.5 py-0"
+            <!-- Comment Content -->
+            <div class="relative group/content">
+              <p
+                class="text-sm sm:text-base text-slate-200 line-clamp-1 group-hover/content:line-clamp-none transition-all duration-300 italic font-medium"
+              >
+                "<span v-html="renderCommentHtml(c.lastText || c.text)"></span>"
+              </p>
+            </div>
+
+            <!-- Thread Context -->
+            <div class="mt-3 flex items-center gap-3 overflow-hidden">
+              <div class="flex items-center gap-2 flex-shrink-0 group/video">
+                <div
+                  class="w-7 h-7 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center flex-shrink-0 shadow-lg"
                 >
-                  {{ $t("status." + c.status).toUpperCase() }}
-                </UBadge>
-                <UBadge
-                  v-if="!c.isLive"
-                  color="red"
-                  variant="solid"
-                  size="xs"
-                  class="rounded-md font-bold text-[9px] px-1.5 py-0"
-                >
-                  {{ $t("status.not_live").toUpperCase() }}
-                </UBadge>
-                <!-- Language badge -->
+                  <UIcon
+                    name="i-heroicons-film-solid"
+                    class="w-3.5 h-3.5 text-indigo-400 opacity-90"
+                  />
+                </div>
                 <span
-                  v-if="c.detectedLang"
-                  class="flex items-center gap-1 bg-white/[0.05] border border-white/[0.1] px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] font-black uppercase text-slate-300"
+                  class="text-[10px] font-black text-slate-500 uppercase tracking-widest line-clamp-2 max-w-[150px] sm:max-w-[350px] group-hover/video:text-indigo-300 transition-colors"
                 >
-                  <span>{{ langFlag[c.detectedLang] || "🌐" }}</span>
-                  <span>{{
-                    languageNames[c.detectedLang] || c.detectedLang
-                  }}</span>
+                  {{ c.videoTitle }}
                 </span>
-                <!-- Opportunity -->
-                <span
-                  v-if="parseOpportunityFlags(c.opportunityFlags).length > 0"
-                  class="flex items-center gap-0.5 px-1 py-0 rounded border text-[8px] font-black uppercase text-yellow-400 bg-yellow-500/10 border-yellow-500/20"
-                >
-                  <UIcon name="i-heroicons-star" class="w-2.5 h-2.5" />
-                  {{ parseOpportunityFlags(c.opportunityFlags)[0] }}
-                </span>
-                <!-- Return commenter -->
-                <span
-                  v-if="c.isReturnCommenter"
-                  class="flex items-center gap-0.5 px-1 py-0 rounded border text-[8px] font-black uppercase text-violet-400 bg-violet-500/10 border-violet-500/20"
-                >
-                  <UIcon name="i-heroicons-user-circle" class="w-2.5 h-2.5" />
-                  FAN
-                </span>
-                <span
-                  v-if="c.detectedLang"
-                  class="text-[10px] font-bold text-slate-600"
-                  >{{ c.detectedLang.toUpperCase() }}</span
-                >
               </div>
+
+              <!-- Reply Indicator -->
               <div
-                class="flex items-center gap-3 text-[10px] font-bold text-slate-500 uppercase tracking-widest flex-shrink-0"
+                v-if="c.replyText || c.suggestedReplyText"
+                class="flex items-center gap-2 text-[10px] font-black text-emerald-400 uppercase tracking-widest"
               >
-                <span v-if="c.likeCount" class="flex items-center gap-1"
-                  ><UIcon
-                    name="i-heroicons-hand-thumb-up"
-                    class="w-3.5 h-3.5"
-                  />{{ c.likeCount }}</span
-                >
-                <span>{{ timeAgo(c.lastActivityAt || c.publishedAt) }}</span>
-              </div>
-            </div>
-            <p
-              class="text-xs sm:text-sm text-slate-400 line-clamp-2 italic order-3"
-            >
-              "<span v-html="renderCommentHtml(c.lastText || c.text)"></span>"
-            </p>
-            <div
-              v-if="c.replyText"
-              class="mt-1 pl-3 border-l-2 border-emerald-500/30 order-4"
-            >
-              <p class="text-[11px] text-slate-500 line-clamp-1 italic">
-                <span class="font-bold text-emerald-500/70 mr-1"
-                  >{{ $t("comments.your_response") }}:</span
-                >
-                {{ c.replyText }}
-              </p>
-            </div>
-            <div
-              v-else-if="c.suggestedReplyText"
-              class="mt-1 pl-3 border-l-2 border-indigo-500/30 order-4"
-            >
-              <p class="text-[11px] text-slate-500 line-clamp-1 italic">
+                <div class="w-1 h-1 rounded-full bg-slate-700"></div>
+                <UIcon
+                  :name="
+                    c.replyText
+                      ? 'i-heroicons-arrow-uturn-left-solid'
+                      : 'i-heroicons-sparkles-solid'
+                  "
+                  class="w-3.5 h-3.5"
+                  :class="c.replyText ? 'text-emerald-400' : 'text-indigo-400'"
+                />
                 <span
-                  class="font-bold text-indigo-400/70 mr-1 inline-flex items-center gap-1"
+                  :class="c.replyText ? 'text-emerald-400' : 'text-indigo-400'"
                 >
-                  <UIcon name="i-heroicons-sparkles" class="w-2.5 h-2.5" />{{
-                    $t("comments.ai_suggestion")
-                  }}:
+                  {{
+                    c.replyText
+                      ? $t("comments.your_response")
+                      : $t("comments.ai_suggestion")
+                  }}
                 </span>
-                {{ c.suggestedReplyText }}
-              </p>
-            </div>
-            <div class="mt-1 flex items-center gap-1.5 order-5">
-              <UIcon name="i-heroicons-film" class="w-3 h-3 text-slate-700" />
-              <span class="text-[10px] text-slate-600 font-medium truncate">{{
-                c.videoTitle
-              }}</span>
-            </div>
-          </div>
-
-          <!-- Action -->
-          <div class="flex-shrink-0 flex items-center gap-4">
-            <button
-              v-if="status === 'dismissed'"
-              class="w-10 h-10 flex items-center justify-center rounded-xl bg-emerald-500/5 border border-emerald-500/10 text-emerald-500 hover:bg-emerald-500/10 transition-colors"
-              @click.prevent="undismiss(c.id)"
-              :title="$t('comments.restore')"
-            >
-              <UIcon name="i-heroicons-arrow-uturn-left" class="w-5 h-5" />
-            </button>
-            <div
-              class="w-6 h-6 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl bg-transparent sm:bg-white/5 border-none sm:border sm:border-white/5 text-slate-600 group-hover:text-indigo-400 group-hover:border-indigo-500/20 transition-all"
-            >
-              <UIcon
-                name="i-heroicons-chevron-right"
-                class="w-3 h-3 sm:w-5 sm:h-5 group-hover:translate-x-0.5 transition-transform"
-              />
+              </div>
             </div>
           </div>
         </NuxtLink>
@@ -1132,7 +1186,7 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
 
             <div class="h-8 w-px bg-white/10 shrink-0" />
 
-            <div class="flex items-center gap-1 sm:gap-1.5">
+            <div class="flex items-center gap-1.5">
               <UButton
                 v-if="status !== 'pending' && status !== 'inbox'"
                 color="yellow"
@@ -1207,3 +1261,47 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
     </Transition>
   </div>
 </template>
+
+<style scoped>
+.comment-card-premium {
+  isolation: isolate;
+}
+
+.animate-slide-up {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.stagger-1 {
+  animation-delay: 0.1s;
+}
+.stagger-2 {
+  animation-delay: 0.2s;
+}
+.stagger-3 {
+  animation-delay: 0.3s;
+}
+.stagger-4 {
+  animation-delay: 0.4s;
+}
+.stagger-5 {
+  animation-delay: 0.5s;
+}
+
+@keyframes slideUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Custom scrollbar for tabs if needed */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+</style>

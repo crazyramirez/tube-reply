@@ -99,6 +99,15 @@ function timeAgo(iso: string): string {
   return t("time.days_ago", { d: Math.floor(hrs / 24) });
 }
 
+function formatDate(iso: string): string {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
 const statusColor = (s: string) =>
   s === "published"
     ? "green"
@@ -120,6 +129,7 @@ const statCards = computed(() => [
     bg: "bg-indigo-500/10",
     text: "text-indigo-400",
     glow: "from-indigo-400 to-violet-400",
+    accent: "bg-indigo-500 shadow-indigo-500/50",
   },
   {
     label: t("dashboard.awaiting_ai"),
@@ -129,6 +139,7 @@ const statCards = computed(() => [
     bg: "bg-amber-500/10",
     text: "text-amber-400",
     glow: "from-amber-400 to-orange-400",
+    accent: "bg-amber-500 shadow-amber-500/50",
   },
   {
     label: t("dashboard.published_today"),
@@ -138,6 +149,7 @@ const statCards = computed(() => [
     bg: "bg-emerald-500/10",
     text: "text-emerald-400",
     glow: "from-emerald-400 to-teal-400",
+    accent: "bg-emerald-500 shadow-emerald-500/50",
   },
   {
     label: t("dashboard.total_published"),
@@ -147,6 +159,7 @@ const statCards = computed(() => [
     bg: "bg-white/[0.06]",
     text: "text-slate-300",
     glow: "from-slate-300 to-slate-400",
+    accent: "bg-slate-500 shadow-slate-500/50",
   },
 ]);
 </script>
@@ -173,7 +186,7 @@ const statCards = computed(() => [
         </div>
 
         <button
-          class="flex items-center gap-2 px-6 py-3 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-sm font-bold transition-all duration-300 cursor-pointer disabled:opacity-50 group shrink-0"
+          class="flex items-center gap-2 px-6 py-3 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-sm font-bold transition-all duration-300 cursor-pointer disabled:opacity-50 group shrink-0 shadow-lg"
           :disabled="syncLoading"
           @click="triggerSync()"
         >
@@ -203,7 +216,7 @@ const statCards = computed(() => [
       >
         <div
           v-if="syncWarning"
-          class="mt-4 flex items-center gap-3 px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-xs animate-in fade-in slide-in-from-top-2"
+          class="mt-4 flex items-center gap-3 px-4 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-xs animate-in fade-in slide-in-from-top-2 shadow-2xl"
         >
           <UIcon
             name="i-heroicons-exclamation-triangle"
@@ -240,16 +253,18 @@ const statCards = computed(() => [
     </div>
 
     <!-- Stats -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-8 sm:mb-12">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-8 sm:mb-12">
       <div
         v-for="(card, idx) in statCards"
         :key="card.label"
-        class="glass-card p-4 sm:p-6 animate-slide-up"
+        class="group relative glass-card p-3 sm:p-6 rounded-xl overflow-hidden hover:-translate-y-1 transition-all duration-500 hover:shadow-2xl animate-slide-up"
         :class="`stagger-${idx + 1}`"
       >
+        <div class="absolute top-0 left-0 right-0 h-1 transition-all duration-500 group-hover:h-1.5" :class="card.accent"></div>
+        
         <div class="flex items-start justify-between mb-2 sm:mb-4">
           <div
-            class="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-2xl flex items-center justify-center border border-white/5 shadow-inner"
+            class="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center border border-white/5 shadow-inner"
             :class="card.bg"
           >
             <UIcon
@@ -266,7 +281,7 @@ const statCards = computed(() => [
           {{ card.value }}
         </div>
         <div
-          class="text-[8px] sm:text-[10px] font-bold text-slate-500 mt-1 sm:mt-2 uppercase tracking-[0.1em] sm:tracking-[0.2em] line-clamp-1"
+          class="text-[8px] sm:text-[10px] font-black text-slate-500 mt-1 sm:mt-2 uppercase tracking-[0.2em] line-clamp-1"
         >
           {{ card.label }}
         </div>
@@ -275,9 +290,9 @@ const statCards = computed(() => [
 
     <!-- Live Feed -->
     <div class="flex items-center justify-between mb-6">
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-3">
         <div
-          class="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+          class="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.6)] animate-pulse"
         ></div>
         <h2
           class="font-black text-lg text-white tracking-tight uppercase tracking-widest"
@@ -287,11 +302,11 @@ const statCards = computed(() => [
       </div>
       <NuxtLink
         to="/comments"
-        class="flex items-center gap-2 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-all group"
+        class="flex items-center gap-2 text-xs font-black text-indigo-400 hover:text-indigo-300 transition-all group uppercase tracking-widest"
       >
         {{ $t("dashboard.access_all") }}
         <UIcon
-          name="i-heroicons-arrow-right"
+          name="i-heroicons-arrow-right-solid"
           class="w-4 h-4 group-hover:translate-x-1 transition-transform"
         />
       </NuxtLink>
@@ -299,180 +314,141 @@ const statCards = computed(() => [
 
     <div
       v-if="!stats?.recentComments?.length"
-      class="bg-white/[0.02] border border-white/[0.08] border-dashed rounded-3xl py-24 text-center mb-12"
+      class="bg-white/[0.02] border border-white/[0.08] border-dashed rounded-[1.5rem] py-24 text-center mb-12 shadow-inner"
     >
       <div
-        class="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10"
+        class="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10 shadow-2xl"
       >
-        <UIcon name="i-heroicons-inbox" class="w-8 h-8 text-slate-700" />
+        <UIcon name="i-heroicons-inbox" class="w-10 h-10 text-slate-700" />
       </div>
-      <p class="text-slate-400 font-bold uppercase tracking-widest text-sm">
+      <p class="text-slate-400 font-black uppercase tracking-widest text-sm">
         {{ $t("dashboard.no_comments") }}
       </p>
-      <p class="text-slate-600 text-xs mt-2">
+      <p class="text-slate-600 text-xs mt-2 font-medium">
         {{ $t("dashboard.init_sync") }}
       </p>
     </div>
 
     <div
       v-else
-      class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2 sm:gap-3 dashboard-single-row mb-12"
+      class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-3 dashboard-single-row mb-12"
     >
       <div
-        v-for="(comment, idx) in stats.recentComments"
-        :key="comment.id"
-        class="glass-card overflow-hidden flex flex-col group animate-slide-up"
-        :class="`stagger-${(idx % 4) + 1}`"
+        v-for="(c, idx) in stats.recentComments"
+        :key="c.id"
+        class="flex flex-col"
       >
-        <!-- Video Preview (Clickable to detail) -->
         <NuxtLink
-          :to="`/comments/${comment.id}`"
-          class="relative aspect-video bg-slate-900 overflow-hidden block"
+          :to="`/comments/${c.id}`"
+          class="comment-card-premium group relative flex flex-col h-full rounded-xl overflow-hidden bg-slate-900/40 border border-white/5 backdrop-blur-xl transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8),0_0_20px_rgba(99,102,241,0.08)] animate-slide-up"
+          :class="`stagger-${(idx % 4) + 1}`"
         >
-          <img
-            v-if="comment.videoThumbnail && !failedThumbnails[comment.id]"
-            :src="getCleanThumbnailUrl(comment.videoId, comment.videoThumbnail)"
-            :alt="comment.videoTitle ?? ''"
-            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-            loading="lazy"
-            referrerpolicy="no-referrer"
-            @error="handleThumbnailError(comment.id, comment.videoId, $event)"
-          />
-          <div v-else class="w-full h-full flex items-center justify-center">
-            <UIcon
-              name="i-heroicons-video-camera"
-              class="text-slate-800 w-12 h-12"
-            />
-          </div>
+          <!-- Premium Border Glow -->
           <div
-            class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60"
+            class="absolute inset-0 border border-white/10 rounded-xl group-hover:border-indigo-500/30 transition-colors duration-700 z-10 pointer-events-none"
           />
 
-          <div class="absolute top-2 left-2 sm:top-3 sm:left-3 flex gap-2">
-            <UBadge
-              :color="statusColor(comment.status)"
-              variant="solid"
-              size="xs"
-              class="font-black tracking-tighter rounded-md text-[8px] sm:text-[10px] px-1 sm:px-1.5"
-            >
-              {{ $t("status." + comment.status).toUpperCase() }}
-            </UBadge>
-            <UBadge
-              v-if="!comment.isLive"
-              color="red"
-              variant="solid"
-              size="xs"
-              class="font-black tracking-tighter rounded-md text-[8px] sm:text-[10px] px-1 sm:px-1.5"
-            >
-              {{ $t("status.not_live").toUpperCase() }}
-            </UBadge>
-          </div>
+          <!-- Status Accent -->
+          <div
+            class="absolute top-0 left-0 right-0 h-1.5 transition-all duration-500 z-20"
+            :class="{
+              'bg-indigo-500 shadow-lg shadow-indigo-500/40':
+                c.status === 'pending' || c.status === 'inbox',
+              'bg-emerald-500 shadow-lg shadow-emerald-500/40':
+                c.status === 'published',
+              'bg-orange-500 shadow-lg shadow-orange-500/40':
+                c.status === 'suggested',
+              'bg-rose-500 shadow-lg shadow-rose-500/40':
+                c.status === 'dismissed',
+            }"
+          />
 
-          <div class="absolute bottom-3 left-3 right-3">
-            <p
-              class="text-[10px] font-bold text-slate-300 line-clamp-1 uppercase tracking-wider mb-1"
-            >
-              {{ comment.videoTitle }}
-            </p>
-          </div>
-        </NuxtLink>
-
-        <!-- Content -->
-        <div class="p-3 sm:p-5 flex flex-col flex-1 gap-2 sm:gap-4">
-          <div class="flex items-center gap-2 sm:gap-3">
-            <UAvatar
-              :src="
-                comment.authorProfileImageUrl ||
-                `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.authorName || 'User')}&background=6366f1&color=fff`
-              "
-              size="sm"
-              class="ring-1 ring-white/10"
-              :alt="comment.authorName"
-              :img-attributes="{
-                referrerpolicy: 'no-referrer',
-                crossorigin: 'anonymous',
-              }"
+          <!-- Video Preview -->
+          <div class="relative aspect-[16/10] overflow-hidden bg-slate-950">
+            <img
+              v-if="c.videoThumbnail && !failedThumbnails[c.id]"
+              :src="getCleanThumbnailUrl(c.videoId, c.videoThumbnail)"
+              :alt="c.videoTitle ?? ''"
+              class="w-full h-full object-cover group-hover:scale-105 transition-all duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] opacity-60 group-hover:opacity-80 will-change-transform"
+              loading="lazy"
+              referrerpolicy="no-referrer"
+              @error="handleThumbnailError(c.id, c.videoId, $event)"
             />
-            <div class="flex flex-col min-w-0">
-              <span
-                class="font-bold text-[10px] sm:text-sm text-white truncate"
-                >{{ comment.authorName }}</span
+            <div
+              class="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent"
+            />
+            
+            <div class="absolute top-3 left-3 sm:top-4 sm:left-4 z-20">
+              <UBadge
+                :color="statusColor(c.status)"
+                variant="solid"
+                class="font-black tracking-[0.1em] rounded-full px-1.5 py-0.5 text-[8px] sm:text-[9px] uppercase shadow-2xl"
               >
-              <span
-                class="mt-0.5 text-[8px] sm:text-[12px] text-slate-500 font-medium"
-                >{{ isMounted ? timeAgo(comment.publishedAt) : "..." }}</span
-              >
+                {{ $t("status." + c.status) }}
+              </UBadge>
+            </div>
+            
+            <div class="absolute bottom-3 left-4 right-4 sm:bottom-4 sm:left-5 sm:right-5">
+              <p class="text-[10px] font-black text-slate-400 line-clamp-1 uppercase tracking-widest">
+                {{ c.videoTitle }}
+              </p>
             </div>
           </div>
 
-          <NuxtLink
-            :to="`/comments/${comment.id}`"
-            class="bg-white/5 border border-white/5 rounded-lg sm:rounded-xl p-2 sm:p-4 flex-1 hover:bg-white/10 transition-colors block"
-          >
-            <p
-              class="text-[10px] sm:text-sm text-slate-300 leading-relaxed line-clamp-2 italic"
-            >
-              "<span
-                v-html="
-                  comment.isLastAuthorOwner
-                    ? comment.text
-                    : comment.lastText || comment.text
+          <!-- Card Body -->
+          <div class="p-3.5 sm:p-5 flex flex-col flex-1 gap-4">
+            <div class="flex items-center gap-3">
+              <UAvatar
+                :src="
+                  c.authorProfileImageUrl ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(c.authorName || 'User')}&background=6366f1&color=fff`
                 "
-              ></span
-              >"
-            </p>
-          </NuxtLink>
-
-          <!-- Your response preview -->
-          <div
-            v-if="comment.isLastAuthorOwner && comment.lastText"
-            class="mt-1 pl-2 sm:pl-4 border-l-2 border-emerald-500/30"
-          >
-            <div class="flex items-center gap-1 sm:gap-1.5 mb-0.5 sm:mb-1">
-              <UIcon
-                name="i-heroicons-chat-bubble-left-right"
-                class="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-400"
+                size="sm"
+                class="ring-2 ring-slate-900 shrink-0 shadow-xl"
+                :img-attributes="{
+                  referrerpolicy: 'no-referrer',
+                  crossorigin: 'anonymous',
+                }"
               />
-              <span
-                class="text-[8px] sm:text-[10px] font-bold text-emerald-400 uppercase tracking-wider truncate"
-                >{{ $t("comments.your_response") }}</span
-              >
+              <div class="flex flex-col min-w-0">
+                <span class="font-black text-sm text-white truncate leading-none">{{ c.authorName }}</span>
+                <span class="mt-1.5 text-[10px] text-slate-500 font-black uppercase tracking-widest">
+                  {{ isMounted ? timeAgo(c.publishedAt) : "..." }}
+                </span>
+              </div>
             </div>
-            <p
-              class="text-[9px] sm:text-xs text-slate-400 line-clamp-1 sm:line-clamp-2 italic"
-              v-html="comment.lastText"
-            ></p>
+
+            <div class="bg-white/5 border border-white/5 rounded-2xl p-4 flex-1 hover:bg-white/[0.08] transition-colors shadow-inner">
+              <p class="text-[13px] text-slate-300 leading-relaxed line-clamp-2 italic font-medium">
+                "<span v-html="c.isLastAuthorOwner ? c.text : c.lastText || c.text"></span>"
+              </p>
+            </div>
+
+            <div class="flex items-center justify-between pt-1">
+              <div class="flex items-center gap-2 group/video">
+                <div class="w-7 h-7 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center flex-shrink-0 shadow-lg">
+                  <UIcon name="i-heroicons-film-solid" class="w-3.5 h-3.5 text-indigo-400 opacity-90" />
+                </div>
+                <p class="text-[9px] font-black text-slate-500 line-clamp-2 uppercase tracking-widest group-hover/video:text-indigo-300 transition-colors">
+                  {{ c.videoTitle }}
+                </p>
+              </div>
+              <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black text-indigo-400 uppercase tracking-widest group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                <span>{{ $t("comments.review") }}</span>
+                <UIcon name="i-heroicons-chevron-right" class="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
           </div>
 
-          <div class="flex items-center justify-between pt-1 sm:pt-2">
-            <div class="flex items-center gap-2 sm:gap-3">
-              <span
-                class="text-[8px] sm:text-[10px] font-bold text-slate-500 flex items-center gap-1"
-              >
-                <UIcon
-                  name="i-heroicons-hand-thumb-up"
-                  class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-500"
-                />
-                {{ comment.likeCount }}
-              </span>
-            </div>
-            <NuxtLink
-              :to="`/comments/${comment.id}`"
-              class="flex items-center gap-1 text-[10px] font-bold text-indigo-400 hover:translate-x-1 transition-transform"
-            >
-              <span class="hidden sm:inline">{{ $t("comments.review") }}</span>
-              <UIcon name="i-heroicons-arrow-right" class="w-3 h-3" />
-            </NuxtLink>
-          </div>
-        </div>
+        </NuxtLink>
       </div>
     </div>
 
     <!-- Latest Videos -->
     <div class="flex items-center justify-between mb-6">
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-3">
         <div
-          class="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+          class="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.6)]"
         ></div>
         <h2
           class="font-black text-lg text-white tracking-tight uppercase tracking-widest"
@@ -482,11 +458,11 @@ const statCards = computed(() => [
       </div>
       <NuxtLink
         to="/videos"
-        class="flex items-center gap-2 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-all group"
+        class="flex items-center gap-2 text-xs font-black text-indigo-400 hover:text-indigo-300 transition-all group uppercase tracking-widest"
       >
         {{ $t("dashboard.view_all_videos") }}
         <UIcon
-          name="i-heroicons-arrow-right"
+          name="i-heroicons-arrow-right-solid"
           class="w-4 h-4 group-hover:translate-x-1 transition-transform"
         />
       </NuxtLink>
@@ -494,16 +470,16 @@ const statCards = computed(() => [
 
     <div
       v-if="!stats?.recentVideos?.length"
-      class="bg-white/[0.02] border border-white/[0.08] border-dashed rounded-3xl py-12 text-center"
+      class="bg-white/[0.02] border border-white/[0.08] border-dashed rounded-2xl py-12 text-center shadow-inner"
     >
-      <p class="text-slate-400 font-bold uppercase tracking-widest text-xs">
+      <p class="text-slate-400 font-black uppercase tracking-widest text-xs">
         {{ $t("dashboard.no_videos") }}
       </p>
     </div>
 
     <div
       v-else
-      class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3"
+      class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4"
     >
       <VideoCard
         v-for="(video, idx) in stats.recentVideos"
@@ -514,7 +490,7 @@ const statCards = computed(() => [
         :view-count="video.viewCount"
         :like-count="video.likeCount"
         :comment-count="video.commentCount"
-        :published-at="timeAgo(video.publishedAt)"
+        :published-at="formatDate(video.publishedAt)"
         :manage-link="`/comments?videoId=${video.id}`"
         :style="{ animationDelay: `${idx * 50}ms` }"
       />
@@ -523,18 +499,34 @@ const statCards = computed(() => [
 </template>
 
 <style scoped>
-/* Show all 4 items on mobile (stacked) */
+.animate-slide-up {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+
+@keyframes slideUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Row Management */
 .dashboard-single-row > *:nth-child(n + 5) {
   display: none;
 }
 @media (min-width: 768px) {
-  /* On tablets, keep 2 items to maintain a nice look if they are wide */
   .dashboard-single-row > *:nth-child(n + 3) {
     display: none;
   }
 }
 @media (min-width: 1024px) {
-  /* On desktop, show 3 items */
   .dashboard-single-row > *:nth-child(n + 3) {
     display: flex;
   }
@@ -543,12 +535,8 @@ const statCards = computed(() => [
   }
 }
 @media (min-width: 1536px) {
-  /* On large screens, show all 4 */
   .dashboard-single-row > *:nth-child(n + 4) {
     display: flex;
-  }
-  .dashboard-single-row > *:nth-child(n + 5) {
-    display: none;
   }
 }
 </style>

@@ -39,126 +39,167 @@ const formatNumber = (n: number | null | undefined) => {
 
 <template>
   <div
-    class="glass-card group/card relative flex flex-col overflow-hidden h-full animate-slide-up hover:border-indigo-500/30 transition-all duration-500"
+    class="video-card-premium group relative flex flex-col h-full rounded-xl overflow-hidden bg-slate-900/40 border border-white/5 backdrop-blur-xl transition-all duration-500 hover:-translate-y-1.5 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.8),0_0_20px_rgba(99,102,241,0.08)] animate-slide-up"
   >
+    <!-- Premium Border Glow -->
+    <div
+      class="absolute inset-0 border border-white/10 rounded-xl group-hover:border-indigo-500/30 transition-colors duration-700 z-10 pointer-events-none"
+    />
+
+    <!-- Status Accent Glow (Dynamic for Video) -->
+    <div
+      class="absolute top-0 left-0 right-0 h-1.5 bg-indigo-500 shadow-[0_4px_15px_rgba(99,102,241,0.5)] transition-all duration-500 z-20"
+    />
+
     <!-- Thumbnail Container -->
-    <a
-      :href="`https://youtube.com/watch?v=${id}`"
-      target="_blank"
-      class="group/thumb relative aspect-video overflow-hidden block bg-slate-900"
+    <NuxtLink
+      v-if="manageLink"
+      :to="manageLink"
+      class="group/thumb relative aspect-[16/10] overflow-hidden block bg-slate-950"
     >
       <img
         v-if="thumbnailUrl && !failedThumbnails[id]"
         :src="getCleanThumbnailUrl(id, thumbnailUrl)"
         :alt="title"
-        class="w-full h-full object-cover group-hover/thumb:scale-110 transition-transform duration-700"
+        class="w-full h-full object-cover group-hover/thumb:scale-105 transition-all duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)] opacity-70 group-hover/thumb:opacity-100 will-change-transform"
         loading="lazy"
         referrerpolicy="no-referrer"
         @error="handleThumbnailError(id, id, $event)"
       />
       <div v-else class="w-full h-full flex items-center justify-center">
-        <UIcon name="i-heroicons-film" class="w-8 h-8 text-slate-700" />
+        <UIcon name="i-heroicons-film" class="w-10 h-10 text-slate-800" />
       </div>
 
-      <!-- YouTube Play Overlay -->
+      <!-- Play Button Overlay (Premium) -->
       <div
-        class="absolute inset-0 bg-black/60 opacity-0 [@media(hover:hover)]:group-hover/thumb:opacity-100 active:opacity-100 transition-all duration-500 flex items-center justify-center z-30 backdrop-blur-[2px]"
+        class="absolute inset-0 flex items-center justify-center z-30 pointer-events-none"
       >
         <div
-          class="flex items-center gap-2.5 sm:px-6 sm:py-3 sm:rounded-2xl sm:bg-white/10 sm:backdrop-blur-md sm:border sm:border-white/20 text-white sm:shadow-[0_0_40px_rgba(0,0,0,0.5)] transform translate-y-4 group-hover/thumb:translate-y-0 transition-all duration-500 scale-90 group-hover/thumb:scale-100"
+          class="absolute inset-0 bg-indigo-950/0 backdrop-blur-0 group-hover/thumb:bg-indigo-950/40 group-hover/thumb:backdrop-blur-[4px] transition-all duration-700 ease-out will-change-[backdrop-filter]"
+        ></div>
+        <div
+          class="relative w-16 h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center transform scale-50 opacity-0 group-hover/thumb:scale-100 group-hover/thumb:opacity-100 transition-all duration-500 ease-[cubic-bezier(0.2,0.8,0.2,1)] shadow-2xl"
         >
-          <div class="relative flex items-center justify-center">
-            <div
-              class="absolute inset-0 bg-red-500/20 blur-lg rounded-full animate-pulse"
-            ></div>
-            <UIcon
-              name="i-heroicons-play-circle-solid"
-              class="w-7 h-7 text-red-500 relative z-10"
-            />
-          </div>
-          <span
-            class="hidden sm:inline text-[10px] font-black uppercase tracking-[0.2em] drop-shadow-md"
-          >
-            {{ $t("video_card.watch_on_youtube") }}
-          </span>
+          <div
+            class="absolute inset-0 rounded-full bg-indigo-500/20 animate-ping opacity-50"
+          ></div>
+          <UIcon
+            name="i-heroicons-play-solid"
+            class="w-8 h-8 text-white ml-0.5"
+          />
         </div>
       </div>
 
-      <!-- Shorts Badge -->
+      <!-- Floating Badges -->
       <div
-        v-if="isShort(duration)"
-        class="absolute top-2 right-2 sm:top-3 sm:right-3 z-20"
+        class="absolute top-3 left-3 right-3 sm:top-4 sm:left-4 sm:right-4 flex justify-between items-start z-20"
       >
-        <UBadge
-          color="rose"
-          variant="solid"
-          size="xs"
-          class="font-black tracking-tighter rounded-lg px-2 py-0.5 uppercase flex items-center gap-1 shadow-lg"
+        <div
+          class="px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full bg-black/60 backdrop-blur-xl border border-white/10 shadow-2xl flex items-center gap-1 sm:gap-1.5"
         >
-          <UIcon name="i-heroicons-bolt" class="w-3 h-3" />
-          Short
-        </UBadge>
-      </div>
+          <UIcon
+            name="i-heroicons-chat-bubble-bottom-center-text-solid"
+            class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-400"
+          />
+          <span class="text-[9px] font-black text-white tracking-widest">{{
+            formatNumber(commentCount)
+          }}</span>
+        </div>
 
-      <!-- Total Comments Badge (Top Left) -->
-      <div
-        class="absolute top-2 left-2 px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-indigo-600 text-[11px] sm:text-[13px] font-black text-white backdrop-blur-md border border-white/20 shadow-xl flex items-center gap-1.5 sm:gap-2 z-10"
-        title="Total Comments"
-      >
-        <UIcon
-          name="i-heroicons-chat-bubble-left-right"
-          class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-200"
-        />
-        {{ formatNumber(commentCount) }}
-      </div>
-
-      <!-- Overlay Stats (Views/Likes) -->
-      <div class="absolute bottom-2 left-2 right-2 flex items-center">
-        <div class="flex gap-1.5 sm:gap-2">
-          <div
-            class="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-black/80 text-[11px] sm:text-[13px] font-black text-white backdrop-blur-md border border-white/10 flex items-center gap-1.5 sm:gap-2 shadow-xl"
-          >
-            <UIcon
-              name="i-heroicons-eye"
-              class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400"
-            />
-            {{ formatNumber(viewCount) }}
-          </div>
-          <div
-            v-if="likeCount"
-            class="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg bg-black/80 text-[11px] sm:text-[13px] font-black text-white backdrop-blur-md border border-white/10 flex items-center gap-1.5 sm:gap-2 shadow-xl"
-          >
-            <UIcon
-              name="i-heroicons-hand-thumb-up"
-              class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-400"
-            />
-            {{ formatNumber(likeCount) }}
-          </div>
+        <div
+          v-if="isShort(duration)"
+          class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-red-500 shadow-2xl border border-white/10 flex items-center justify-center"
+          title="Short Video"
+        >
+          <UIcon name="i-heroicons-bolt-solid" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
         </div>
       </div>
-    </a>
+
+      <!-- Gradient Overlay for Readability (Smaller) -->
+      <div
+        class="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent"
+      />
+
+      <!-- Bottom Stats Overlay -->
+      <div
+        class="absolute bottom-3 left-4 right-4 sm:bottom-4 sm:left-5 sm:right-5 flex gap-2 sm:gap-3 z-20"
+      >
+        <div
+          class="px-1.5 py-0.5 rounded-full bg-black/40 text-[8px] sm:text-[9px] font-black text-white backdrop-blur-md border border-white/5 flex items-center gap-1.5"
+        >
+          <UIcon
+            name="i-heroicons-eye-solid"
+            class="w-3 h-3 text-slate-400"
+          />
+          {{ formatNumber(viewCount) }}
+        </div>
+        <div
+          v-if="likeCount"
+          class="px-1.5 py-0.5 rounded-full bg-black/40 text-[8px] sm:text-[9px] font-black text-white backdrop-blur-md border border-white/5 flex items-center gap-1.5"
+        >
+          <UIcon
+            name="i-heroicons-hand-thumb-up-solid"
+            class="w-3 h-3 text-indigo-400"
+          />
+          {{ formatNumber(likeCount) }}
+        </div>
+      </div>
+    </NuxtLink>
+    <div v-else class="group/thumb relative aspect-[16/10] overflow-hidden block bg-slate-950">
+       <!-- Duplicate content or use a slot/component if this was more complex -->
+       <img
+        v-if="thumbnailUrl && !failedThumbnails[id]"
+        :src="getCleanThumbnailUrl(id, thumbnailUrl)"
+        :alt="title"
+        class="w-full h-full object-cover group-hover/thumb:scale-110 group-hover/thumb:rotate-1 transition-all duration-1000 ease-out opacity-70 group-hover/thumb:opacity-100"
+        loading="lazy"
+        referrerpolicy="no-referrer"
+        @error="handleThumbnailError(id, id, $event)"
+      />
+      <div v-else class="w-full h-full flex items-center justify-center">
+        <UIcon name="i-heroicons-film" class="w-10 h-10 text-slate-800" />
+      </div>
+    </div>
 
     <!-- Content Section -->
-    <div class="p-3 flex flex-col flex-1">
-      <p
-        class="text-xs font-black text-slate-200 line-clamp-3 group-hover/card:text-indigo-300 transition-colors mb-3 leading-snug h-12"
-      >
-        {{ title }}
-      </p>
+    <div class="p-4 sm:p-6 pb-0 flex flex-col flex-1 gap-4 group/content relative">
+      <!-- Full Area Link Overlay -->
+      <NuxtLink
+        v-if="manageLink"
+        :to="manageLink"
+        class="absolute inset-0 z-10"
+        aria-hidden="true"
+      />
 
-      <div class="mt-auto flex flex-col gap-3">
-        <!-- Optional Metadata -->
-        <div v-if="publishedAt" class="flex flex-col mb-1">
+      <div class="flex flex-col gap-4 relative z-20 pointer-events-none">
+        <h3
+          class="text-sm font-black text-white line-clamp-3 sm:line-clamp-2 leading-tight group-hover/content:text-indigo-300 transition-colors tracking-tight"
+          :title="title"
+        >
+          {{ title }}
+        </h3>
+
+        <!-- Date -->
+        <div
+          v-if="publishedAt"
+          class="flex items-center gap-1.5 sm:gap-2.5 text-slate-500"
+        >
+          <UIcon
+            name="i-heroicons-calendar-days-solid"
+            class="w-3 h-3 sm:w-4 sm:h-4 opacity-40"
+          />
           <span
-            class="text-[9px] sm:text-[10px] font-bold text-slate-500 uppercase tracking-widest"
+            class="text-[8px] sm:text-[10px] font-black uppercase tracking-[0.2em]"
           >
             {{ publishedAt }}
           </span>
         </div>
+      </div>
 
+      <div class="mt-auto relative z-20">
         <!-- Intent Indicators -->
         <div
-          class="flex flex-wrap gap-1.5"
+          class="flex flex-wrap gap-2 mb-2"
           v-if="
             (pendingCount || 0) > 0 ||
             (negativeCount || 0) > 0 ||
@@ -168,39 +209,55 @@ const formatNumber = (n: number | null | undefined) => {
           <NuxtLink
             v-if="(pendingCount || 0) > 0"
             :to="`/comments?videoId=${id}&status=pending`"
-            class="px-2 py-1 rounded-md bg-amber-400/10 text-[8px] md:text-[10px] font-black text-amber-400 border border-amber-400/20 hover:bg-amber-400/20 transition-colors"
+            class="px-3 py-1.5 rounded-xl bg-amber-400/5 text-[10px] font-black text-amber-400 border border-amber-400/10 hover:bg-amber-400/10 transition-all uppercase tracking-wider"
           >
             {{ pendingCount }} {{ $t("analytics.pending_label") }}
           </NuxtLink>
           <NuxtLink
             v-if="(negativeCount || 0) > 0"
             :to="`/comments?videoId=${id}&intent=complaint`"
-            class="px-2 py-1 rounded-md bg-red-400/10 text-[8px] md:text-[10px] font-black text-red-400 border border-red-400/20 hover:bg-red-400/20 transition-colors"
+            class="px-3 py-1.5 rounded-xl bg-red-400/5 text-[10px] font-black text-red-400 border border-red-400/10 hover:bg-red-400/10 transition-all uppercase tracking-wider"
           >
             {{ negativeCount }} {{ $t("analytics.complaints_label") }}
           </NuxtLink>
           <NuxtLink
             v-if="(questionCount || 0) > 0"
             :to="`/comments?videoId=${id}&intent=question`"
-            class="px-2 py-1 rounded-md bg-blue-400/10 text-[8px] md:text-[10px] font-black text-blue-400 border border-blue-400/20 hover:bg-blue-400/20 transition-colors"
+            class="px-3 py-1.5 rounded-xl bg-blue-400/5 text-[10px] font-black text-blue-400 border border-blue-400/10 hover:bg-blue-400/10 transition-all uppercase tracking-wider"
           >
             {{ questionCount }} {{ $t("analytics.questions_label") }}
           </NuxtLink>
         </div>
-
-        <!-- Manage Button -->
-        <NuxtLink
-          v-if="manageLink"
-          :to="manageLink"
-          class="w-full py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center hover:bg-white/[0.06] hover:text-indigo-400 hover:border-indigo-500/20 transition-all flex items-center justify-center gap-2"
-        >
-          <UIcon
-            name="i-heroicons-chat-bubble-left-right"
-            class="w-3.5 h-3.5"
-          />
-          {{ $t("analytics.manage_comments") }}
-        </NuxtLink>
       </div>
     </div>
+
+    <!-- Integrated Action Bar (Premium Footer) -->
+    <NuxtLink
+      v-if="manageLink"
+      :to="manageLink"
+      class="flex items-center justify-center gap-3 w-full py-3 bg-white/[0.01] border-t border-white/[0.05] text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] transition-all duration-300 hover:bg-indigo-500/10 hover:text-indigo-400 group/footer"
+    >
+      <UIcon
+        name="i-heroicons-chat-bubble-bottom-center-text"
+        class="w-3.5 h-3.5 opacity-30 group-hover/footer:opacity-100 transition-opacity"
+      />
+      {{ $t("analytics.manage_comments") }}
+    </NuxtLink>
+
   </div>
 </template>
+
+<style scoped>
+.animate-slide-up {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes slideUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>

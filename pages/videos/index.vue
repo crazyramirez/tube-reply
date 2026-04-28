@@ -80,14 +80,13 @@ watch([search, type], () => {
   }, 100);
 });
 
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return t("time.just_now");
-  if (mins < 60) return t("time.minutes_ago", { m: mins });
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return t("time.hours_ago", { h: hrs });
-  return t("time.days_ago", { d: Math.floor(hrs / 24) });
+function formatDate(iso: string): string {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 const typeTabs = [
@@ -120,34 +119,36 @@ onActivated(() => {
 <template>
   <div class="animate-fade-in">
     <!-- Header -->
-    <div class="mb-8">
+    <div class="mb-10">
       <div
-        class="flex items-center gap-2 text-[10px] font-bold text-indigo-400 uppercase tracking-[0.3em] mb-1"
+        class="flex items-center gap-2 text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em] mb-1.5"
       >
-        <UIcon name="i-heroicons-video-camera" class="w-3.5 h-3.5" />
+        <UIcon name="i-heroicons-video-camera-solid" class="w-4 h-4" />
         {{ brand?.name || "Content Library" }}
       </div>
       <h1
-        class="text-3xl sm:text-4xl font-black text-white tracking-tighter flex items-center gap-3"
+        class="text-3xl sm:text-5xl font-black text-white tracking-tighter flex items-center gap-4"
       >
         {{ $t("videos.title") }}
         <UIcon
           v-if="pending"
           name="i-heroicons-arrow-path"
-          class="w-6 h-6 text-indigo-500/50 animate-spin"
+          class="w-7 h-7 text-indigo-500/50 animate-spin"
         />
       </h1>
-      <p class="text-slate-500 text-sm mt-1 max-w-md">
+      <p
+        class="text-slate-500 text-sm sm:text-base mt-2 max-w-xl font-medium leading-relaxed italic"
+      >
         {{ $t("videos.subtitle") }}
       </p>
     </div>
 
     <!-- Toolbar: Search + Filters -->
-    <div class="flex flex-col lg:flex-row lg:items-center gap-4 mb-10">
+    <div class="flex flex-col lg:flex-row lg:items-center gap-6 mb-6">
       <!-- Search Bar -->
       <div class="relative group flex-1">
         <div
-          class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"
+          class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none"
         >
           <UIcon
             name="i-heroicons-magnifying-glass"
@@ -159,69 +160,76 @@ onActivated(() => {
           v-model="searchInput"
           type="search"
           :placeholder="$t('videos.search_placeholder')"
-          class="w-full pl-12 pr-12 py-2.5 bg-white/[0.03] border border-white/[0.07] rounded-2xl text-md text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.05] focus:ring-4 focus:ring-indigo-500/10 transition-all duration-300"
+          class="w-full pl-12 pr-12 py-4 bg-white/[0.03] border border-white/[0.08] rounded-xl text-md text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500/50 focus:bg-white/[0.05] focus:ring-4 focus:ring-indigo-500/10 transition-all duration-500 shadow-inner"
         />
         <button
           v-if="searchInput"
           @click="clearSearch"
-          class="absolute inset-y-0 right-0 pr-4 flex items-center"
+          class="absolute inset-y-0 right-0 pr-5 flex items-center"
         >
-          <div class="p-1.5 rounded-xl hover:bg-white/10 transition-colors">
-            <UIcon name="i-heroicons-x-mark" class="w-4 h-4 text-slate-500" />
+          <div
+            class="p-2 rounded-xl hover:bg-white/10 transition-colors group/clear"
+          >
+            <UIcon
+              name="i-heroicons-x-mark"
+              class="w-4 h-4 text-slate-500 group-hover/clear:text-white transition-colors"
+            />
           </div>
         </button>
       </div>
 
       <!-- Filters -->
       <div
-        class="flex items-center gap-0.5 p-1 bg-white/[0.03] border border-white/[0.07] rounded-2xl w-full lg:w-auto flex-shrink-0 overflow-hidden"
+        class="flex items-center gap-1.5 p-1.5 bg-white/[0.03] border border-white/[0.08] rounded-xl w-full lg:w-auto flex-shrink-0 overflow-hidden shadow-inner backdrop-blur-xl"
       >
         <button
           v-for="tab in typeTabs"
           :key="tab.value"
           @click="setType(tab.value)"
-          class="flex-1 lg:flex-none flex items-center justify-center gap-1 px-1.5 sm:px-4 lg:px-6 py-1.5 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-bold transition-all duration-300 whitespace-nowrap"
+          class="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] sm:text-[11px] font-black transition-all duration-500 whitespace-nowrap uppercase tracking-widest"
           :class="
             type === tab.value
-              ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'
-              : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+              ? 'bg-indigo-500 text-white shadow-[0_10px_20px_rgba(99,102,241,0.4)] border border-indigo-400'
+              : 'text-slate-500 hover:text-slate-200 hover:bg-white/5 border border-transparent'
           "
         >
-          <UIcon :name="tab.icon" class="hidden sm:inline-block w-4 h-4" />
+          <UIcon :name="tab.icon" class="w-4 h-4" />
           {{ $t(tab.label) }}
         </button>
 
-        <!-- Mobile Column Switcher (Visible only on mobile) -->
-        <div class="lg:hidden w-[1px] h-4 bg-white/10 mx-0.5" />
-        <button
-          class="lg:hidden flex items-center justify-center p-1.5 px-3 aspect-square rounded-lg transition-all duration-300"
-          :class="
-            mobileColumns === 1
-              ? 'text-indigo-400 bg-white/5'
-              : 'text-slate-500'
-          "
-          @click="mobileColumns = 1"
-        >
-          <UIcon name="i-heroicons-stop" class="w-4 h-4" />
-        </button>
-        <button
-          class="lg:hidden flex items-center justify-center p-1.5 px-3 aspect-square rounded-lg transition-all duration-300"
-          :class="
-            mobileColumns === 2
-              ? 'text-indigo-400 bg-white/5'
-              : 'text-slate-500'
-          "
-          @click="mobileColumns = 2"
-        >
-          <UIcon name="i-heroicons-squares-2x2" class="w-4 h-4" />
-        </button>
+        <!-- Mobile Column Switcher -->
+        <div class="lg:hidden w-px h-5 bg-white/10 mx-1" />
+        <div class="lg:hidden flex items-center gap-1 px-1">
+          <button
+            class="flex items-center justify-center p-2.5 rounded-lg transition-all duration-300"
+            :class="
+              mobileColumns === 1
+                ? 'text-indigo-400 bg-white/5 shadow-inner'
+                : 'text-slate-600'
+            "
+            @click="mobileColumns = 1"
+          >
+            <UIcon name="i-heroicons-stop-solid" class="w-5 h-5" />
+          </button>
+          <button
+            class="flex items-center justify-center p-2.5 rounded-lg transition-all duration-300"
+            :class="
+              mobileColumns === 2
+                ? 'text-indigo-400 bg-white/5 shadow-inner'
+                : 'text-slate-600'
+            "
+            @click="mobileColumns = 2"
+          >
+            <UIcon name="i-heroicons-squares-2x2-solid" class="w-5 h-5" />
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- Grid Loading -->
     <div
       v-if="pending && !data?.items?.length"
-      class="grid gap-4 sm:gap-6"
+      class="grid gap-6"
       :class="[
         mobileColumns === 1 ? 'grid-cols-1' : 'grid-cols-2',
         'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
@@ -230,23 +238,23 @@ onActivated(() => {
       <div
         v-for="i in 8"
         :key="i"
-        class="aspect-[16/10] rounded-3xl bg-white/[0.03] border border-white/[0.06] animate-pulse"
+        class="aspect-[16/10] rounded-xl bg-white/[0.03] border border-white/[0.06] animate-pulse"
       />
     </div>
 
     <div
       v-else-if="!data?.items?.length"
-      class="py-20 flex flex-col items-center justify-center text-center"
+      class="py-32 flex flex-col items-center justify-center text-center bg-white/[0.02] border border-white/[0.08] border-dashed rounded-2xl shadow-inner"
     >
       <div
-        class="w-20 h-20 rounded-full bg-slate-900 flex items-center justify-center mb-4 border border-white/5"
+        class="w-24 h-24 rounded-full bg-white/5 flex items-center justify-center mb-6 border border-white/10 shadow-2xl"
       >
         <UIcon
-          name="i-heroicons-video-camera-slash"
-          class="w-10 h-10 text-slate-700"
+          name="i-heroicons-video-camera-slash-solid"
+          class="w-12 h-12 text-slate-800"
         />
       </div>
-      <p class="text-slate-500 text-lg font-medium">
+      <p class="text-slate-400 text-xl font-black uppercase tracking-widest">
         {{ $t("videos.no_videos") }}
       </p>
       <button
@@ -254,15 +262,15 @@ onActivated(() => {
           clearSearch();
           setType('all');
         "
-        class="mt-4 text-indigo-400 font-bold text-sm hover:underline"
+        class="mt-6 px-8 py-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-black text-xs uppercase tracking-widest hover:bg-indigo-500 hover:text-white hover:border-indigo-400 transition-all shadow-xl"
       >
         {{ $t("comments.search_clear") }}
       </button>
     </div>
 
     <div
-      v-else
-      class="grid gap-2 sm:gap-3"
+      v-if="!pending && data?.items?.length"
+      class="grid gap-3 sm:gap-4"
       :class="[
         mobileColumns === 1 ? 'grid-cols-1' : 'grid-cols-2',
         'sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4',
@@ -278,7 +286,7 @@ onActivated(() => {
         :like-count="video.likeCount"
         :comment-count="video.commentCount"
         :duration="video.duration"
-        :published-at="timeAgo(video.publishedAt)"
+        :published-at="formatDate(video.publishedAt)"
         :manage-link="`/comments?videoId=${video.id}${search ? '&search=' + encodeURIComponent(search) : ''}`"
         :style="{ animationDelay: `${idx * 50}ms` }"
       />
@@ -287,7 +295,7 @@ onActivated(() => {
     <!-- Pagination -->
     <div
       v-if="data && data.pagination.pages > 1"
-      class="flex justify-center mt-12 mb-4"
+      class="flex justify-center mt-8 mb-8"
     >
       <UPagination
         :model-value="page"
@@ -302,25 +310,14 @@ onActivated(() => {
 
 <style scoped>
 .animate-fade-in {
-  animation: fadeIn 0.6s ease-out forwards;
+  animation: fadeIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
+    transform: translateY(10px);
   }
-  to {
-    opacity: 1;
-  }
-}
-
-.animate-slide-up {
-  opacity: 0;
-  transform: translateY(20px);
-  animation: slideUp 0.5s ease-out forwards;
-}
-
-@keyframes slideUp {
   to {
     opacity: 1;
     transform: translateY(0);
