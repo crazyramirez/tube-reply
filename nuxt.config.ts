@@ -7,13 +7,28 @@ export default defineNuxtConfig({
     appManifest: false
   },
 
-  modules: ['@nuxt/ui', '@nuxtjs/i18n', '@vite-pwa/nuxt'],
+  modules: ['@vite-pwa/nuxt', '@nuxt/ui', '@nuxtjs/i18n'],
+
+  nitro: {
+    externals: {
+      external: ['better-sqlite3'],
+    },
+    serverAssets: [
+      {
+        baseName: 'migrations',
+        dir: './server/db/migrations',
+      },
+    ],
+  },
 
   pwa: {
+    strategies: 'generateSW',
     registerType: 'autoUpdate',
     manifest: {
+      id: '/',
       name: 'Tube Reply',
       short_name: 'TubeReply',
+      description: 'AI-powered YouTube comment management. Sync, generate suggestions, and reply faster.',
       theme_color: '#000000',
       background_color: '#000000',
       display: 'standalone',
@@ -21,6 +36,18 @@ export default defineNuxtConfig({
       scope: '/',
       start_url: '/',
       icons: [
+        {
+          src: '/images/icons/web-app-manifest-192x192.png',
+          sizes: '192x192',
+          type: 'image/png',
+          purpose: 'any',
+        },
+        {
+          src: '/images/icons/web-app-manifest-512x512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any',
+        },
         {
           src: '/images/icons/web-app-manifest-192x192.png',
           sizes: '192x192',
@@ -36,18 +63,13 @@ export default defineNuxtConfig({
       ],
     },
     workbox: {
-      navigateFallback: '/',
       globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
-    },
-    client: {
-      installPrompt: true,
-      periodicSyncForUpdates: 3600,
+      navigateFallback: null,
     },
     devOptions: {
       enabled: true,
-      suppressWarnings: true,
-      navigateFallbackAllowlist: [/^\/$/],
-      type: 'module',
+      suppressWarnings: false,
+      type: 'classic',
     },
   },
 
@@ -109,18 +131,6 @@ export default defineNuxtConfig({
         'X-Robots-Tag': 'noindex, nofollow, noarchive, nosnippet',
       },
     },
-  },
-
-  nitro: {
-    externals: {
-      external: ['better-sqlite3'],
-    },
-    serverAssets: [
-      {
-        baseName: 'migrations',
-        dir: './server/db/migrations',
-      },
-    ],
   },
 
   runtimeConfig: {
