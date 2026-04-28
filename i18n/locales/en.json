@@ -45,7 +45,8 @@
     "suggested": "Suggested",
     "published": "Published",
     "dismissed": "Dismissed",
-    "skipped": "Skipped"
+    "skipped": "Skipped",
+    "not_live": "Not on YouTube"
   },
   "dashboard": {
     "analytics_label": "Analytics & Control",
@@ -98,7 +99,8 @@
     "search_placeholder": "Search comments, videos, authors…",
     "search_no_results": "No results for \"{q}\"",
     "search_clear": "Clear search",
-    "search_results": "{n} results"
+    "search_results": "{n} results",
+    "not_live_warning": "This comment is no longer visible on YouTube."
   },
   "comment_detail": {
     "terminal_label": "Verification Terminal",

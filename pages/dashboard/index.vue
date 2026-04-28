@@ -355,6 +355,15 @@ const statCards = computed(() => [
             >
               {{ $t("status." + comment.status).toUpperCase() }}
             </UBadge>
+            <UBadge
+              v-if="!comment.isLive"
+              color="red"
+              variant="solid"
+              size="xs"
+              class="font-black tracking-tighter rounded-md text-[8px] sm:text-[10px] px-1 sm:px-1.5"
+            >
+              {{ $t("status.not_live").toUpperCase() }}
+            </UBadge>
           </div>
 
           <div class="absolute bottom-3 left-3 right-3">
@@ -430,7 +439,33 @@ const statCards = computed(() => [
             <p
               class="text-[10px] sm:text-sm text-slate-300 leading-relaxed line-clamp-2 italic"
             >
-              "{{ comment.text }}"
+              "{{
+                comment.isLastAuthorOwner
+                  ? comment.text
+                  : comment.lastText || comment.text
+              }}"
+            </p>
+          </div>
+
+          <!-- Your response preview -->
+          <div
+            v-if="comment.isLastAuthorOwner && comment.lastText"
+            class="mt-1 pl-2 sm:pl-4 border-l-2 border-emerald-500/30"
+          >
+            <div class="flex items-center gap-1 sm:gap-1.5 mb-0.5 sm:mb-1">
+              <UIcon
+                name="i-heroicons-chat-bubble-left-right"
+                class="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-400"
+              />
+              <span
+                class="text-[8px] sm:text-[10px] font-bold text-emerald-400 uppercase tracking-wider truncate"
+                >{{ $t("comments.your_response") }}</span
+              >
+            </div>
+            <p
+              class="text-[9px] sm:text-xs text-slate-400 line-clamp-1 sm:line-clamp-2 italic"
+            >
+              {{ comment.lastText }}
             </p>
           </div>
 
@@ -470,7 +505,7 @@ const statCards = computed(() => [
         </h2>
       </div>
       <NuxtLink
-        to="/analytics"
+        to="/videos"
         class="flex items-center gap-2 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-all group"
       >
         {{ $t("dashboard.view_all_videos") }}

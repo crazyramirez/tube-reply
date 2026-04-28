@@ -186,6 +186,14 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
     } catch (healErr) {
       await logger.warn('comment-sync', 'Avatar backfill failed (non-critical)', { error: (healErr as Error).message })
     }
+
+    // 3. INTEGRITY CHECK: Verify if pending comments still exist on YouTube
+    try {
+      const missing = await verifyCommentsIntegrity()
+      if (missing > 0) await logger.info('comment-sync', `Integrity check: ${missing} comments marked as no longer live`)
+    } catch (intErr) {
+      await logger.warn('comment-sync', 'Integrity check failed (non-critical)', { error: (intErr as Error).message })
+    }
   }
   catch (err) {
     await logger.error('comment-sync', 'Sync failed', err as Error)
@@ -269,7 +277,7 @@ async function syncChannelComments(
           publishedAt: top.snippet.publishedAt ?? new Date().toISOString(),
           updatedAt: top.snippet.updatedAt ?? new Date().toISOString(),
           ownerAlreadyReplied,
-        }, updatedAuthors)
+        }, ownerChannelId, updatedAuthors)
 
         if (!top.snippet.authorProfileImageUrl) {
            await logger.warn('comment-sync', `Missing avatar for user ${top.snippet.authorDisplayName}`, { channelId: (top.snippet.authorChannelId as any)?.value })
@@ -306,7 +314,7 @@ async function syncChannelComments(
             publishedAt: reply.snippet.publishedAt ?? new Date().toISOString(),
             updatedAt: reply.snippet.updatedAt ?? new Date().toISOString(),
             ownerAlreadyReplied: false,
-          }, updatedAuthors)
+          }, ownerChannelId, updatedAuthors)
 
           if (replyIsNew) {
             newCount++
@@ -388,7 +396,7 @@ async function ensureVideoExists(
       title: v.snippet.title ?? '',
       description: v.snippet.description ?? '',
       publishedAt: v.snippet.publishedAt ?? new Date().toISOString(),
-      thumbnailUrl: (v.snippet.thumbnails?.maxres?.url || v.snippet.thumbnails?.high?.url || v.snippet.thumbnails?.medium?.url || v.snippet.thumbnails?.default?.url || null)?.replace('mqdefault.jpg', 'hqdefault.jpg') || null,
+      thumbnailUrl: (v.snippet.thumbnails?.medium?.url || v.snippet.thumbnails?.high?.url || v.snippet.thumbnails?.maxres?.url || v.snippet.thumbnails?.default?.url || null) || null,
       duration: v.contentDetails?.duration ?? null,
       tags: v.snippet.tags ? JSON.stringify(v.snippet.tags) : null,
       categoryId: v.snippet.categoryId ?? null,
@@ -457,7 +465,7 @@ async function syncVideoList(
         title: v.snippet.title ?? '',
         description: v.snippet.description ?? '',
         publishedAt: v.snippet.publishedAt ?? new Date().toISOString(),
-        thumbnailUrl: (v.snippet.thumbnails?.maxres?.url || v.snippet.thumbnails?.high?.url || v.snippet.thumbnails?.medium?.url || v.snippet.thumbnails?.default?.url || null)?.replace('mqdefault.jpg', 'hqdefault.jpg') || null,
+        thumbnailUrl: (v.snippet.thumbnails?.medium?.url || v.snippet.thumbnails?.high?.url || v.snippet.thumbnails?.maxres?.url || v.snippet.thumbnails?.default?.url || null) || null,
         duration: v.contentDetails?.duration ?? null,
         tags: v.snippet.tags ? JSON.stringify(v.snippet.tags) : null,
         categoryId: v.snippet.categoryId ?? null,
@@ -536,7 +544,7 @@ async function syncVideoComments(
         publishedAt: top.snippet.publishedAt ?? new Date().toISOString(),
         updatedAt: top.snippet.updatedAt ?? new Date().toISOString(),
         ownerAlreadyReplied,
-      }, updatedAuthors)
+      }, ownerChannelId, updatedAuthors)
       if (isNew) newCount++
 
       // Sync replies in thread
@@ -563,7 +571,7 @@ async function syncVideoComments(
           publishedAt: reply.snippet.publishedAt ?? new Date().toISOString(),
           updatedAt: reply.snippet.updatedAt ?? new Date().toISOString(),
           ownerAlreadyReplied: false,
-        }, updatedAuthors)
+        }, ownerChannelId, updatedAuthors)
         
         if (replyIsNew) {
           newCount++
@@ -631,11 +639,12 @@ type CommentInsert = {
 async function upsertComment(
   db: ReturnType<typeof useDb>, 
   data: CommentInsert, 
+  ownerChannelId: string | null,
   updatedAuthors?: Set<string>
 ): Promise<boolean> {
   const existing = await db.query.comments.findFirst({
     where: eq(comments.id, data.id),
-    columns: { id: true, updatedAt: true, status: true, authorProfileImageUrl: true, authorChannelId: true },
+    columns: { id: true, videoId: true, updatedAt: true, status: true, authorProfileImageUrl: true, authorChannelId: true },
   })
 
   // SMART SYNC: Always update/insert the authors table
@@ -658,8 +667,13 @@ async function upsertComment(
 
   if (!existing) {
     let status: 'pending' | 'published' | 'skipped' = 'pending'
-    if (data.parentId) status = 'skipped'
-    else if (data.ownerAlreadyReplied) status = 'published'
+    
+    // Determine initial status
+    if (data.parentId) {
+      status = 'skipped'
+    } else if (data.ownerAlreadyReplied || (data.authorChannelId && data.authorChannelId === ownerChannelId)) {
+      status = 'published'
+    }
 
     await db.insert(comments).values({
       id: data.id,
@@ -697,12 +711,14 @@ async function upsertComment(
 
     // If it's a reply, update the parent's activity metadata
     if (data.parentId) {
+      const isOwnerReply = data.authorChannelId && data.authorChannelId === ownerChannelId
       await db.update(comments)
         .set({
           lastActivityAt: data.publishedAt,
           lastActivityText: data.text,
           lastActivityAuthor: data.authorName,
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
+          ...(isOwnerReply ? { status: 'published', processedAt: new Date().toISOString() } : {})
         })
         .where(eq(comments.id, data.parentId))
     }
@@ -710,8 +726,18 @@ async function upsertComment(
     return true
   }
 
-  // Mark as published if owner replied externally and comment isn't already handled
-  if (data.ownerAlreadyReplied && existing.status !== 'published') {
+  // 1. DATA INTEGRITY: Ensure videoId is correct (corrects legacy or cross-sync issues)
+  if (existing.videoId !== data.videoId) {
+    await logger.warn('comment-sync', `Correcting videoId mismatch for comment ${data.id}`, { old: existing.videoId, new: data.videoId })
+    await db.update(comments)
+      .set({ videoId: data.videoId, updatedAt: new Date().toISOString() })
+      .where(eq(comments.id, data.id))
+  }
+
+  // Mark as published if owner replied externally or if this IS an owner-started thread
+  const isOwnerActivity = data.ownerAlreadyReplied || (data.authorChannelId && data.authorChannelId === ownerChannelId)
+  
+  if (isOwnerActivity && !data.parentId && existing.status !== 'published') {
     await db.update(comments)
       .set({ 
         status: 'published', 
@@ -719,6 +745,16 @@ async function upsertComment(
         authorProfileImageUrl: data.authorProfileImageUrl // Backfill
       })
       .where(eq(comments.id, data.id))
+  }
+  // If it's a reply from the owner, mark the parent thread as published
+  else if (data.parentId && data.authorChannelId === ownerChannelId) {
+    await db.update(comments)
+      .set({ 
+        status: 'published', 
+        processedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      })
+      .where(eq(comments.id, data.parentId))
   }
   // Update if text changed (comment was edited)
   else if (existing.updatedAt !== data.updatedAt) {
@@ -817,4 +853,83 @@ export async function backfillAuthorsTable(): Promise<number> {
   `)
 
   return result.rowsAffected || 0
+}
+
+/**
+ * INTEGRITY CHECK: Verifies if comments that are still 'pending' or 'suggested' 
+ * actually still exist on YouTube. If not, marks them as is_live = false.
+ * Consumes 1 quota unit per 50 comments checked.
+ */
+export async function verifyCommentsIntegrity(): Promise<number> {
+  const db = useDb()
+  const yt = await getAuthenticatedYouTube()
+
+  // Get comments to verify: only those in 'pending' or 'suggested' state that we think are still live
+  const commentsToVerify = await db.query.comments.findMany({
+    where: and(
+      inArray(comments.status, ['pending', 'suggested']),
+      eq(comments.isLive, true)
+    ),
+    columns: { id: true, parentId: true }
+  })
+
+  if (commentsToVerify.length === 0) return 0
+
+  let missingCount = 0
+  
+  // Separate into threads and replies because they use different API endpoints
+  const threadIds = commentsToVerify.filter(c => !c.parentId).map(c => c.id)
+  const replyIds = commentsToVerify.filter(c => c.parentId).map(c => c.id)
+
+  // Batch verify threads (50 at a time)
+  for (let i = 0; i < threadIds.length; i += 50) {
+    const batch = threadIds.slice(i, i + 50)
+    try {
+      const res = await yt.commentThreads.list({
+        part: ['id'],
+        id: batch,
+        maxResults: 50
+      })
+      const foundIds = new Set(res.data.items?.map(item => item.id) || [])
+      const missingBatch = batch.filter(id => !foundIds.has(id))
+      
+      if (missingBatch.length > 0) {
+        missingCount += missingBatch.length
+        await db.update(comments)
+          .set({ isLive: false, updatedAt: new Date().toISOString() })
+          .where(inArray(comments.id, missingBatch))
+      }
+    } catch (err) {
+      await logger.warn('comment-sync', 'Failed to verify thread batch', { error: (err as Error).message })
+    }
+  }
+
+  // Batch verify replies (50 at a time)
+  for (let i = 0; i < replyIds.length; i += 50) {
+    const batch = replyIds.slice(i, i + 50)
+    try {
+      const res = await yt.comments.list({
+        part: ['id'],
+        id: batch,
+        maxResults: 50
+      })
+      const foundIds = new Set(res.data.items?.map(item => item.id) || [])
+      const missingBatch = batch.filter(id => !foundIds.has(id))
+      
+      if (missingBatch.length > 0) {
+        missingCount += missingBatch.length
+        await db.update(comments)
+          .set({ isLive: false, updatedAt: new Date().toISOString() })
+          .where(inArray(comments.id, missingBatch))
+      }
+    } catch (err) {
+      await logger.warn('comment-sync', 'Failed to verify reply batch', { error: (err as Error).message })
+    }
+  }
+
+  if (missingCount > 0) {
+    await logger.info('comment-sync', `Integrity check: Marked ${missingCount} comments as no longer live on YouTube`)
+  }
+
+  return missingCount
 }

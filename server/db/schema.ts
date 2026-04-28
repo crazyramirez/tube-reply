@@ -73,6 +73,7 @@ export const comments = sqliteTable('comments', {
   detectedIntent: text('detected_intent'), // cached intent from scorer
   translatedText: text('translated_text'), // cached translation in user's language
   translationLang: text('translation_lang'), // the language code of the cached translation
+  isLive: integer('is_live', { mode: 'boolean' }).default(true),
 }, (t) => ({
   videoIdx: index('comments_video_idx').on(t.videoId),
   statusIdx: index('comments_status_idx').on(t.status),
@@ -163,7 +164,7 @@ export const videoSummaries = sqliteTable('video_summaries', {
   keyTopics: text('key_topics'), // JSON array
   faqs: text('faqs'), // JSON array of {q, a}
   generatedAt: text('generated_at').default(sql`(datetime('now'))`),
-  generatedBy: text('generated_by').default('gemini'),
+  generatedBy: text('generated_by').default('openai'),
   tokenCount: integer('token_count'),
 }, (t) => ({
   videoUniq: uniqueIndex('video_summaries_video_unique').on(t.videoId),

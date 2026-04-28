@@ -70,6 +70,9 @@ function replyRateColor(rate: number) {
   if (rate >= 30) return "text-amber-400";
   return "text-red-400";
 }
+
+const { failedThumbnails, getCleanThumbnailUrl, handleThumbnailError } =
+  useYouTubeThumbnail();
 </script>
 
 <template>
@@ -89,7 +92,9 @@ function replyRateColor(rate: number) {
 
     <!-- Overview Cards -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
-      <div class="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-3 sm:p-5">
+      <div
+        class="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-3 sm:p-5"
+      >
         <p
           class="text-[9px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 sm:mb-2"
         >
@@ -99,13 +104,18 @@ function replyRateColor(rate: number) {
           class="text-2xl sm:text-4xl font-black"
           :class="replyRateColor(overview?.replyRate ?? 0)"
         >
-          {{ overview?.replyRate ?? "—" }}<span class="text-base sm:text-xl">%</span>
+          {{ overview?.replyRate ?? "—"
+          }}<span class="text-base sm:text-xl">%</span>
         </p>
-        <p class="text-[9px] sm:text-[11px] text-slate-600 mt-0.5 sm:mt-1 line-clamp-1">
+        <p
+          class="text-[9px] sm:text-[11px] text-slate-600 mt-0.5 sm:mt-1 line-clamp-1"
+        >
           {{ $t("analytics.reply_rate_desc") }}
         </p>
       </div>
-      <div class="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-3 sm:p-5">
+      <div
+        class="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-3 sm:p-5"
+      >
         <p
           class="text-[9px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 sm:mb-2"
         >
@@ -114,11 +124,15 @@ function replyRateColor(rate: number) {
         <p class="text-2xl sm:text-4xl font-black text-white">
           {{ overview?.totalCommentsLast30Days ?? "—" }}
         </p>
-        <p class="text-[9px] sm:text-[11px] text-slate-600 mt-0.5 sm:mt-1 line-clamp-1">
+        <p
+          class="text-[9px] sm:text-[11px] text-slate-600 mt-0.5 sm:mt-1 line-clamp-1"
+        >
           {{ $t("analytics.last_30_days_desc") }}
         </p>
       </div>
-      <div class="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-3 sm:p-5">
+      <div
+        class="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-3 sm:p-5"
+      >
         <p
           class="text-[9px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 sm:mb-2"
         >
@@ -128,18 +142,24 @@ function replyRateColor(rate: number) {
           {{ overview?.returnCommenterRate ?? "—"
           }}<span class="text-base sm:text-xl">%</span>
         </p>
-        <p class="text-[9px] sm:text-[11px] text-slate-600 mt-0.5 sm:mt-1 line-clamp-1">
+        <p
+          class="text-[9px] sm:text-[11px] text-slate-600 mt-0.5 sm:mt-1 line-clamp-1"
+        >
           {{ $t("analytics.return_rate_desc") }}
         </p>
       </div>
-      <div class="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-3 sm:p-5">
+      <div
+        class="bg-white/[0.03] border border-white/[0.07] rounded-2xl p-3 sm:p-5"
+      >
         <p
           class="text-[9px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 sm:mb-2"
         >
           {{ $t("analytics.sentiment_label") }}
         </p>
         <div class="flex flex-col gap-0.5 sm:gap-1 mt-1 sm:mt-2">
-          <div class="flex justify-between items-center text-[11px] sm:text-sm font-black">
+          <div
+            class="flex justify-between items-center text-[11px] sm:text-sm font-black"
+          >
             <span class="text-emerald-400 text-[10px] sm:text-[12px]">{{
               $t("analytics.positive")
             }}</span>
@@ -147,7 +167,9 @@ function replyRateColor(rate: number) {
               >{{ overview?.sentiment.positive ?? 0 }}%</span
             >
           </div>
-          <div class="flex justify-between items-center text-[11px] sm:text-sm font-black">
+          <div
+            class="flex justify-between items-center text-[11px] sm:text-sm font-black"
+          >
             <span class="text-blue-400 text-[10px] sm:text-[12px]">{{
               $t("analytics.curious")
             }}</span>
@@ -155,7 +177,9 @@ function replyRateColor(rate: number) {
               >{{ overview?.sentiment.curious ?? 0 }}%</span
             >
           </div>
-          <div class="flex justify-between items-center text-[11px] sm:text-sm font-black">
+          <div
+            class="flex justify-between items-center text-[11px] sm:text-sm font-black"
+          >
             <span class="text-red-400 text-[10px] sm:text-[12px]">{{
               $t("analytics.negative")
             }}</span>
@@ -164,7 +188,9 @@ function replyRateColor(rate: number) {
             >
           </div>
         </div>
-        <p class="text-[9px] sm:text-[11px] text-slate-600 mt-1 sm:mt-2 line-clamp-1">
+        <p
+          class="text-[9px] sm:text-[11px] text-slate-600 mt-1 sm:mt-2 line-clamp-1"
+        >
           {{ $t("analytics.sentiment_desc") }}
         </p>
       </div>
@@ -424,11 +450,13 @@ function replyRateColor(rate: number) {
           <div
             class="mt-auto w-full grid grid-cols-2 gap-2 pt-4 border-t border-white/[0.05]"
           >
-            <NuxtLink 
+            <NuxtLink
               :to="`/comments?authorId=${fan.authorChannelId}&status=all`"
               class="group/stat block hover:scale-110 transition-transform cursor-pointer"
             >
-              <p class="text-xl font-black text-violet-400 leading-none group-hover/stat:text-violet-300">
+              <p
+                class="text-xl font-black text-violet-400 leading-none group-hover/stat:text-violet-300"
+              >
                 {{ fan.commentCount }}
               </p>
               <p
@@ -497,11 +525,12 @@ function replyRateColor(rate: number) {
             class="relative aspect-video overflow-hidden block"
           >
             <img
-              v-if="v.thumbnailUrl"
-              :src="v.thumbnailUrl"
+              v-if="v.thumbnailUrl && !failedThumbnails[v.videoId]"
+              :src="getCleanThumbnailUrl(v.videoId, v.thumbnailUrl)"
               class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
               referrerpolicy="no-referrer"
               crossorigin="anonymous"
+              @error="handleThumbnailError(v.videoId, v.videoId, $event)"
             />
             <div
               class="absolute inset-0 bg-slate-900 flex items-center justify-center"
@@ -568,21 +597,21 @@ function replyRateColor(rate: number) {
                 <NuxtLink
                   v-if="v.pendingCount > 0"
                   :to="`/comments?videoId=${v.videoId}&status=pending`"
-                  class="px-2 py-1 rounded-md bg-amber-400/10 text-[10px] md:text-[12px] font-black text-amber-400 border border-amber-400/20 hover:bg-amber-400/20 transition-colors"
+                  class="px-2 py-1 rounded-md bg-amber-400/10 text-[8px] md:text-[10px] font-black text-amber-400 border border-amber-400/20 hover:bg-amber-400/20 transition-colors"
                 >
                   {{ v.pendingCount }} {{ $t("analytics.pending_label") }}
                 </NuxtLink>
                 <NuxtLink
                   v-if="v.negativeCount > 0"
                   :to="`/comments?videoId=${v.videoId}&intent=complaint`"
-                  class="px-2 py-1 rounded-md bg-red-400/10 text-[10px] md:text-[12px] font-black text-red-400 border border-red-400/20 hover:bg-red-400/20 transition-colors"
+                  class="px-2 py-1 rounded-md bg-red-400/10 text-[8px] md:text-[10px] font-black text-red-400 border border-red-400/20 hover:bg-red-400/20 transition-colors"
                 >
                   {{ v.negativeCount }} {{ $t("analytics.complaints_label") }}
                 </NuxtLink>
                 <NuxtLink
                   v-if="v.questionCount > 0"
                   :to="`/comments?videoId=${v.videoId}&intent=question`"
-                  class="px-2 py-1 rounded-md bg-blue-400/10 text-[10px] md:text-[12px] font-black text-blue-400 border border-blue-400/20 hover:bg-blue-400/20 transition-colors"
+                  class="px-2 py-1 rounded-md bg-blue-400/10 text-[8px] md:text-[10px] font-black text-blue-400 border border-blue-400/20 hover:bg-blue-400/20 transition-colors"
                 >
                   {{ v.questionCount }} {{ $t("analytics.questions_label") }}
                 </NuxtLink>
@@ -591,8 +620,12 @@ function replyRateColor(rate: number) {
               <!-- Internal Review Button -->
               <NuxtLink
                 :to="`/comments?videoId=${v.videoId}`"
-                class="w-full py-2.5 rounded-xl bg-white/5 border border-white/10 text-[10px] md:text-[12px] font-black text-indigo-400 uppercase tracking-widest text-center hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all"
+                class="w-full py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] text-[10px] md:text-[11px] font-bold text-slate-500 uppercase tracking-widest text-center hover:bg-white/[0.06] hover:text-indigo-400 hover:border-indigo-500/20 transition-all flex items-center justify-center gap-2"
               >
+                <UIcon
+                  name="i-heroicons-chat-bubble-left-right"
+                  class="w-3.5 h-3.5"
+                />
                 {{ $t("analytics.manage_comments") }}
               </NuxtLink>
             </div>

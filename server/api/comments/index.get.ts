@@ -1,4 +1,4 @@
-import { eq, and, desc, count, isNull, inArray, sql } from 'drizzle-orm'
+import { eq, ne, and, desc, count, isNull, inArray, sql } from 'drizzle-orm'
 import { useDb } from '../../utils/db'
 import { comments, videos, authors } from '../../db/schema'
 
@@ -43,6 +43,18 @@ export default defineEventHandler(async (event) => {
       )`
     : sql`1=1`
 
+  const token = await db.query.oauthTokens.findFirst({ 
+    columns: { 
+      channelId: true,
+      channelTitle: true
+    } 
+  })
+  const ownerChannelId = token?.channelId
+  const ownerAuthor = ownerChannelId ? await db.query.authors.findFirst({
+    where: eq(authors.channelId, ownerChannelId)
+  }) : null
+  const ownerName = ownerAuthor?.name || token?.channelTitle
+
   const whereConditions = [
     isNull(comments.parentId),
     statusCondition,
@@ -50,6 +62,7 @@ export default defineEventHandler(async (event) => {
     ...(videoId ? [eq(comments.videoId, videoId)] : []),
     ...(intentParam ? [eq(comments.detectedIntent, intentParam)] : []),
     ...(authorId ? [eq(comments.authorChannelId, authorId)] : []),
+    ...(ownerChannelId ? [ne(comments.authorChannelId, ownerChannelId)] : []),
   ]
 
 
@@ -77,6 +90,7 @@ export default defineEventHandler(async (event) => {
       priorityScore: comments.priorityScore,
       priorityLabel: comments.priorityLabel,
       isReturnCommenter: comments.isReturnCommenter,
+      isLive: comments.isLive,
       opportunityFlags: comments.opportunityFlags,
       detectedIntent: comments.detectedIntent,
       videoTitle: videos.title,
@@ -109,8 +123,24 @@ export default defineEventHandler(async (event) => {
     .leftJoin(videos, eq(comments.videoId, videos.id))
     .where(and(...whereConditions))
 
+  const normalize = (s: string) => (s || '').trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+
+  const enrichedRows = rows.map(row => {
+    const lastAuthorName = normalize(row.lastAuthor || row.authorName)
+    const oName = normalize(ownerName)
+    
+    const isLastAuthorOwner = 
+      (ownerChannelId && row.authorChannelId === ownerChannelId) || 
+      (oName && lastAuthorName === oName)
+    
+    return {
+      ...row,
+      isLastAuthorOwner
+    }
+  })
+
   return {
-    items: rows,
+    items: enrichedRows,
     pagination: {
       page,
       limit,

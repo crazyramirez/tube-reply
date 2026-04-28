@@ -109,8 +109,13 @@ const MAX_QUOTA_PER_DAY = computed(
 );
 const quotaPct = computed(() => {
   const pct = (quotaUsed.value / MAX_QUOTA_PER_DAY.value) * 100;
-  if (pct > 0 && pct < 1) return pct.toFixed(2);
-  return Math.min(100, Math.round(pct)).toString();
+  return Math.min(100, Math.round(pct * 100) / 100);
+});
+
+const quotaPctDisplay = computed(() => {
+  const val = quotaPct.value;
+  if (val > 0 && val < 1) return val.toFixed(2);
+  return Math.round(val).toString();
 });
 
 const quotaBarClass = computed(() => {
@@ -165,7 +170,7 @@ async function disconnectYouTube() {
   disconnecting.value = true;
   try {
     await $fetch("/api/youtube/disconnect", {
-      method: "POST",
+      method: "DELETE",
       headers: useCsrfHeaders(),
     });
     await refreshStatus();
@@ -678,7 +683,7 @@ onUnmounted(() => {
                                   <p
                                     class="text-4xl font-black text-white tracking-tighter"
                                   >
-                                    {{ quotaPct }}%
+                                    {{ quotaPctDisplay }}%
                                   </p>
                                   <p
                                     class="text-xs font-bold text-slate-500 uppercase"

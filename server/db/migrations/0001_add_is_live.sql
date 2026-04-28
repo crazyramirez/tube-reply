@@ -1,0 +1,1 @@
+ALTER TABLE `comments` ADD `is_live` integer DEFAULT true;

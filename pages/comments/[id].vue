@@ -270,6 +270,12 @@ watch(
   selectedStatus,
   async (status) => {
     if (!status || status === data.value?.comment?.status) return;
+
+    // Reset editing state if moving to a final state
+    if (status === "published" || status === "dismissed") {
+      isEditing.value = false;
+    }
+
     await $fetch(`/api/comments/${id}`, {
       method: "PATCH",
       body: { status },
@@ -972,6 +978,16 @@ async function confirmUnban() {
                   {{ flag }}
                 </span>
               </div>
+              <!-- Warning if not live -->
+              <UAlert
+                v-if="!data.comment.isLive"
+                color="red"
+                variant="soft"
+                icon="i-heroicons-exclamation-triangle"
+                :title="$t('comments.not_live_warning')"
+                class="mb-3 max-w-[85%]"
+              />
+
               <div
                 class="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl rounded-tl-none p-4 text-sm text-slate-200 leading-relaxed shadow-sm max-w-[85%]"
               >
@@ -1354,7 +1370,10 @@ async function confirmUnban() {
             </div>
 
             <div class="p-6">
-              <div class="premium-textarea-container group mb-6">
+              <div
+                class="premium-textarea-container group mb-6"
+                :class="{ 'is-editing': isEditing }"
+              >
                 <textarea
                   v-model="editedText"
                   rows="5"
@@ -1397,7 +1416,7 @@ async function confirmUnban() {
                   </div>
                 </div>
                 <p class="text-sm text-slate-400 italic leading-relaxed">
-                  "{{ activeSuggestion.verificationTranslation }}"
+                  "{{ activeSuggestion?.verificationTranslation }}"
                 </p>
               </div>
 

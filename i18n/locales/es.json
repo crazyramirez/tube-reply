@@ -45,7 +45,8 @@
     "suggested": "Sugerido",
     "published": "Publicado",
     "dismissed": "Descartado",
-    "skipped": "Omitido"
+    "skipped": "Omitido",
+    "not_live": "No en YouTube"
   },
   "dashboard": {
     "analytics_label": "Analíticas y Control",
@@ -98,7 +99,8 @@
     "search_placeholder": "Buscar comentarios, videos, autores…",
     "search_no_results": "Sin resultados para \"{q}\"",
     "search_clear": "Limpiar búsqueda",
-    "search_results": "{n} resultados"
+    "search_results": "{n} resultados",
+    "not_live_warning": "Este comentario ya no es visible en YouTube."
   },
   "comment_detail": {
     "terminal_label": "Terminal de Verificación",

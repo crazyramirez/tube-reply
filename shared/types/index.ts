@@ -28,6 +28,7 @@ export interface Comment {
   opportunityFlags: string[] | null
   detectedIntent: string | null
   translatedText?: string | null
+  isLive: boolean | null
 }
 
 export interface CommentListItem extends Comment {
@@ -38,6 +39,7 @@ export interface CommentListItem extends Comment {
   lastText?: string
   lastAuthor?: string
   lastActivityAt?: string
+  isLastAuthorOwner?: boolean
 }
 
 // ─── Analytics ────────────────────────────────────────────────────────────────
@@ -47,6 +49,7 @@ export interface SentimentDataPoint {
   positive: number
   neutral: number
   negative: number
+  curious: number
   total: number
 }
 
@@ -71,6 +74,8 @@ export interface VideoCommentStats {
   videoId: string
   videoTitle: string
   thumbnailUrl: string | null
+  viewCount: number
+  likeCount: number
   pendingCount: number
   publishedCount: number
   negativeCount: number
@@ -83,7 +88,7 @@ export interface AnalyticsOverview {
   avgResponseTimeHours: number | null
   returnCommenterRate: number
   totalCommentsLast30Days: number
-  sentiment: { positive: number; neutral: number; negative: number }
+  sentiment: { positive: number; neutral: number; negative: number; curious: number }
   languageDistribution: Record<string, number>
 }
 
@@ -206,6 +211,9 @@ export interface DashboardComment {
   videoId: string
   authorName: string
   text: string
+  lastText?: string
+  lastAuthor?: string
+  isLastAuthorOwner?: boolean
   likeCount: number
   detectedLang: string | null
   publishedAt: string
@@ -214,6 +222,8 @@ export interface DashboardComment {
   videoThumbnail: string | null
   replyText?: string | null
   authorProfileImageUrl: string | null
+  authorChannelId: string | null
+  isLive: boolean | null
 }
 
 export interface UrgentComment {

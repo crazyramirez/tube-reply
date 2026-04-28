@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "b8e1f906-faad-4767-8bca-a06156ea2808",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "98257b29-ca3e-44dd-b09c-72c208c05fc1",
+  "prevId": "b8e1f906-faad-4767-8bca-a06156ea2808",
   "tables": {
     "agent_chats": {
       "name": "agent_chats",
@@ -520,6 +520,14 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "is_live": {
+          "name": "is_live",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": true
         }
       },
       "indexes": {

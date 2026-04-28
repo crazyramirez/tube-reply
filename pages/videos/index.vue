@@ -31,7 +31,9 @@ watch(type, (newVal) => {
 function setPage(p: number) {
   page.value = p;
   router.replace({ query: { ...route.query, page: p } });
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  setTimeout(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, 100);
 }
 
 // Debounce search
@@ -73,7 +75,9 @@ const { data, pending, refresh } = useFetch<PaginatedResponse<Video>>(
 
 watch([search, type], () => {
   page.value = 1;
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  setTimeout(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, 100);
 });
 
 function timeAgo(iso: string): string {
@@ -278,21 +282,24 @@ onActivated(() => {
 
     <div
       v-else
-      class="grid gap-4 sm:gap-3"
+      class="grid gap-2 sm:gap-3"
       :class="[
         mobileColumns === 1 ? 'grid-cols-1' : 'grid-cols-2',
-        'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
+        'sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4',
       ]"
     >
-      <NuxtLink
+      <div
         v-for="(video, idx) in data.items"
         :key="video.id"
-        :to="`/comments?videoId=${video.id}${search ? '&search=' + encodeURIComponent(search) : ''}`"
         class="group glass-card overflow-hidden flex flex-col h-full animate-slide-up hover:border-indigo-500/30 transition-all duration-500"
         :style="{ animationDelay: `${idx * 50}ms` }"
       >
         <!-- Thumbnail -->
-        <div class="relative aspect-video bg-slate-900 overflow-hidden">
+        <a
+          :href="`https://youtube.com/watch?v=${video.id}`"
+          target="_blank"
+          class="relative aspect-video bg-slate-900 overflow-hidden block"
+        >
           <img
             v-if="video.thumbnailUrl && !failedThumbnails[video.id]"
             :src="getCleanThumbnailUrl(video.id, video.thumbnailUrl)"
@@ -307,6 +314,17 @@ onActivated(() => {
               name="i-heroicons-video-camera"
               class="text-slate-800 w-12 h-12"
             />
+          </div>
+
+          <!-- YouTube Play Overlay -->
+          <div
+            class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+          >
+            <div
+              class="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center text-white shadow-xl scale-90 group-hover:scale-100 transition-transform"
+            >
+              <UIcon name="i-heroicons-play-solid" class="w-5 h-5" />
+            </div>
           </div>
 
           <!-- Badges -->
@@ -341,42 +359,59 @@ onActivated(() => {
               </span>
             </div>
           </div>
-        </div>
+        </a>
 
         <!-- Content -->
         <div class="p-5 flex flex-col flex-1">
-          <h3
-            class="text-white font-bold text-sm leading-snug line-clamp-2 group-hover:text-indigo-300 transition-colors mb-3"
+          <a
+            :href="`https://youtube.com/watch?v=${video.id}`"
+            target="_blank"
+            class="block mb-3"
           >
-            {{ video.title }}
-          </h3>
-
-          <div
-            class="mt-auto pt-4 border-t border-white/5 flex items-center justify-between"
-          >
-            <div class="flex flex-col">
-              <span
-                class="text-[10px] font-bold text-slate-500 uppercase tracking-widest"
-                >{{ timeAgo(video.publishedAt) }}</span
-              >
-              <span class="text-[11px] text-slate-400 font-medium">
-                {{
-                  $t("videos.stats", {
-                    views: formatNumber(video.viewCount || 0),
-                    comments: formatNumber(video.commentCount || 0),
-                  })
-                }}
-              </span>
-            </div>
-
-            <div
-              class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300"
+            <h3
+              class="text-white font-bold text-sm leading-snug line-clamp-2 group-hover:text-indigo-300 transition-colors"
             >
-              <UIcon name="i-heroicons-arrow-right" class="w-4 h-4" />
+              {{ video.title }}
+            </h3>
+          </a>
+
+          <div class="mt-auto pt-4 border-t border-white/5 space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex flex-col">
+                <span
+                  class="text-[10px] font-bold text-slate-500 uppercase tracking-widest"
+                  >{{ timeAgo(video.publishedAt) }}</span
+                >
+                <span class="text-[11px] text-slate-400 font-medium">
+                  {{
+                    $t("videos.stats", {
+                      views: formatNumber(video.viewCount || 0),
+                      comments: formatNumber(video.commentCount || 0),
+                    })
+                  }}
+                </span>
+              </div>
+
+              <div
+                class="text-[10px] font-black text-slate-600 uppercase tracking-widest"
+              >
+                ID: {{ video.id.substring(0, 4) }}...
+              </div>
             </div>
+
+            <NuxtLink
+              :to="`/comments?videoId=${video.id}${search ? '&search=' + encodeURIComponent(search) : ''}`"
+              class="w-full py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] text-[10px] md:text-[11px] font-bold text-slate-500 uppercase tracking-widest text-center hover:bg-white/[0.06] hover:text-indigo-400 hover:border-indigo-500/20 transition-all flex items-center justify-center gap-2"
+            >
+              <UIcon
+                name="i-heroicons-chat-bubble-left-right"
+                class="w-3.5 h-3.5"
+              />
+              {{ $t("analytics.manage_comments") }}
+            </NuxtLink>
           </div>
         </div>
-      </NuxtLink>
+      </div>
     </div>
 
     <!-- Pagination -->

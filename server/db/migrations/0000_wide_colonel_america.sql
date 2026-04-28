@@ -223,7 +223,7 @@ CREATE TABLE `video_summaries` (
 	`key_topics` text,
 	`faqs` text,
 	`generated_at` text DEFAULT (datetime('now')),
-	`generated_by` text DEFAULT 'gemini',
+	`generated_by` text DEFAULT 'openai',
 	`token_count` integer,
 	FOREIGN KEY (`video_id`) REFERENCES `videos`(`id`) ON UPDATE no action ON DELETE no action
 );

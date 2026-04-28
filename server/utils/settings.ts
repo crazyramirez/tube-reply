@@ -41,7 +41,7 @@ export async function getAutoSuggestEnabled(): Promise<boolean> {
 
 export async function getAiProvider(): Promise<'gemini' | 'openai'> {
   const config = useRuntimeConfig()
-  const envProvider = (config.aiProvider as string) || 'gemini'
+  const envProvider = (config.aiProvider as string) || 'openai'
   
   const dbProvider = await getSetting('ai_provider', '')
   

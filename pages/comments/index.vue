@@ -13,7 +13,10 @@ const lastStatus = useCookie<string>("comment-last-status", {
   default: () => "inbox",
 });
 
-const status = ref((route.query.status as string) || (route.query.videoId || route.query.intent ? "all" : lastStatus.value));
+const status = ref(
+  (route.query.status as string) ||
+    (route.query.videoId || route.query.intent ? "all" : lastStatus.value),
+);
 const page = ref(Number(route.query.page || 1));
 const videoId = ref((route.query.videoId as string) || "");
 const authorId = ref((route.query.authorId as string) || "");
@@ -32,7 +35,9 @@ watch(searchInput, (val) => {
   searchDebounceTimer = setTimeout(() => {
     search.value = val.trim();
     page.value = 1;
-    router.replace({ query: { ...route.query, search: val.trim() || undefined, page: 1 } });
+    router.replace({
+      query: { ...route.query, search: val.trim() || undefined, page: 1 },
+    });
   }, 350);
 });
 
@@ -43,46 +48,43 @@ function clearSearch() {
 }
 
 useHead({
-  meta: [
-    { name: 'referrer', content: 'no-referrer' }
-  ]
+  meta: [{ name: "referrer", content: "no-referrer" }],
 });
 
-
-const { data, refresh, pending } = useFetch<
-  PaginatedResponse<CommentListItem>
->("/api/comments", {
-  lazy: true,
-  query: computed(() => ({
-    status: status.value,
-    page: page.value,
-    limit: 12,
-    videoId: videoId.value,
-    authorId: authorId.value,
-    intent: intent.value,
-    search: search.value || undefined,
-  })),
-});
-
-
+const { data, refresh, pending } = useFetch<PaginatedResponse<CommentListItem>>(
+  "/api/comments",
+  {
+    lazy: true,
+    query: computed(() => ({
+      status: status.value,
+      page: page.value,
+      limit: 12,
+      videoId: videoId.value,
+      authorId: authorId.value,
+      intent: intent.value,
+      search: search.value || undefined,
+    })),
+  },
+);
 
 function setStatus(s: string) {
   status.value = s;
   page.value = 1;
-  router.replace({ 
-    query: { 
+  router.replace({
+    query: {
       ...route.query,
-      status: s, 
-      page: 1 
-    } 
+      status: s,
+      page: 1,
+    },
   });
-
 }
 
 function setPage(p: number) {
   page.value = p;
   router.replace({ query: { ...route.query, page: p } });
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  setTimeout(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, 100);
 }
 
 async function undismiss(commentId: string) {
@@ -166,11 +168,14 @@ const statusColor = (s: string) => {
   }
 };
 
-
 function parseOpportunityFlags(flags: string | string[] | null): string[] {
   if (!flags) return [];
   if (Array.isArray(flags)) return flags;
-  try { return JSON.parse(flags); } catch { return []; }
+  try {
+    return JSON.parse(flags);
+  } catch {
+    return [];
+  }
 }
 
 const viewMode = useCookie<"grid" | "list">("comment-view-mode", {
@@ -180,7 +185,6 @@ const viewMode = useCookie<"grid" | "list">("comment-view-mode", {
 const mobileColumns = useCookie<number>("comment-mobile-columns", {
   default: () => 2,
 });
-
 
 const statusTabs = computed(() => [
   { label: t("status.all"), value: "all", icon: "i-heroicons-list-bullet" },
@@ -281,7 +285,8 @@ onActivated(() => {
   }
 });
 
-const { failedThumbnails, getCleanThumbnailUrl, handleThumbnailError } = useYouTubeThumbnail();
+const { failedThumbnails, getCleanThumbnailUrl, handleThumbnailError } =
+  useYouTubeThumbnail();
 
 const { justAutoSuggestCompleted } = useSyncStatus();
 watch(justAutoSuggestCompleted, (done) => {
@@ -290,11 +295,13 @@ watch(justAutoSuggestCompleted, (done) => {
 
 // Solo hacer scroll al principio si cambian REALMENTE los filtros
 watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
-  const hasOldValues = oldVals.some(v => v !== undefined);
+  const hasOldValues = oldVals.some((v) => v !== undefined);
   const hasChanged = newVals.some((v, i) => v !== oldVals[i]);
-  
+
   if (hasOldValues && hasChanged) {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 100);
   }
 });
 </script>
@@ -314,12 +321,14 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
           />
           {{ $t("comments.hub_label") }}
         </div>
-        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tighter flex items-center gap-3">
+        <h1
+          class="text-2xl sm:text-3xl font-black text-white tracking-tighter flex items-center gap-3"
+        >
           {{ $t("comments.title") }}
-          <UIcon 
-            v-if="pending && data?.items?.length" 
-            name="i-heroicons-arrow-path" 
-            class="w-5 h-5 text-indigo-500/50 animate-spin" 
+          <UIcon
+            v-if="pending && data?.items?.length"
+            name="i-heroicons-arrow-path"
+            class="w-5 h-5 text-indigo-500/50 animate-spin"
           />
         </h1>
       </div>
@@ -387,45 +396,72 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
       </div>
     </div>
 
-
     <!-- Active Filters -->
-    <div v-if="videoId || authorId" class="mb-6 animate-fade-in flex flex-wrap gap-3">
+    <div
+      v-if="videoId || authorId"
+      class="mb-6 animate-fade-in flex flex-wrap gap-3"
+    >
       <!-- Video Filter -->
-      <div v-if="videoId" class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 shadow-lg shadow-indigo-500/5">
+      <div
+        v-if="videoId"
+        class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 shadow-lg shadow-indigo-500/5"
+      >
         <UIcon name="i-heroicons-funnel" class="w-4 h-4 text-indigo-400" />
         <span class="text-xs font-bold text-indigo-300">
-          Filtered by: <span class="text-white">{{ data?.items?.[0]?.videoTitle || videoId }}</span>
+          Filtered by:
+          <span class="text-white">{{
+            data?.items?.[0]?.videoTitle || videoId
+          }}</span>
         </span>
-        <button 
-          @click="videoId = ''; router.replace({ query: { ...route.query, videoId: undefined } })"
+        <button
+          @click="
+            videoId = '';
+            router.replace({ query: { ...route.query, videoId: undefined } });
+          "
           class="ml-2 p-1 hover:bg-white/10 rounded-lg transition-colors group"
           title="Clear filter"
         >
-          <UIcon name="i-heroicons-x-mark" class="w-4 h-4 text-indigo-400 group-hover:text-white" />
+          <UIcon
+            name="i-heroicons-x-mark"
+            class="w-4 h-4 text-indigo-400 group-hover:text-white"
+          />
         </button>
       </div>
 
       <!-- Author Filter -->
-      <div v-if="authorId" class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-violet-500/10 border border-violet-500/20 shadow-lg shadow-violet-500/5">
+      <div
+        v-if="authorId"
+        class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-violet-500/10 border border-violet-500/20 shadow-lg shadow-violet-500/5"
+      >
         <UIcon name="i-heroicons-user" class="w-4 h-4 text-violet-400" />
         <span class="text-xs font-bold text-violet-300">
-          Author: <span class="text-white">{{ data?.items?.[0]?.authorName || authorId }}</span>
+          Author:
+          <span class="text-white">{{
+            data?.items?.[0]?.authorName || authorId
+          }}</span>
         </span>
-        <button 
-          @click="authorId = ''; router.replace({ query: { ...route.query, authorId: undefined } })"
+        <button
+          @click="
+            authorId = '';
+            router.replace({ query: { ...route.query, authorId: undefined } });
+          "
           class="ml-2 p-1 hover:bg-white/10 rounded-lg transition-colors group"
           title="Clear filter"
         >
-          <UIcon name="i-heroicons-x-mark" class="w-4 h-4 text-violet-400 group-hover:text-white" />
+          <UIcon
+            name="i-heroicons-x-mark"
+            class="w-4 h-4 text-violet-400 group-hover:text-white"
+          />
         </button>
       </div>
     </div>
 
-
     <!-- Search Bar -->
     <div class="mb-6">
       <div class="relative group">
-        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+        <div
+          class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"
+        >
           <UIcon
             name="i-heroicons-magnifying-glass"
             class="w-4 h-4 transition-colors"
@@ -454,7 +490,10 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
             :title="$t('comments.search_clear')"
           >
             <div class="p-1 rounded-lg hover:bg-white/10 transition-colors">
-              <UIcon name="i-heroicons-x-mark" class="w-3.5 h-3.5 text-slate-500 group-hover/clear:text-white transition-colors" />
+              <UIcon
+                name="i-heroicons-x-mark"
+                class="w-3.5 h-3.5 text-slate-500 group-hover/clear:text-white transition-colors"
+              />
             </div>
           </button>
         </Transition>
@@ -468,16 +507,23 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
         leave-from-class="opacity-100 translate-y-0"
         leave-to-class="opacity-0 -translate-y-1"
       >
-        <div v-if="search && !pending && data?.pagination" class="mt-2 flex items-center gap-2">
+        <div
+          v-if="search && !pending && data?.pagination"
+          class="mt-2 flex items-center gap-2"
+        >
           <span class="text-xs text-slate-500">
-            <span class="font-bold text-indigo-400">{{ $t('comments.search_results', { n: data.pagination.total }) }}</span>
-            {{ $t('comments.search_clear') && '' }}
+            <span class="font-bold text-indigo-400">{{
+              $t("comments.search_results", { n: data.pagination.total })
+            }}</span>
+            {{ $t("comments.search_clear") && "" }}
             <span class="text-slate-600">· "{{ search }}"</span>
           </span>
           <button
             @click="clearSearch"
             class="text-[10px] font-bold text-indigo-500 hover:text-indigo-300 uppercase tracking-widest transition-colors"
-          >{{ $t('comments.search_clear') }}</button>
+          >
+            {{ $t("comments.search_clear") }}
+          </button>
         </div>
       </Transition>
     </div>
@@ -563,14 +609,14 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
         class="w-12 h-12 mx-auto mb-3 text-slate-700"
       />
       <p class="text-slate-500 text-sm mb-3">
-        {{ $t('comments.search_no_results', { q: search }) }}
+        {{ $t("comments.search_no_results", { q: search }) }}
       </p>
       <button
         @click="clearSearch"
         class="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl"
       >
         <UIcon name="i-heroicons-x-mark" class="w-3.5 h-3.5" />
-        {{ $t('comments.search_clear') }}
+        {{ $t("comments.search_clear") }}
       </button>
     </div>
 
@@ -599,7 +645,7 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
         'sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4',
       ]"
     >
-      <div v-for="(c, idx) in data.items" :key="c.id" class="flex flex-col">
+      <div v-for="(c, idx) in data?.items" :key="c.id" class="flex flex-col">
         <NuxtLink
           :to="`/comments/${c.id}`"
           class="glass-card overflow-hidden flex flex-col h-full group animate-slide-up"
@@ -656,7 +702,16 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
                 size="xs"
                 class="font-black tracking-tighter rounded-md text-[8px] sm:text-[10px] px-1 sm:px-1.5"
               >
-                {{ $t('status.' + c.status).toUpperCase() }}
+                {{ $t("status." + c.status).toUpperCase() }}
+              </UBadge>
+              <UBadge
+                v-if="!c.isLive"
+                color="red"
+                variant="solid"
+                size="xs"
+                class="font-black tracking-tighter rounded-md text-[8px] sm:text-[10px] px-1 sm:px-1.5"
+              >
+                {{ $t("status.not_live").toUpperCase() }}
               </UBadge>
               <!-- Opportunity flag -->
               <span
@@ -671,8 +726,10 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
                 v-if="c.detectedLang"
                 class="flex items-center gap-1 bg-black/60 backdrop-blur-md px-1.5 sm:px-2 py-0.5 rounded border border-white/10 text-[8px] sm:text-[10px] font-black uppercase text-white shadow-lg"
               >
-                <span>{{ langFlag[c.detectedLang] || '🌐' }}</span>
-                <span class="hidden sm:inline">{{ languageNames[c.detectedLang] || c.detectedLang }}</span>
+                <span>{{ langFlag[c.detectedLang] || "🌐" }}</span>
+                <span class="hidden sm:inline">{{
+                  languageNames[c.detectedLang] || c.detectedLang
+                }}</span>
                 <span class="sm:hidden">{{ c.detectedLang }}</span>
               </span>
             </div>
@@ -689,7 +746,10 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
           <div class="p-3 sm:p-5 flex flex-col flex-1 gap-2 sm:gap-4">
             <div class="flex items-center gap-2 sm:gap-3 group/author">
               <UAvatar
-                :src="c.authorProfileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.authorName || '')}&background=6366f1&color=fff`"
+                :src="
+                  c.authorProfileImageUrl ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(c.authorName || '')}&background=6366f1&color=fff`
+                "
                 size="sm"
                 class="ring-1 ring-white/10 shrink-0 shadow-sm"
                 :img-attributes="{
@@ -710,18 +770,26 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
               </div>
             </div>
 
-
             <div
               class="bg-white/5 border border-white/5 rounded-lg sm:rounded-xl p-2 sm:p-4 flex-1"
             >
               <p
                 class="text-[10px] sm:text-sm text-slate-300 leading-relaxed line-clamp-2 sm:line-clamp-3 italic"
-              >"<span v-html="renderCommentHtml(c.lastText || c.text)"></span>"</p>
+              >
+                "<span
+                  v-html="
+                    renderCommentHtml(
+                      c.isLastAuthorOwner ? c.text : c.lastText || c.text,
+                    )
+                  "
+                ></span
+                >"
+              </p>
             </div>
 
             <!-- Published reply preview -->
             <div
-              v-if="c.replyText"
+              v-if="c.replyText || (c.isLastAuthorOwner && c.lastText)"
               class="mt-1 pl-2 sm:pl-4 border-l-2 border-emerald-500/30"
             >
               <div class="flex items-center gap-1 sm:gap-1.5 mb-0.5 sm:mb-1">
@@ -737,7 +805,7 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
               <p
                 class="text-[9px] sm:text-xs text-slate-400 line-clamp-1 sm:line-clamp-2 italic"
               >
-                {{ c.replyText }}
+                {{ c.replyText || c.lastText }}
               </p>
             </div>
             <!-- AI suggestion preview (inbox) -->
@@ -811,7 +879,7 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
     <!-- List View -->
     <div v-else class="space-y-3">
       <div
-        v-for="(c, idx) in data.items"
+        v-for="(c, idx) in data?.items"
         :key="c.id"
         class="animate-slide-up"
         :class="`stagger-${(idx % 5) + 1}`"
@@ -872,9 +940,14 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
 
           <!-- Content -->
           <div class="flex-1 min-w-0 flex flex-col">
-            <div class="mb-1.5 order-2 sm:order-1 flex items-center gap-2 group/author">
+            <div
+              class="mb-1.5 order-2 sm:order-1 flex items-center gap-2 group/author"
+            >
               <UAvatar
-                :src="c.authorProfileImageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(c.authorName || '')}&background=6366f1&color=fff`"
+                :src="
+                  c.authorProfileImageUrl ||
+                  `https://ui-avatars.com/api/?name=${encodeURIComponent(c.authorName || '')}&background=6366f1&color=fff`
+                "
                 size="xs"
                 class="ring-1 ring-white/10 shrink-0 shadow-sm"
                 :img-attributes="{
@@ -882,11 +955,11 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
                   crossorigin: 'anonymous',
                 }"
               />
-              <span class="font-bold text-white text-sm truncate block transition-colors">{{
-                c.authorName
-              }}</span>
+              <span
+                class="font-bold text-white text-sm truncate block transition-colors"
+                >{{ c.authorName }}</span
+              >
             </div>
-
 
             <div
               class="flex items-center justify-between gap-4 mb-2 order-1 sm:order-2"
@@ -898,15 +971,26 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
                   size="xs"
                   class="rounded-md font-bold text-[9px] px-1.5 py-0"
                 >
-                  {{ $t('status.' + c.status).toUpperCase() }}
+                  {{ $t("status." + c.status).toUpperCase() }}
+                </UBadge>
+                <UBadge
+                  v-if="!c.isLive"
+                  color="red"
+                  variant="solid"
+                  size="xs"
+                  class="rounded-md font-bold text-[9px] px-1.5 py-0"
+                >
+                  {{ $t("status.not_live").toUpperCase() }}
                 </UBadge>
                 <!-- Language badge -->
                 <span
                   v-if="c.detectedLang"
                   class="flex items-center gap-1 bg-white/[0.05] border border-white/[0.1] px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] font-black uppercase text-slate-300"
                 >
-                  <span>{{ langFlag[c.detectedLang] || '🌐' }}</span>
-                  <span>{{ languageNames[c.detectedLang] || c.detectedLang }}</span>
+                  <span>{{ langFlag[c.detectedLang] || "🌐" }}</span>
+                  <span>{{
+                    languageNames[c.detectedLang] || c.detectedLang
+                  }}</span>
                 </span>
                 <!-- Opportunity -->
                 <span
@@ -944,7 +1028,9 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
             </div>
             <p
               class="text-xs sm:text-sm text-slate-400 line-clamp-2 italic order-3"
-            >"<span v-html="renderCommentHtml(c.lastText || c.text)"></span>"</p>
+            >
+              "<span v-html="renderCommentHtml(c.lastText || c.text)"></span>"
+            </p>
             <div
               v-if="c.replyText"
               class="mt-1 pl-3 border-l-2 border-emerald-500/30 order-4"

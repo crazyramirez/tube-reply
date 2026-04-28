@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
   const type = query.type as string // 'all', 'video', 'short'
 
   const page = Math.max(1, parseInt(query.page as string || '1'))
-  const limit = Math.max(1, parseInt(query.limit as string || '20'))
+  const limit = Math.max(1, parseInt(query.limit as string || '12'))
   const offset = (page - 1) * limit
 
   const whereClauses = []

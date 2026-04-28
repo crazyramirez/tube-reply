@@ -25,6 +25,7 @@ export default defineEventHandler(async (event) => {
       priorityLabel: comments.priorityLabel,
       cachedTranslation: comments.translatedText,
       cachedTranslationLang: comments.translationLang,
+      isLive: comments.isLive,
     })
     .from(comments)
     .leftJoin(authors, eq(comments.authorChannelId, authors.channelId))

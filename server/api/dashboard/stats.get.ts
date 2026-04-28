@@ -1,6 +1,6 @@
-import { eq, and, count, isNull, desc, or, sql } from 'drizzle-orm'
+import { eq, ne, and, count, isNull, desc, or, sql } from 'drizzle-orm'
 import { useDb } from '../../utils/db'
-import { comments, videos, publishedReplies } from '../../db/schema'
+import { comments, videos, publishedReplies, authors } from '../../db/schema'
 
 const COMMENT_PAGE_SIZE = 4
 
@@ -10,9 +10,22 @@ export default defineEventHandler(async (event) => {
   const commentPage = Math.max(1, Number(query.commentPage ?? 1))
   const commentOffset = (commentPage - 1) * COMMENT_PAGE_SIZE
 
+  const token = await db.query.oauthTokens.findFirst({ 
+    columns: { 
+      channelId: true,
+      channelTitle: true
+    } 
+  })
+  const ownerChannelId = token?.channelId
+  const ownerAuthor = ownerChannelId ? await db.query.authors.findFirst({
+    where: eq(authors.channelId, ownerChannelId)
+  }) : null
+  const ownerName = ownerAuthor?.name || token?.channelTitle
+
   const needsAttentionWhere = and(
     isNull(comments.parentId),
     or(eq(comments.status, 'pending'), eq(comments.status, 'suggested')),
+    ownerChannelId ? ne(comments.authorChannelId, ownerChannelId) : sql`1=1`
   )
 
   const [
@@ -40,6 +53,8 @@ export default defineEventHandler(async (event) => {
       videoId: comments.videoId,
       authorName: comments.authorName,
       text: comments.text,
+      lastText: comments.lastActivityText,
+      lastAuthor: comments.lastActivityAuthor,
       likeCount: comments.likeCount,
       detectedLang: comments.detectedLang,
       publishedAt: comments.publishedAt,
@@ -48,6 +63,7 @@ export default defineEventHandler(async (event) => {
       videoThumbnail: videos.thumbnailUrl,
       authorProfileImageUrl: comments.authorProfileImageUrl,
       authorChannelId: comments.authorChannelId,
+      isLive: comments.isLive,
     })
       .from(comments)
       .leftJoin(videos, eq(comments.videoId, videos.id))
@@ -74,6 +90,22 @@ export default defineEventHandler(async (event) => {
       .limit(4),
   ])
 
+  const normalize = (s: string) => (s || '').trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+
+  const enrichedComments = recentComments.map(row => {
+    const lastAuthorName = normalize(row.lastAuthor || row.authorName)
+    const oName = normalize(ownerName)
+    
+    const isLastAuthorOwner = 
+      (ownerChannelId && row.authorChannelId === ownerChannelId) || 
+      (oName && lastAuthorName === oName)
+    
+    return {
+      ...row,
+      isLastAuthorOwner
+    }
+  })
+
   return {
     comments: {
       pending,
@@ -81,7 +113,7 @@ export default defineEventHandler(async (event) => {
       publishedToday,
       totalPublished,
     },
-    recentComments,
+    recentComments: enrichedComments,
     recentCommentsTotal,
     recentVideos,
   }
