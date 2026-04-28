@@ -17,6 +17,8 @@ Herramienta de gestión de comentarios y Asistente de YouTube impulsado por IA. 
 - **Detección de idioma y corrección** — detecta el idioma (20+ idiomas) y permite cambiarlo manualmente si es necesario.
 - **Resúmenes de vídeos** — resúmenes generados por IA para cada vídeo, utilizados como contexto al generar respuestas.
 - **Base de Conocimientos** — entrena a la IA con guías de estilo, FAQs, personas, temas y reglas personalizadas. **Ahora con auto-generación impulsada por IA** basada en los datos reales de tu canal.
+- **Insights de Vídeo y Blueprints** — análisis impulsado por IA de los patrones de comentarios para generar ideas de vídeos virales y planos de contenido estratégico.
+- **Analíticas Avanzadas** — monitoriza tendencias de sentimiento, distribución de idiomas e identifica a tus "Superfans" (comentaristas más activos).
 - **Publicación en un clic** — aprueba y publica respuestas directamente en YouTube sin salir de la aplicación.
 - **Baneo de usuarios** — bloquea usuarios problemáticos directamente desde la vista de comentarios.
 - **Moderación masiva** — aprueba, descarta u omite múltiples comentarios a la vez desde la lista.
@@ -102,6 +104,11 @@ En un escenario típico con **200 vídeos en tu base de datos** y una **Base de 
   - **Selección Inteligente**: Solo procesa comentarios de nivel superior en estado "Pendiente" que aún no tengan una sugerencia generada, evitando llamadas redundantes e innecesarias.
   - **Ejecución en Segundo Plano**: El proceso se ejecuta en segundo plano, permitiéndote seguir usando el panel de control mientras se generan las sugerencias.
 - **Agente de IA del Canal**: Una interfaz de chat interna dedicada, impulsada por Gemini Flash, que actúa como consultor de tu canal. Tiene acceso completo al contexto de tu base de datos (historial de vídeos, resúmenes y base de conocimientos) para ayudarte a idear nuevo contenido, responder preguntas específicas sobre tu canal o perfeccionar tu estrategia.
+- **Insights de Vídeo y Blueprints**: Un motor especializado que agrupa los comentarios de los usuarios en temas semánticos para identificar qué está pidiendo tu audiencia. Genera planos de vídeo completos que incluyen "Ganchos Virales", "Objetivos Estratégicos" y "Guías de Producción" para maximizar el rendimiento de tu próximo vídeo.
+- **Analíticas de Audiencia Avanzadas**:
+  - **Seguimiento de Sentimiento**: Monitoriza cómo evoluciona el "humor" de tu comunidad a lo largo del tiempo con tendencias de sentimiento semanales.
+  - **Ranking de Superfans**: Identifica a tus espectadores más leales basándose en la frecuencia de comentarios y el compromiso.
+  - **Distribución de Idiomas**: Entiende el alcance global de tu canal con analíticas de detección automática de idiomas.
 - **Generación de Base de Conocimientos con IA**: Amplía automáticamente tu base de conocimientos permitiendo que la IA analice tus mejores vídeos y las preguntas más frecuentes de los usuarios. Identifica patrones y sugiere nuevas FAQs, reglas de estilo y entradas de contexto para mantener las respuestas de tu IA precisas y actualizadas con el mínimo esfuerzo.
 - **Planificador Automático (Scheduler)**: El sistema incluye un planificador en segundo plano que realiza "Escaneos Profundos" de tu canal (todos los vídeos) 4 veces al día (cada 6 horas) para asegurar que todos los comentarios estén sincronizados y las sugerencias de IA se disparen automáticamente.
 

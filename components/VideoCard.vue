@@ -68,11 +68,18 @@ const formatNumber = (n: number | null | undefined) => {
           class="flex items-center gap-2.5 sm:px-6 sm:py-3 sm:rounded-2xl sm:bg-white/10 sm:backdrop-blur-md sm:border sm:border-white/20 text-white sm:shadow-[0_0_40px_rgba(0,0,0,0.5)] transform translate-y-4 group-hover/thumb:translate-y-0 transition-all duration-500 scale-90 group-hover/thumb:scale-100"
         >
           <div class="relative flex items-center justify-center">
-            <div class="absolute inset-0 bg-red-500/20 blur-lg rounded-full animate-pulse"></div>
-            <UIcon name="i-heroicons-play-circle-solid" class="w-7 h-7 text-red-500 relative z-10" />
+            <div
+              class="absolute inset-0 bg-red-500/20 blur-lg rounded-full animate-pulse"
+            ></div>
+            <UIcon
+              name="i-heroicons-play-circle-solid"
+              class="w-7 h-7 text-red-500 relative z-10"
+            />
           </div>
-          <span class="hidden sm:inline text-[10px] font-black uppercase tracking-[0.2em] drop-shadow-md">
-            {{ $t('video_card.watch_on_youtube') }}
+          <span
+            class="hidden sm:inline text-[10px] font-black uppercase tracking-[0.2em] drop-shadow-md"
+          >
+            {{ $t("video_card.watch_on_youtube") }}
           </span>
         </div>
       </div>

@@ -17,6 +17,8 @@ AI-powered YouTube comment management tool and Channel Assistant. Syncs comments
 - **Language detection & Overrides** — auto-detects language (20+ languages) and allows manual overrides
 - **Video summaries** — AI-generated per-video summaries used as context for reply generation
 - **Knowledge Base** — train the AI with channel style guides, FAQs, personas, topics, and custom rules. **Now with AI-powered auto-generation** based on your channel's real data
+- **Video Insights & Blueprints** — AI-powered analysis of comment patterns to generate viral video ideas and strategic content blueprints
+- **Advanced Analytics** — monitor sentiment trends, language distribution, and identify your "Superfans" (top commenters)
 - **One-click publish** — approve and post replies directly to YouTube without leaving the app
 - **User Banning** — Block problematic users from your channel with one click
 - **Bulk Moderation** — Approve, dismiss, or skip multiple comments at once
@@ -102,6 +104,11 @@ In a typical scenario with **200 videos in your database** and an active **Knowl
   - **Smart Selection**: It only targets top-level "Pending" comments that don't already have an AI suggestion, preventing redundant API calls.
   - **Background Execution**: The process runs in the background, allowing you to continue using the dashboard while suggestions are being generated.
 - **AI Channel Agent**: A dedicated internal chat interface powered by Gemini Flash that acts as your channel consultant. It has full access to your database context (video history, summaries, and knowledge base) to help you brainstorm new content, answer specific questions about your channel, or refine your strategy.
+- **Video Insights & Blueprints**: A specialized engine that clusters user comments into semantic topics to identify what your audience is asking for. It generates complete video blueprints including "Viral Hooks", "Strategic Objectives", and "Production Guides" to maximize your next video's performance.
+- **Advanced Audience Analytics**:
+  - **Sentiment Tracking**: Monitor how the "mood" of your community evolves over time with weekly sentiment trends.
+  - **Superfan Leaderboard**: Identify your most loyal viewers based on comment frequency and engagement.
+  - **Language Distribution**: Understand the global reach of your channel with automatic language detection analytics.
 - **AI Knowledge Base Generation**: Automatically expand your knowledge base by letting the AI analyze your top videos and most frequent user questions. It identifies patterns and suggests new FAQs, style rules, and context entries to keep your AI's responses accurate and up-to-date with minimal effort.
 - **Automated Scheduler**: The system includes a background scheduler that performs "Deep Scans" of your channel (all videos) 4 times a day (every 6 hours) to ensure all comments are synced and AI suggestions are triggered automatically.
 
