@@ -722,10 +722,9 @@ onUnmounted(() => {
                             </div>
 
                             <p
-                              class="text-[10px] text-slate-500 leading-relaxed mt-1 mb-2 italic bg-white/5 p-2 rounded-xl border border-white/5"
+                              class="text-[12px] text-slate-500 leading-relaxed mt-3 mb-2 italic bg-white/5 p-3 rounded-xl border border-white/5"
                             >
-                              * El consumo de cuota depende directamente del
-                              número de comentarios y videos sincronizados.
+                              {{ $t("settings.quota_warning") }}
                             </p>
                           </div>
                         </div>

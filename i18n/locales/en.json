@@ -361,7 +361,8 @@
     "backfill_started": "Backfill started",
     "backfill_failed": "Backfill failed",
     "used": "used",
-    "limit": "Limit"
+    "limit": "Limit",
+    "quota_warning": "The quota consumption is approximate and depends directly on the number of comments and videos synchronized."
   },
   "pwa": {
     "offline_ready": "App ready to work offline",

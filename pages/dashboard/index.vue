@@ -108,7 +108,8 @@ const statusColor = (s: string) =>
         ? "gray"
         : "yellow";
 
-const { failedThumbnails, getCleanThumbnailUrl, handleThumbnailError } = useYouTubeThumbnail();
+const { failedThumbnails, getCleanThumbnailUrl, handleThumbnailError } =
+  useYouTubeThumbnail();
 
 const statCards = computed(() => [
   {
@@ -251,7 +252,11 @@ const statCards = computed(() => [
             class="w-8 h-8 sm:w-12 sm:h-12 rounded-lg sm:rounded-2xl flex items-center justify-center border border-white/5 shadow-inner"
             :class="card.bg"
           >
-            <UIcon :name="card.icon" class="w-4 h-4 sm:w-6 sm:h-6" :class="card.text" />
+            <UIcon
+              :name="card.icon"
+              class="w-4 h-4 sm:w-6 sm:h-6"
+              :class="card.text"
+            />
           </div>
         </div>
         <div
@@ -268,120 +273,7 @@ const statCards = computed(() => [
       </div>
     </div>
 
-    <!-- Latest Videos -->
-    <div class="flex items-center justify-between mb-6">
-      <div class="flex items-center gap-2">
-        <div
-          class="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
-        ></div>
-        <h2
-          class="font-black text-lg text-white tracking-tight uppercase tracking-widest"
-        >
-          {{ $t("dashboard.latest_videos") }}
-        </h2>
-      </div>
-      <NuxtLink
-        to="/analytics"
-        class="flex items-center gap-2 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-all group"
-      >
-        {{ $t("dashboard.view_all_videos") }}
-        <UIcon
-          name="i-heroicons-arrow-right"
-          class="w-4 h-4 group-hover:translate-x-1 transition-transform"
-        />
-      </NuxtLink>
-    </div>
-
-    <div
-      v-if="!stats?.recentVideos?.length"
-      class="bg-white/[0.02] border border-white/[0.08] border-dashed rounded-3xl py-12 text-center mb-12"
-    >
-      <p class="text-slate-400 font-bold uppercase tracking-widest text-xs">
-        {{ $t("dashboard.no_videos") }}
-      </p>
-    </div>
-
-    <div
-      v-else
-      class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-12"
-    >
-      <NuxtLink
-        v-for="(video, idx) in stats.recentVideos"
-        :key="video.id"
-        :to="`/comments?videoId=${video.id}`"
-        class="glass-card overflow-hidden flex flex-col group animate-slide-up"
-        :class="`stagger-${(idx % 4) + 1}`"
-      >
-        <div class="relative aspect-video bg-slate-900 overflow-hidden">
-          <img
-            v-if="video.thumbnailUrl && !failedThumbnails[video.id]"
-            :src="getCleanThumbnailUrl(video.id, video.thumbnailUrl)"
-            :alt="video.title"
-            class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-            loading="lazy"
-            referrerpolicy="no-referrer"
-            @error="handleThumbnailError(video.id, video.id, $event)"
-          />
-          <div v-else class="w-full h-full flex items-center justify-center bg-slate-900">
-            <UIcon name="i-heroicons-video-camera" class="w-8 h-8 text-slate-800" />
-          </div>
-          <div
-            class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
-          />
-          
-          <!-- Overlay Stats (Views/Likes) -->
-          <div
-            class="absolute bottom-2 left-2 right-2 flex items-center justify-between"
-          >
-            <div class="flex gap-1.5">
-              <div
-                class="px-2 py-1 rounded-lg bg-black/80 text-[10px] font-black text-white backdrop-blur-md border border-white/10 flex items-center gap-1.5 shadow-xl"
-              >
-                <UIcon
-                  name="i-heroicons-eye"
-                  class="w-3 h-3 text-slate-400"
-                />
-                {{ video.viewCount?.toLocaleString() || 0 }}
-              </div>
-              <div
-                v-if="video.likeCount"
-                class="px-2 py-1 rounded-lg bg-black/80 text-[10px] font-black text-white backdrop-blur-md border border-white/10 flex items-center gap-1.5 shadow-xl"
-              >
-                <UIcon
-                  name="i-heroicons-hand-thumb-up"
-                  class="w-3 h-3 text-indigo-400"
-                />
-                {{ video.likeCount?.toLocaleString() }}
-              </div>
-            </div>
-            <div
-              class="px-2 py-1 rounded-lg bg-indigo-600 text-[10px] font-black text-white backdrop-blur-md border border-white/20 shadow-[0_4px_12px_rgba(79,70,229,0.4)]"
-            >
-              {{ video.commentCount?.toLocaleString() || 0 }}
-            </div>
-          </div>
-        </div>
-
-        <!-- Content -->
-        <div class="p-3 flex flex-col flex-1 bg-white/[0.02]">
-          <p
-            class="text-[11px] font-black text-slate-200 line-clamp-2 group-hover:text-indigo-400 transition-colors mb-2 leading-tight h-8"
-          >
-            {{ video.title }}
-          </p>
-
-          <div class="mt-auto flex items-center justify-between border-t border-white/5 pt-2">
-            <span class="text-[9px] font-black text-indigo-500/50 uppercase tracking-widest">
-              {{ $t('nav.comments') }}
-            </span>
-            <span class="text-[9px] font-bold text-slate-600">
-              {{ isMounted ? timeAgo(video.publishedAt) : '...' }}
-            </span>
-          </div>
-        </div>
-      </NuxtLink>
-    </div>
-
+    <!-- Live Feed -->
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-2">
         <div
@@ -407,7 +299,7 @@ const statCards = computed(() => [
 
     <div
       v-if="!stats?.recentComments?.length"
-      class="bg-white/[0.02] border border-white/[0.08] border-dashed rounded-3xl py-24 text-center"
+      class="bg-white/[0.02] border border-white/[0.08] border-dashed rounded-3xl py-24 text-center mb-12"
     >
       <div
         class="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 border border-white/10"
@@ -424,7 +316,7 @@ const statCards = computed(() => [
 
     <div
       v-else
-      class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2 sm:gap-6 dashboard-single-row"
+      class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-2 sm:gap-6 dashboard-single-row mb-12"
     >
       <NuxtLink
         v-for="(comment, idx) in stats.recentComments"
@@ -502,7 +394,7 @@ const statCards = computed(() => [
               >
               <span
                 class="mt-0.5 text-[8px] sm:text-[12px] text-slate-500 font-medium"
-                >{{ isMounted ? timeAgo(comment.publishedAt) : '...' }}</span
+                >{{ isMounted ? timeAgo(comment.publishedAt) : "..." }}</span
               >
             </div>
           </a>
@@ -527,7 +419,7 @@ const statCards = computed(() => [
               >
               <span
                 class="mt-0.5 text-[8px] sm:text-[12px] text-slate-500 font-medium"
-                >{{ isMounted ? timeAgo(comment.publishedAt) : '...' }}</span
+                >{{ isMounted ? timeAgo(comment.publishedAt) : "..." }}</span
               >
             </div>
           </div>
@@ -560,6 +452,127 @@ const statCards = computed(() => [
               <span class="hidden sm:inline">{{ $t("comments.review") }}</span>
               <UIcon name="i-heroicons-arrow-right" class="w-3 h-3" />
             </div>
+          </div>
+        </div>
+      </NuxtLink>
+    </div>
+
+    <!-- Latest Videos -->
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-2">
+        <div
+          class="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"
+        ></div>
+        <h2
+          class="font-black text-lg text-white tracking-tight uppercase tracking-widest"
+        >
+          {{ $t("dashboard.latest_videos") }}
+        </h2>
+      </div>
+      <NuxtLink
+        to="/analytics"
+        class="flex items-center gap-2 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-all group"
+      >
+        {{ $t("dashboard.view_all_videos") }}
+        <UIcon
+          name="i-heroicons-arrow-right"
+          class="w-4 h-4 group-hover:translate-x-1 transition-transform"
+        />
+      </NuxtLink>
+    </div>
+
+    <div
+      v-if="!stats?.recentVideos?.length"
+      class="bg-white/[0.02] border border-white/[0.08] border-dashed rounded-3xl py-12 text-center"
+    >
+      <p class="text-slate-400 font-bold uppercase tracking-widest text-xs">
+        {{ $t("dashboard.no_videos") }}
+      </p>
+    </div>
+
+    <div
+      v-else
+      class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6"
+    >
+      <NuxtLink
+        v-for="(video, idx) in stats.recentVideos"
+        :key="video.id"
+        :to="`/comments?videoId=${video.id}`"
+        class="glass-card overflow-hidden flex flex-col group animate-slide-up"
+        :class="`stagger-${(idx % 4) + 1}`"
+      >
+        <div class="relative aspect-video bg-slate-900 overflow-hidden">
+          <img
+            v-if="video.thumbnailUrl && !failedThumbnails[video.id]"
+            :src="getCleanThumbnailUrl(video.id, video.thumbnailUrl)"
+            :alt="video.title"
+            class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+            loading="lazy"
+            referrerpolicy="no-referrer"
+            @error="handleThumbnailError(video.id, video.id, $event)"
+          />
+          <div
+            v-else
+            class="w-full h-full flex items-center justify-center bg-slate-900"
+          >
+            <UIcon
+              name="i-heroicons-video-camera"
+              class="w-8 h-8 text-slate-800"
+            />
+          </div>
+          <div
+            class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
+          />
+
+          <!-- Overlay Stats (Views/Likes) -->
+          <div
+            class="absolute bottom-2 left-2 right-2 flex items-center justify-between"
+          >
+            <div class="flex gap-1.5">
+              <div
+                class="px-2 py-1 rounded-lg bg-black/80 text-[10px] font-black text-white backdrop-blur-md border border-white/10 flex items-center gap-1.5 shadow-xl"
+              >
+                <UIcon name="i-heroicons-eye" class="w-3 h-3 text-slate-400" />
+                {{ video.viewCount?.toLocaleString() || 0 }}
+              </div>
+              <div
+                v-if="video.likeCount"
+                class="px-2 py-1 rounded-lg bg-black/80 text-[10px] font-black text-white backdrop-blur-md border border-white/10 flex items-center gap-1.5 shadow-xl"
+              >
+                <UIcon
+                  name="i-heroicons-hand-thumb-up"
+                  class="w-3 h-3 text-indigo-400"
+                />
+                {{ video.likeCount?.toLocaleString() }}
+              </div>
+            </div>
+            <div
+              class="px-2 py-1 rounded-lg bg-indigo-600 text-[10px] font-black text-white backdrop-blur-md border border-white/20 shadow-[0_4px_12px_rgba(79,70,229,0.4)]"
+            >
+              {{ video.commentCount?.toLocaleString() || 0 }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Content -->
+        <div class="p-3 flex flex-col flex-1 bg-white/[0.02]">
+          <p
+            class="text-[11px] font-black text-slate-200 line-clamp-2 group-hover:text-indigo-400 transition-colors mb-2 leading-tight h-8"
+          >
+            {{ video.title }}
+          </p>
+
+          <div
+            class="mt-auto flex items-center justify-between border-t border-white/5 pt-2"
+          >
+            <span
+              class="text-[9px] font-black text-indigo-500/50 uppercase tracking-widest"
+            >
+              {{ $t("nav.comments") }}
+            </span>
+            <span class="text-[9px] font-bold text-slate-600">
+              {{ isMounted ? timeAgo(video.publishedAt) : "..." }}
+            </span>
           </div>
         </div>
       </NuxtLink>

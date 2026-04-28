@@ -362,7 +362,8 @@
     "backfill_started": "Backfill iniciado",
     "backfill_failed": "Error en backfill",
     "used": "usado",
-    "limit": "Límite"
+    "limit": "Límite",
+    "quota_warning": "El consumo de cuota es aproximado y depende directamente del número de comentarios y videos sincronizados."
   },
   "pwa": {
     "offline_ready": "App lista para trabajar sin conexión",
