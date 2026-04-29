@@ -48,8 +48,9 @@ async function writeSentinel(videoId: string, status: 'no_captions' | 'forbidden
  * Returns the cached transcript for a video, or fetches it from YouTube.
  * Prefers the user's configured language. Falls back to any cached track.
  * Won't retry videos already known to be unavailable (sentinel row).
+ * @param onlyIfCached If true, will NOT trigger a new YouTube API call if missing.
  */
-export async function getVideoTranscript(videoId: string): Promise<string | null> {
+export async function getVideoTranscript(videoId: string, onlyIfCached = false): Promise<string | null> {
   const db = useDb()
   const userLang = await getUserLanguageCode()
 
@@ -63,16 +64,18 @@ export async function getVideoTranscript(videoId: string): Promise<string | null
     if (preferred.transcript === SENTINEL) return null
     // If it's in user's language or there's no user-lang row, return it
     if (normLang(preferred.language) === normLang(userLang) || preferred.language === 'und') return preferred.transcript
+    return preferred.transcript
   }
 
-  // 2. No cached row at all → fetch now with language preference
-  if (!preferred) return fetchAndCacheTranscript(videoId, userLang)
-
-  // 3. Cached row exists but in a different language → still usable
-  return preferred.transcript
+  // 2. No cached row at all → fetch now with language preference (unless onlyIfCached is true)
+  if (onlyIfCached) return null
+  return fetchAndCacheTranscript(videoId, userLang)
 }
 
-export async function fetchAndCacheTranscript(videoId: string, preferredLang?: string): Promise<string | null> {
+/**
+ * Internal fetch that returns both the transcript and the quota units consumed.
+ */
+export async function fetchAndCacheTranscriptWithQuota(videoId: string, preferredLang?: string): Promise<{ transcript: string | null; quotaUsed: number }> {
   const userLang = preferredLang ?? await getUserLanguageCode()
 
   try {
@@ -95,7 +98,7 @@ export async function fetchAndCacheTranscript(videoId: string, preferredLang?: s
     const tracks = tracksRes.data.items ?? []
     if (tracks.length === 0) {
       await writeSentinel(videoId, 'no_captions', userLang)
-      return null
+      return { transcript: null, quotaUsed: 50 } // Spent 50 on captions.list
     }
 
     // Priority: manual+userLang > manual+any > ASR+userLang > ASR+any
@@ -170,12 +173,12 @@ export async function fetchAndCacheTranscript(videoId: string, preferredLang?: s
       },
     })
 
-    return transcript
+    return { transcript, quotaUsed: 50 + 200 } // captions.list(50) + captions.download(200)
   }
   catch (err: any) {
     await logger.warn('captions-service', `Transcript fetch failed for ${videoId}: ${err.message}`)
     await writeSentinel(videoId, 'error', userLang)
-    return null
+    return { transcript: null, quotaUsed: 50 } // Still spent on captions.list
   }
 }
 
@@ -188,7 +191,7 @@ export async function fetchAndCacheTranscript(videoId: string, preferredLang?: s
 export async function batchFetchTranscripts(
   limit = 50,
   delayMs = 1500,
-): Promise<{ ok: number; no_captions: number; forbidden: number; error: number; skipped: number }> {
+): Promise<{ ok: number; no_captions: number; forbidden: number; error: number; skipped: number; quotaUsed: number }> {
   const userLang = await getUserLanguageCode()
   const db = useDb()
 
@@ -210,10 +213,18 @@ export async function batchFetchTranscripts(
     .filter(id => !processedIds.has(id))
     .slice(0, limit)
 
-  const counts = { ok: 0, no_captions: 0, forbidden: 0, error: 0, skipped: allVideos.length - pending.length - (allVideos.length - processedIds.size - pending.length) }
+  const counts = { 
+    ok: 0, 
+    no_captions: 0, 
+    forbidden: 0, 
+    error: 0, 
+    skipped: processedIds.size,
+    quotaUsed: 0 
+  }
 
   for (const videoId of pending) {
-    const result = await fetchAndCacheTranscript(videoId, userLang)
+    const { transcript: result, quotaUsed } = await fetchAndCacheTranscriptWithQuota(videoId, userLang)
+    counts.quotaUsed += quotaUsed
 
     // Check what status was written
     const row = await db.query.videoTranscripts.findFirst({
@@ -231,9 +242,13 @@ export async function batchFetchTranscripts(
     }
   }
 
-  counts.skipped = processedIds.size
-
   return counts
+}
+
+// Keep original signature for compatibility if used elsewhere
+export async function fetchAndCacheTranscript(videoId: string, preferredLang?: string): Promise<string | null> {
+  const { transcript } = await fetchAndCacheTranscriptWithQuota(videoId, preferredLang)
+  return transcript
 }
 
 /**

@@ -221,9 +221,12 @@ export async function buildContext(commentId: string, langOverride: string | nul
   })
   if (!video) throw new Error(`Video not found: ${comment.videoId}`)
 
+  const intent = detectIntent(comment.text ?? '')
+  const needsTranscript = ['question', 'help_needed', 'video_request', 'complaint'].includes(intent)
+
   const [summary, rawTranscript] = await Promise.all([
     db.query.videoSummaries.findFirst({ where: eq(videoSummaries.videoId, video.id) }),
-    getVideoTranscript(video.id),
+    getVideoTranscript(video.id, !needsTranscript),
   ])
 
   const existingReplies = await db.query.comments.findMany({
@@ -307,7 +310,7 @@ export async function buildContext(commentId: string, langOverride: string | nul
       detectedLang: comment.detectedLang ?? 'und',
       langConfidence: comment.langConfidence ?? 0,
       langOverride,
-      intent: detectIntent(comment.text ?? ''),
+      intent,
     },
     video: {
       id: video.id,
@@ -318,7 +321,7 @@ export async function buildContext(commentId: string, langOverride: string | nul
       commentCount: video.commentCount ?? 0,
     },
     videoSummary: summary?.summary ?? null,
-    videoTranscript: findRelevantTranscriptExcerpt(rawTranscript, comment.text ?? '', detectIntent(comment.text ?? '')),
+    videoTranscript: findRelevantTranscriptExcerpt(rawTranscript, comment.text ?? '', intent),
     videoKeyTopics,
     videoFaqs,
     existingReplies: existingReplies.map(r => ({

@@ -9,6 +9,8 @@ export const QUOTA_COSTS = {
   'channels.list': 1,
   'playlistItems.list': 1,
   'videos.list': 1,
+  'captions.list': 50,
+  'captions.download': 200,
 } as const
 
 export async function getDailyQuotaUsed(): Promise<number> {

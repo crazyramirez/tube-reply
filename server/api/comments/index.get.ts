@@ -1,6 +1,7 @@
 import { eq, ne, and, desc, count, isNull, inArray, sql } from 'drizzle-orm'
 import { useDb } from '../../utils/db'
 import { comments, videos, authors } from '../../db/schema'
+import { getVideoTranscript } from '../../services/captions-service'
 
 const INBOX_STATUSES = ['pending', 'suggested'] as const
 
@@ -64,6 +65,11 @@ export default defineEventHandler(async (event) => {
     ...(authorId ? [eq(comments.authorChannelId, authorId)] : []),
     ...(ownerChannelId ? [ne(comments.authorChannelId, ownerChannelId)] : []),
   ]
+
+  // TARGETED TRANSCRIPT FETCH: If user is filtering by video, ensure we have the transcript
+  if (videoId) {
+    getVideoTranscript(videoId).catch(() => {})
+  }
 
 
   const orderBy = isInbox
