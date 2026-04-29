@@ -8,6 +8,7 @@ import { oauthTokens } from '../db/schema'
 const YOUTUBE_SCOPES = [
   'https://www.googleapis.com/auth/youtube.readonly',
   'https://www.googleapis.com/auth/youtube.force-ssl',
+  'https://www.googleapis.com/auth/yt-analytics.readonly',
 ]
 
 export function getOAuth2Client() {
@@ -77,6 +78,34 @@ export async function exchangeCode(code: string): Promise<{ channelId: string }>
   })
 
   return { channelId }
+}
+
+export async function getAuthenticatedOAuth2() {
+  const db = useDb()
+  const token = await db.query.oauthTokens.findFirst()
+  if (!token) throw new Error('YouTube not connected. Please connect your channel first.')
+
+  const oauth2 = getOAuth2Client()
+  const expiresAt = new Date(token.expiresAt)
+
+  if (expiresAt.getTime() - Date.now() < 5 * 60 * 1000) {
+    oauth2.setCredentials({ refresh_token: decrypt(token.refreshToken) })
+    const { credentials } = await oauth2.refreshAccessToken()
+    const newExpiresAt = credentials.expiry_date
+      ? new Date(credentials.expiry_date).toISOString()
+      : new Date(Date.now() + 3600 * 1000).toISOString()
+
+    await db.update(oauthTokens)
+      .set({ accessToken: encrypt(credentials.access_token!), expiresAt: newExpiresAt, updatedAt: new Date().toISOString() })
+      .where(eq(oauthTokens.id, token.id))
+
+    oauth2.setCredentials(credentials)
+  }
+  else {
+    oauth2.setCredentials({ access_token: decrypt(token.accessToken) })
+  }
+
+  return oauth2
 }
 
 export async function getAuthenticatedYouTube() {

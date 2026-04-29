@@ -90,7 +90,18 @@ const languageOptions = [
 
 const currentLocale = computed({
   get: () => locale.value,
-  set: (val) => setLocale(val),
+  set: async (val) => {
+    setLocale(val)
+    try {
+      await $fetch('/api/settings', {
+        method: 'PATCH',
+        headers: useCsrfHeaders(),
+        body: { language: val },
+      })
+    } catch (e) {
+      toast.add({ title: t('settings.ai_provider_failed'), color: 'red' })
+    }
+  },
 });
 
 const activeAiProvider = computed(() => settings.value?.aiProvider);

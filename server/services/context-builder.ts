@@ -1,6 +1,7 @@
-import { eq, and, desc, isNotNull } from 'drizzle-orm'
+import { eq, and, desc, isNotNull, ne } from 'drizzle-orm'
 import { useDb } from '../utils/db'
 import { comments, videos, videoSummaries, knowledgeBase } from '../db/schema'
+import { getVideoTranscript, findRelevantTranscriptExcerpt } from './captions-service'
 
 export type CommentIntent =
   | 'video_request'
@@ -33,6 +34,7 @@ export interface CommentContext {
     commentCount: number
   }
   videoSummary: string | null
+  videoTranscript: string | null
   videoKeyTopics: string[]
   videoFaqs: Array<{ q: string; a: string }>
   existingReplies: Array<{ author: string; text: string }>
@@ -219,9 +221,10 @@ export async function buildContext(commentId: string, langOverride: string | nul
   })
   if (!video) throw new Error(`Video not found: ${comment.videoId}`)
 
-  const summary = await db.query.videoSummaries.findFirst({
-    where: eq(videoSummaries.videoId, video.id),
-  })
+  const [summary, rawTranscript] = await Promise.all([
+    db.query.videoSummaries.findFirst({ where: eq(videoSummaries.videoId, video.id) }),
+    getVideoTranscript(video.id),
+  ])
 
   const existingReplies = await db.query.comments.findMany({
     where: and(
@@ -275,6 +278,7 @@ export async function buildContext(commentId: string, langOverride: string | nul
 
   const recentVideos = await db.query.videos.findMany({
     columns: { id: true, title: true, thumbnailUrl: true, duration: true },
+    where: ne(videos.id, video.id),
     orderBy: [desc(videos.publishedAt)],
     limit: MAX_RECENT_VIDEOS,
   })
@@ -314,6 +318,7 @@ export async function buildContext(commentId: string, langOverride: string | nul
       commentCount: video.commentCount ?? 0,
     },
     videoSummary: summary?.summary ?? null,
+    videoTranscript: findRelevantTranscriptExcerpt(rawTranscript, comment.text ?? '', detectIntent(comment.text ?? '')),
     videoKeyTopics,
     videoFaqs,
     existingReplies: existingReplies.map(r => ({
@@ -500,6 +505,7 @@ ${topicsText ? `Key topics: ${topicsText}` : ''}
 VIDEO SUMMARY:
 ${ctx.videoSummary ?? 'No summary available. Use video title and description only.'}
 ${faqsText ? `\nVIDEO FAQs (pre-analyzed viewer questions — use these to answer directly):\n${faqsText}` : ''}
+${ctx.videoTranscript ? `\nVIDEO TRANSCRIPT EXCERPT (actual spoken content — highest accuracy source for answering questions):\n${ctx.videoTranscript}` : ''}
 
 EXISTING REPLIES IN THIS THREAD (MOST RECENT FIRST):
 ${repliesText}

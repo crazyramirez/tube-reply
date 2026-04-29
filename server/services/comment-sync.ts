@@ -107,6 +107,29 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
       } catch (healErr) {
         await logger.warn('comment-sync', 'Avatar backfill failed (non-critical)', { error: (healErr as Error).message })
       }
+
+      // TRANSCRIPT OPPORTUNISTIC FETCH: use leftover quota to pre-cache transcripts.
+      // Each video costs ~150 units (captions.list + captions.download).
+      // Only runs when enough quota remains. Max 5 videos per sync to stay safe.
+      try {
+        const quotaAfterSync = await getRemainingQuota()
+        const TRANSCRIPT_COST_PER_VIDEO = 150
+        const TRANSCRIPT_QUOTA_RESERVE = 1500 // keep this much in reserve for next sync
+        const canFetch = Math.floor((quotaAfterSync - TRANSCRIPT_QUOTA_RESERVE) / TRANSCRIPT_COST_PER_VIDEO)
+        const transcriptLimit = Math.min(canFetch, 5)
+
+        if (transcriptLimit > 0) {
+          const { batchFetchTranscripts } = await import('./captions-service')
+          const tr = await batchFetchTranscripts(transcriptLimit, 800)
+          const fetched = tr.ok + tr.no_captions + tr.forbidden + tr.error
+          if (fetched > 0) {
+            await logger.info('comment-sync', `Transcripts: ${tr.ok} ok, ${tr.no_captions} no-captions, ${tr.forbidden} forbidden, ${tr.error} error (${tr.skipped} skipped)`)
+          }
+        }
+      } catch (trErr) {
+        await logger.warn('comment-sync', 'Transcript opportunistic fetch failed (non-critical)', { error: (trErr as Error).message })
+      }
+
       return
     }
 

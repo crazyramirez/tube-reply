@@ -297,6 +297,9 @@ watch(
     data.value?.comment?.status,
   ],
   ([suggestions, published, status]) => {
+    // If we have an ephemeral suggestion, don't let the watcher overwrite it
+    if (activeSuggestion.value?.id === -1) return;
+
     if (!suggestions?.length) {
       activeSuggestion.value = null;
       return;
@@ -326,10 +329,44 @@ watch(
   { immediate: true },
 );
 
+async function persistSuggestion() {
+  if (
+    !activeSuggestion.value ||
+    (activeSuggestion.value.id && activeSuggestion.value.id > 0)
+  )
+    return activeSuggestion.value?.id;
+
+  try {
+    const res = await $fetch<{ suggestionId: number }>(
+      `/api/comments/${id}/save-suggestion`,
+      {
+        method: "POST",
+        body: {
+          ...activeSuggestion.value,
+          editedText: editedText.value,
+        },
+        headers: useCsrfHeaders(),
+      },
+    );
+
+    if (activeSuggestion.value) {
+      activeSuggestion.value.id = res.suggestionId;
+    }
+
+    // Refresh to ensure everything is synced
+    await refresh();
+
+    return res.suggestionId;
+  } catch (err) {
+    toast.add({ title: t("comment_detail.save_failed"), color: "red" });
+    throw err;
+  }
+}
+
 async function generateSuggestion() {
   generating.value = true;
   try {
-    await $fetch(`/api/comments/${id}/suggest`, {
+    const res = await $fetch<any>(`/api/comments/${id}/suggest-preview`, {
       method: "POST",
       body: {
         additionalContext: additionalContext.value,
@@ -339,23 +376,31 @@ async function generateSuggestion() {
       headers: useCsrfHeaders(),
     });
 
-    // Refresh the data to get the new suggestion
-    await refresh();
+    // Create a local suggested reply object
+    const ephemeral: SuggestedReply = {
+      ...res,
+      id: -1, // Mark as ephemeral
+      commentId: id,
+      status: "pending_review",
+      generatedAt: new Date().toISOString(),
+      reviewedAt: null,
+      editedText: null,
+    };
 
-    // Force update the editor with the new response
-    if (data.value?.suggestions?.length) {
-      const latest = data.value.suggestions[0] as SuggestedReply;
-      activeSuggestion.value = latest;
-      // ALWAYS overwrite if we explicitly called generate
-      editedText.value = latest.responseText;
-      isEditing.value = true;
+    activeSuggestion.value = ephemeral;
+    editedText.value = ephemeral.responseText;
+    isEditing.value = true;
 
-      toast.add({
-        title: t("comment_detail.suggestion_generated"),
-        icon: "i-heroicons-sparkles",
-        color: "emerald",
-      });
+    // Update local status so the UI reflects "Suggested" state
+    if (data.value?.comment) {
+      data.value.comment.status = "suggested";
     }
+
+    toast.add({
+      title: t("comment_detail.suggestion_generated"),
+      icon: "i-heroicons-sparkles",
+      color: "emerald",
+    });
   } catch (err) {
     toast.add({ title: t("comment_detail.generation_failed"), color: "red" });
   } finally {
@@ -365,6 +410,16 @@ async function generateSuggestion() {
 
 async function saveEdit() {
   if (!activeSuggestion.value) return;
+
+  // If it's a new suggestion, persist it first
+  if (activeSuggestion.value.id === -1) {
+    try {
+      await persistSuggestion();
+    } catch (e) {
+      return;
+    }
+  }
+
   const res = await $fetch<{
     ok: boolean;
     suggestion?: { verificationTranslation: string; videoLinksUsed: any[] };
@@ -412,6 +467,12 @@ async function publishReply() {
   if (!activeSuggestion.value || !publishConfirmed.value) return;
   publishing.value = true;
   try {
+    // 1. Ensure it's persisted first
+    let suggestionId = activeSuggestion.value.id;
+    if (suggestionId === -1) {
+      suggestionId = await persistSuggestion();
+    }
+
     if (
       editedText.value !==
       (activeSuggestion.value.editedText ?? activeSuggestion.value.responseText)
@@ -420,7 +481,7 @@ async function publishReply() {
     }
     await $fetch(`/api/comments/${id}/publish`, {
       method: "POST",
-      body: { suggestionId: activeSuggestion.value.id },
+      body: { suggestionId },
       headers: useCsrfHeaders(),
     });
     toast.add({ title: t("comment_detail.reply_published"), color: "green" });
@@ -508,8 +569,6 @@ function timeAgo(iso: string): string {
 }
 
 const effectiveVideoLinks = computed(() => {
-  if (!activeSuggestion.value) return [];
-
   const text = editedText.value || "";
   const urlRegex =
     /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/g;
@@ -518,7 +577,7 @@ const effectiveVideoLinks = computed(() => {
 
   // Use metadata from current suggestion if available
   const metaMap = new Map(
-    (activeSuggestion.value.videoLinksUsed || []).map((v) => [v.video_id, v]),
+    (activeSuggestion.value?.videoLinksUsed || []).map((v) => [v.video_id, v]),
   );
 
   return detectedIds.map((id) => {
@@ -1172,55 +1231,6 @@ async function confirmUnban() {
           </div>
         </div>
 
-        <!-- Danger actions -->
-        <div class="flex gap-2 !mt-4">
-          <button
-            class="px-4 flex items-center justify-center text-center w-1/2 py-4 rounded-xl border border-red-500/10 bg-red-500/5 text-red-500/60 hover:text-red-500 hover:bg-red-500/10 text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 cursor-pointer"
-            @click="showDeleteModal = true"
-          >
-            <UIcon name="i-heroicons-trash" class="w-3.5 h-3.5" />
-            {{ $t("comment_detail.delete_youtube") }}
-          </button>
-          <button
-            v-if="!data.comment.isBanned"
-            class="px-4 flex items-center justify-center text-center w-1/2 py-4 rounded-xl border border-red-500/10 bg-red-500/5 text-red-500/60 hover:text-red-500 hover:bg-red-500/10 text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 cursor-pointer"
-            @click="showBanModal = true"
-          >
-            <UIcon name="i-heroicons-no-symbol" class="w-3.5 h-3.5" />
-            {{ $t("comment_detail.ban_user") }}
-          </button>
-          <button
-            v-else
-            class="px-4 py-2 rounded-xl border border-emerald-500/10 bg-emerald-500/5 text-emerald-500/60 hover:text-emerald-500 hover:bg-emerald-500/10 text-[12px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 cursor-pointer"
-            @click="showUnbanModal = true"
-          >
-            <UIcon name="i-heroicons-check-circle" class="w-3.5 h-3.5" />
-            {{ $t("comment_detail.unban_user") }}
-          </button>
-        </div>
-
-        <div class="flex">
-          <button
-            v-if="data.comment?.status === 'dismissed'"
-            class="px-5 py-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 hover:bg-emerald-500/10 text-sm font-bold transition-all duration-300 flex items-center gap-2 cursor-pointer"
-            @click="undismissComment"
-          >
-            <UIcon name="i-heroicons-arrow-uturn-left" class="w-4 h-4" />
-            {{ $t("comment_detail.restore") }}
-          </button>
-          <button
-            v-if="
-              data.comment?.status !== 'dismissed' &&
-              data.comment?.status !== 'published'
-            "
-            class="px-5 mb-6 py-3 rounded-2xl border border-white/10 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 text-sm font-bold transition-all duration-300 flex items-center gap-2 cursor-pointer disabled:opacity-20 disabled:cursor-not-allowed"
-            @click="dismissComment"
-          >
-            <UIcon name="i-heroicons-archive-box" class="w-4 h-4" />
-            {{ $t("comment_detail.dismiss") }}
-          </button>
-        </div>
-
         <!-- Commenter History Panel -->
         <div
           v-if="commenterHistory && commenterHistory.total > 1"
@@ -1286,6 +1296,33 @@ async function confirmUnban() {
               />
             </NuxtLink>
           </div>
+        </div>
+
+        <!-- Danger actions -->
+        <div class="flex gap-2 !mt-4">
+          <button
+            class="px-4 flex items-center justify-center text-center w-1/2 py-4 rounded-xl border border-red-500/10 bg-red-500/5 text-red-500/60 hover:text-red-500 hover:bg-red-500/10 text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 cursor-pointer"
+            @click="showDeleteModal = true"
+          >
+            <UIcon name="i-heroicons-trash" class="w-3.5 h-3.5" />
+            {{ $t("comment_detail.delete_youtube") }}
+          </button>
+          <button
+            v-if="!data.comment.isBanned"
+            class="px-4 flex items-center justify-center text-center w-1/2 py-4 rounded-xl border border-red-500/10 bg-red-500/5 text-red-500/60 hover:text-red-500 hover:bg-red-500/10 text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 cursor-pointer"
+            @click="showBanModal = true"
+          >
+            <UIcon name="i-heroicons-no-symbol" class="w-3.5 h-3.5" />
+            {{ $t("comment_detail.ban_user") }}
+          </button>
+          <button
+            v-else
+            class="px-4 py-2 rounded-xl border border-emerald-500/10 bg-emerald-500/5 text-emerald-500/60 hover:text-emerald-500 hover:bg-emerald-500/10 text-[12px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 cursor-pointer"
+            @click="showUnbanModal = true"
+          >
+            <UIcon name="i-heroicons-check-circle" class="w-3.5 h-3.5" />
+            {{ $t("comment_detail.unban_user") }}
+          </button>
         </div>
       </div>
 
@@ -1376,8 +1413,8 @@ async function confirmUnban() {
               >
                 <textarea
                   v-model="editedText"
-                  rows="5"
-                  class="premium-textarea min-h-[200px] text-lg leading-relaxed"
+                  rows="4"
+                  class="premium-textarea min-h-[180px] text-lg leading-relaxed"
                   :placeholder="$t('comment_detail.refine_placeholder')"
                 ></textarea>
 
@@ -1502,7 +1539,7 @@ async function confirmUnban() {
           <!-- Final High-Impact Action -->
           <div class="pt-4">
             <button
-              class="premium-btn-success w-full flex items-center justify-center gap-4 py-7 shadow-[0_0_60px_rgba(16,185,129,0.2)] group relative overflow-hidden"
+              class="premium-btn-success w-full flex items-center justify-center gap-4 py-10 shadow-[0_0_60px_rgba(16,185,129,0.2)] group relative overflow-hidden"
               :disabled="!editedText || publishing"
               @click="showPublishModal = true"
             >
@@ -1532,41 +1569,97 @@ async function confirmUnban() {
                 >{{ $t("comment_detail.referenced_intel") }}</span
               >
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <a
                 v-for="link in effectiveVideoLinks"
                 :key="link.video_id"
-                class="glass-card p-3 flex items-center gap-3 hover:border-indigo-500/30 transition-colors"
+                :href="link.url"
+                target="_blank"
+                class="group relative p-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] hover:border-indigo-500/40 transition-all duration-500 flex gap-4 items-center overflow-hidden cursor-pointer"
               >
-                <img
-                  v-if="!failedThumbnails['link-' + link.video_id]"
-                  :src="getCleanThumbnailUrl(link.video_id, link.thumbnail_url)"
-                  class="w-16 aspect-video object-cover rounded shadow-lg"
-                  referrerpolicy="no-referrer"
-                  @error="
-                    handleThumbnailError(
-                      'link-' + link.video_id,
-                      link.video_id,
-                      $event,
-                    )
-                  "
-                />
+                <!-- Subtle Background Glow -->
                 <div
-                  v-else
-                  class="w-16 aspect-video rounded bg-slate-800 flex items-center justify-center"
+                  class="absolute -right-8 -top-8 w-32 h-32 bg-indigo-500/10 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"
+                />
+
+                <!-- Thumbnail Container -->
+                <div
+                  class="relative shrink-0 w-28 aspect-video rounded-xl overflow-hidden border border-white/10 shadow-2xl bg-slate-900"
                 >
-                  <UIcon
-                    name="i-heroicons-video-camera"
-                    class="w-4 h-4 text-slate-600"
+                  <img
+                    v-if="!failedThumbnails['link-' + link.video_id]"
+                    :src="
+                      getCleanThumbnailUrl(link.video_id, link.thumbnail_url)
+                    "
+                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    referrerpolicy="no-referrer"
+                    @error="
+                      handleThumbnailError(
+                        'link-' + link.video_id,
+                        link.video_id,
+                        $event,
+                      )
+                    "
                   />
+                  <div
+                    v-else
+                    class="w-full h-full flex items-center justify-center bg-slate-800"
+                  >
+                    <UIcon
+                      name="i-heroicons-video-camera"
+                      class="w-6 h-6 text-slate-600"
+                    />
+                  </div>
+
+                  <!-- Play Overlay -->
+                  <div
+                    class="absolute inset-0 bg-black/20 group-hover:bg-black/50 transition-colors duration-500 flex items-center justify-center"
+                  >
+                    <div
+                      class="w-8 h-8 rounded-full bg-indigo-500/90 flex items-center justify-center scale-75 group-hover:scale-100 transition-all duration-500 shadow-xl border border-white/20"
+                    >
+                      <UIcon
+                        name="i-heroicons-play"
+                        class="w-4 h-4 text-white fill-current translate-x-0.5"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <a
-                  :href="link.url"
-                  target="_blank"
-                  class="text-[12px] font-bold text-slate-300 hover:text-indigo-400 line-clamp-1 transition-colors"
-                  >{{ link.video_title }}</a
+
+                <!-- Info -->
+                <div class="flex-1 min-w-0 pr-2">
+                  <div class="flex items-center gap-1.5 mb-1">
+                    <div
+                      class="w-1 h-1 rounded-full bg-indigo-500 animate-pulse"
+                    />
+                    <span
+                      class="text-[9px] font-black text-indigo-400/80 uppercase tracking-widest"
+                      >{{ $t("status.suggested") }}</span
+                    >
+                  </div>
+                  <h4
+                    class="text-[13px] font-bold text-slate-200 line-clamp-2 group-hover:text-white transition-colors"
+                  >
+                    {{ link.video_title }}
+                  </h4>
+                  <div class="flex items-center gap-2 mt-1.5 text-slate-500">
+                    <UIcon
+                      name="i-heroicons-link"
+                      class="w-3 h-3 flex-shrink-0"
+                    />
+                    <span class="text-[10px] font-mono truncate opacity-60">{{
+                      link.video_id
+                    }}</span>
+                  </div>
+                </div>
+
+                <!-- Discreet Chevron Cue -->
+                <div
+                  class="shrink-0 opacity-0 group-hover:opacity-40 group-hover:translate-x-1 transition-all duration-500 pr-2"
                 >
-              </div>
+                  <UIcon name="i-heroicons-chevron-right" class="w-5 h-5 text-slate-400" />
+                </div>
+              </a>
             </div>
           </div>
         </div>
@@ -1653,41 +1746,97 @@ async function confirmUnban() {
                 >{{ $t("comment_detail.referenced_intel") }}</span
               >
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <a
                 v-for="link in effectiveVideoLinks"
                 :key="link.video_id"
-                class="glass-card p-3 flex items-center gap-3 border-emerald-500/10 bg-emerald-500/[0.01] hover:border-emerald-500/30 transition-colors"
+                :href="link.url"
+                target="_blank"
+                class="group relative p-3 rounded-2xl bg-emerald-500/[0.01] border border-emerald-500/10 hover:bg-emerald-500/[0.03] hover:border-emerald-500/40 transition-all duration-500 flex gap-4 items-center overflow-hidden cursor-pointer"
               >
-                <img
-                  v-if="!failedThumbnails['link-' + link.video_id]"
-                  :src="getCleanThumbnailUrl(link.video_id, link.thumbnail_url)"
-                  class="w-16 aspect-video object-cover rounded shadow-lg"
-                  referrerpolicy="no-referrer"
-                  @error="
-                    handleThumbnailError(
-                      'link-' + link.video_id,
-                      link.video_id,
-                      $event,
-                    )
-                  "
-                />
+                <!-- Subtle Background Glow -->
                 <div
-                  v-else
-                  class="w-16 aspect-video rounded bg-slate-800 flex items-center justify-center"
+                  class="absolute -right-8 -top-8 w-32 h-32 bg-emerald-500/5 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700"
+                />
+
+                <!-- Thumbnail Container -->
+                <div
+                  class="relative shrink-0 w-28 aspect-video rounded-xl overflow-hidden border border-white/10 shadow-2xl bg-slate-900"
                 >
-                  <UIcon
-                    name="i-heroicons-video-camera"
-                    class="w-4 h-4 text-slate-600"
+                  <img
+                    v-if="!failedThumbnails['link-' + link.video_id]"
+                    :src="
+                      getCleanThumbnailUrl(link.video_id, link.thumbnail_url)
+                    "
+                    class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    referrerpolicy="no-referrer"
+                    @error="
+                      handleThumbnailError(
+                        'link-' + link.video_id,
+                        link.video_id,
+                        $event,
+                      )
+                    "
                   />
+                  <div
+                    v-else
+                    class="w-full h-full flex items-center justify-center bg-slate-800"
+                  >
+                    <UIcon
+                      name="i-heroicons-video-camera"
+                      class="w-6 h-6 text-slate-600"
+                    />
+                  </div>
+
+                  <!-- Play Overlay -->
+                  <div
+                    class="absolute inset-0 bg-black/20 group-hover:bg-black/50 transition-colors duration-500 flex items-center justify-center"
+                  >
+                    <div
+                      class="w-8 h-8 rounded-full bg-emerald-500/90 flex items-center justify-center scale-75 group-hover:scale-100 transition-all duration-500 shadow-xl border border-white/20"
+                    >
+                      <UIcon
+                        name="i-heroicons-play"
+                        class="w-4 h-4 text-white fill-current translate-x-0.5"
+                      />
+                    </div>
+                  </div>
                 </div>
-                <a
-                  :href="link.url"
-                  target="_blank"
-                  class="text-[12px] font-bold text-slate-300 hover:text-emerald-400 line-clamp-1 transition-colors"
-                  >{{ link.video_title }}</a
+
+                <!-- Info -->
+                <div class="flex-1 min-w-0 pr-2">
+                  <div class="flex items-center gap-1.5 mb-1">
+                    <div
+                      class="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"
+                    />
+                    <span
+                      class="text-[9px] font-black text-emerald-400/80 uppercase tracking-widest"
+                      >{{ $t("status.published") }}</span
+                    >
+                  </div>
+                  <h4
+                    class="text-[13px] font-bold text-slate-200 line-clamp-2 group-hover:text-white transition-colors"
+                  >
+                    {{ link.video_title }}
+                  </h4>
+                  <div class="flex items-center gap-2 mt-1.5 text-slate-500">
+                    <UIcon
+                      name="i-heroicons-link"
+                      class="w-3 h-3 flex-shrink-0"
+                    />
+                    <span class="text-[10px] font-mono truncate opacity-60">{{
+                      link.video_id
+                    }}</span>
+                  </div>
+                </div>
+
+                <!-- Discreet Chevron Cue -->
+                <div
+                  class="shrink-0 opacity-0 group-hover:opacity-40 group-hover:translate-x-1 transition-all duration-500 pr-2"
                 >
-              </div>
+                  <UIcon name="i-heroicons-chevron-right" class="w-5 h-5 text-slate-400" />
+                </div>
+              </a>
             </div>
           </div>
         </div>

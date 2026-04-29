@@ -23,6 +23,8 @@ export async function runMigrations() {
       for (const statement of statements) {
         const cleanSql = statement.trim()
         if (!cleanSql) continue
+        // Skip pure comment blocks (no actual SQL)
+        if (/^(--.*)$/m.test(cleanSql) && !/^(ALTER|CREATE|DROP|INSERT|UPDATE|DELETE|SELECT)\b/i.test(cleanSql)) continue
 
         try {
           // Use .run() for better-sqlite3 DDL statements

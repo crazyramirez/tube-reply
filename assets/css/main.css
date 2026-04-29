@@ -193,11 +193,11 @@ option {
 
 /* Global mobile button optimization */
 @media (max-width: 639px) {
-  button,
-  .u-button,
-  .u-button-label,
-  button span,
-  .glass-card button {
+  button:not([class*="premium-btn"]),
+  .u-button:not([class*="premium-btn"]),
+  .u-button-label:not([class*="premium-btn"]),
+  button:not([class*="premium-btn"]) span,
+  .glass-card button:not([class*="premium-btn"]) {
     font-size: 11px !important;
     padding-top: 4px !important;
     padding-bottom: 4px !important;

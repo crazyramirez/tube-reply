@@ -1,8 +1,9 @@
 import { eq, and, isNotNull } from 'drizzle-orm'
 import { useDb } from '../../../utils/db'
-import { comments, videos, suggestedReplies, publishedReplies, bannedAuthors, oauthTokens, authors } from '../../../db/schema'
+import { comments, videos, suggestedReplies, publishedReplies, bannedAuthors, oauthTokens, authors, videoTranscripts } from '../../../db/schema'
 import { getUserLanguage, getUserLanguageCode } from '../../../utils/settings'
 import { translateText } from '../../../utils/translate'
+import { fetchAndCacheTranscript } from '../../../services/captions-service'
 
 export default defineEventHandler(async (event) => {
   const db = useDb()
@@ -55,6 +56,13 @@ export default defineEventHandler(async (event) => {
   const video = await db.query.videos.findFirst({
     where: eq(videos.id, comment.videoId),
   })
+
+  // Fire-and-forget transcript pre-fetch: starts downloading in background
+  // while the user reads the comment. Zero impact on page load time.
+  // Skips if already cached (any row = ok/forbidden/no_captions/error).
+  db.query.videoTranscripts.findFirst({ where: eq(videoTranscripts.videoId, comment.videoId), columns: { id: true } })
+    .then(existing => { if (!existing) fetchAndCacheTranscript(comment.videoId).catch(() => {}) })
+    .catch(() => {})
 
   // Thread replies
   const token = await db.query.oauthTokens.findFirst({ 

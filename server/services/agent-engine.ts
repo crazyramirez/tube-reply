@@ -7,11 +7,11 @@ import {
   type Tool,
   type FunctionCall,
 } from '@google/genai'
-import { desc, eq, and, or, isNull, like } from 'drizzle-orm'
+import { desc, eq, and, or, isNull, like, sql, count } from 'drizzle-orm'
 import { useDb } from '../utils/db'
-import { videos, comments, knowledgeBase, oauthTokens, agentMessages } from '../db/schema'
+import { videos, comments, knowledgeBase, oauthTokens, agentMessages, videoTranscripts } from '../db/schema'
 import { getAiProvider, getSetting } from '../utils/settings'
-import { openaiGenerate } from '../utils/openai'
+import { openaiGenerate, getOpenAIClient } from '../utils/openai'
 
 // ─── DB search tools ─────────────────────────────────────────────────────────
 
@@ -90,6 +90,50 @@ async function getVideoComments(videoKeyword: string, limit = 10): Promise<Comme
     .limit(cap)
 }
 
+interface TranscriptSearchResult {
+  videoId: string
+  videoTitle: string
+  transcriptSnippet: string
+  language: string
+}
+
+async function searchVideoTranscripts(query: string, videoKeyword?: string, limit = 5): Promise<TranscriptSearchResult[]> {
+  const db = useDb()
+  const cap = Math.min(Math.max(1, limit), 10)
+  
+  let cond = like(videoTranscripts.transcript, `%${query}%`)
+  if (videoKeyword) {
+    cond = and(cond, like(videos.title, `%${videoKeyword}%`)) as any
+  }
+
+  const rows = await db.select({
+    videoId: videoTranscripts.videoId,
+    videoTitle: videos.title,
+    transcript: videoTranscripts.transcript,
+    language: videoTranscripts.language,
+  })
+    .from(videoTranscripts)
+    .innerJoin(videos, eq(videoTranscripts.videoId, videos.id))
+    .where(cond)
+    .limit(cap)
+
+  return rows.map(r => {
+    const index = r.transcript.toLowerCase().indexOf(query.toLowerCase())
+    const start = Math.max(0, index - 150)
+    const end = Math.min(r.transcript.length, index + 150)
+    let snippet = r.transcript.substring(start, end).trim()
+    if (start > 0) snippet = '...' + snippet
+    if (end < r.transcript.length) snippet = snippet + '...'
+    
+    return {
+      videoId: r.videoId,
+      videoTitle: r.videoTitle,
+      transcriptSnippet: snippet,
+      language: r.language,
+    }
+  })
+}
+
 async function executeTool(name: string, args: Record<string, unknown>): Promise<unknown> {
   if (name === 'search_comments') {
     const rows = await searchCommentsByText(String(args.query ?? ''), Number(args.limit ?? 8))
@@ -129,6 +173,21 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
           likes: r.likeCount ?? 0,
         }))
       : { message: 'No comments found for that video.' }
+  }
+  if (name === 'search_video_transcripts') {
+    const rows = await searchVideoTranscripts(
+      String(args.query ?? ''), 
+      args.video_keyword ? String(args.video_keyword) : undefined,
+      Number(args.limit ?? 5)
+    )
+    return rows.length
+      ? rows.map(r => ({
+          videoId: r.videoId,
+          video: r.videoTitle,
+          snippet: r.transcriptSnippet,
+          language: r.language,
+        }))
+      : { message: 'No transcripts found matching that query.' }
   }
   return { error: `Unknown tool: ${name}` }
 }
@@ -171,6 +230,19 @@ const agentTools: Tool[] = [{
         required: ['video_keyword'],
       },
     },
+    {
+      name: 'search_video_transcripts',
+      description: 'Search through the full text of video transcriptions. Use this to find what was SPOKEN in a specific video or across all videos.',
+      parametersJsonSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Keywords or phrase to search for in transcripts' },
+          video_keyword: { type: 'string', description: 'Optional: Filter by video title (e.g. "Blusa Abril")' },
+          limit: { type: 'number', description: 'Max videos to return (default 5, max 10)' },
+        },
+        required: ['query'],
+      },
+    },
   ],
 }]
 
@@ -207,7 +279,8 @@ async function buildChannelContext(): Promise<ChannelContext> {
     videoCount: oauthTokens.channelVideoCount,
   }).from(oauthTokens).limit(1)
 
-  const allVideos = await db.select({
+  // 1. Get Top Videos (Views)
+  const topByViews = await db.select({
     id: videos.id,
     title: videos.title,
     viewCount: videos.viewCount,
@@ -215,37 +288,48 @@ async function buildChannelContext(): Promise<ChannelContext> {
     publishedAt: videos.publishedAt,
     tags: videos.tags,
   }).from(videos)
+    .orderBy(desc(videos.viewCount))
+    .limit(8)
 
-  const videoStats: VideoStat[] = allVideos.map(v => ({
-    id: v.id,
-    title: v.title,
+  // 2. Get Top Videos (Engagement)
+  const engagementRateExpr = sql<number>`CAST(${videos.commentCount} AS FLOAT) / NULLIF(${videos.viewCount}, 0) * 100`
+  const topByEngagement = await db.select({
+    id: videos.id,
+    title: videos.title,
+    viewCount: videos.viewCount,
+    commentCount: videos.commentCount,
+    publishedAt: videos.publishedAt,
+    tags: videos.tags,
+    engagementRate: engagementRateExpr
+  }).from(videos)
+    .where(sql`${videos.viewCount} >= 100`)
+    .orderBy(desc(engagementRateExpr))
+    .limit(5)
+
+  // 3. Get Recent Videos
+  const recentVideos = await db.select({
+    id: videos.id,
+    title: videos.title,
+    viewCount: videos.viewCount,
+    commentCount: videos.commentCount,
+    publishedAt: videos.publishedAt,
+    tags: videos.tags,
+  }).from(videos)
+    .orderBy(desc(videos.publishedAt))
+    .limit(6)
+
+  // 4. Counts (Optimized with count())
+  const [{ total: totalComments }] = await db.select({ total: count() }).from(comments)
+  const [{ total: pendingComments }] = await db.select({ total: count() }).from(comments).where(eq(comments.status, 'pending'))
+  const [{ total: publishedReplies }] = await db.select({ total: count() }).from(comments).where(eq(comments.status, 'published'))
+
+  // Transform video data for the return type (adding default values)
+  const formatStats = (v: any) => ({
+    ...v,
     viewCount: v.viewCount ?? 0,
     commentCount: v.commentCount ?? 0,
-    publishedAt: v.publishedAt,
-    tags: v.tags,
-    engagementRate: v.viewCount && v.viewCount > 0
-      ? Number(((v.commentCount ?? 0) / v.viewCount * 100).toFixed(3))
-      : 0,
-  }))
-
-  const topByViews = [...videoStats]
-    .sort((a, b) => b.viewCount - a.viewCount)
-    .slice(0, 8)
-
-  const topByEngagement = [...videoStats]
-    .filter(v => v.viewCount >= 100)
-    .sort((a, b) => b.engagementRate - a.engagementRate)
-    .slice(0, 5)
-
-  const recentVideos = [...videoStats]
-    .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
-    .slice(0, 6)
-
-  const allComments = await db.select({ id: comments.id }).from(comments)
-  const pendingRows = await db.select({ id: comments.id })
-    .from(comments).where(eq(comments.status, 'pending'))
-  const publishedRows = await db.select({ id: comments.id })
-    .from(comments).where(eq(comments.status, 'published'))
+    engagementRate: Number((v.engagementRate ?? 0).toFixed(3))
+  })
 
   // Audience signals: sample of recent pending top-level comments
   const recentPending = await db.select({ text: comments.text })
@@ -271,12 +355,12 @@ async function buildChannelContext(): Promise<ChannelContext> {
     channelName: channel?.channelTitle ?? null,
     subscriberCount: channel?.subscriberCount ?? null,
     videoCount: channel?.videoCount ?? null,
-    topByViews,
-    topByEngagement,
-    recentVideos,
-    totalComments: allComments.length,
-    pendingComments: pendingRows.length,
-    publishedReplies: publishedRows.length,
+    topByViews: topByViews.map(formatStats),
+    topByEngagement: topByEngagement.map(formatStats),
+    recentVideos: recentVideos.map(formatStats),
+    totalComments,
+    pendingComments,
+    publishedReplies,
     audienceSignals,
     kbEntries,
   }
@@ -328,12 +412,17 @@ You have direct database access via function calls. Use them whenever the user a
 - **search_comments(query, limit)** — search comments by keyword/phrase
 - **search_comments_by_author(author_name, limit)** — find all comments by a specific person
 - **get_video_comments(video_keyword, limit)** — get top comments for a specific video
+- **search_video_transcripts(query, video_keyword, limit)** — search the full SPOKEN text of videos. Use when the user asks what you said about a topic, when you mentioned something, or to find details about a project discussed in a video.
 
-When a user asks "who said X?", "find comments about Y", "what did people say about Z" — call search_comments immediately with the relevant keywords extracted from their question.
+When a user asks "who said X?", "find comments about Y", "what did people say about Z" — call search_comments immediately.
+When a user asks "what did I say about X?", "when did I mention Y?", "look for the video where I talk about Z", or asks for design/technical details of a video's subject — call search_video_transcripts immediately. Always provide the video title in video_keyword if you know which video they are asking about.
 
 **CRITICAL — Link format for found comments:** After retrieving comments from a tool, always render each one with a clickable link using this exact markdown format at the end of each comment entry:
 [Ver comentario →](/comments/COMMENT_ID) — replace COMMENT_ID with the actual id field from the result.
 If the user writes in English, use [View comment →](/comments/COMMENT_ID) instead.
+
+**CRITICAL — Link format for found transcripts:** When mentioning a video found via search_video_transcripts, always provide a link to the video library:
+[Ver video →](/videos/VIDEO_ID) — replace VIDEO_ID with the actual videoId from the result.
 
 ## PRIMARY MISSION
 Every single response must serve ONE goal: **maximize this channel** — grow subscribers, increase views, improve engagement, and help the owner make better content decisions. Never give generic advice. Always tie recommendations to the real data below.
@@ -410,8 +499,76 @@ export async function runAgentChat(
 
   // ─── Case: OpenAI ──────────────────────────────────────────────────────────
   if (provider === 'openai') {
-    const fullPrompt = `SYSTEM: ${systemPrompt}\n\nUSER: ${userMessage}`
-    return await openaiGenerate(fullPrompt, 2)
+    const client = getOpenAIClient()
+    const model = (config.openaiModel as string) ?? 'gpt-4o-mini'
+    
+    // Map Google AI tools to OpenAI tools
+    const openAiTools = agentTools[0].functionDeclarations?.map(fd => ({
+      type: 'function',
+      function: {
+        name: fd.name,
+        description: fd.description,
+        parameters: fd.parametersJsonSchema,
+      }
+    }))
+
+    const messages: any[] = [
+      { role: 'system', content: systemPrompt },
+      ...history.map(m => ({
+        role: m.role === 'user' ? 'user' : 'assistant',
+        content: m.content
+      })),
+      { role: 'user', content: userMessage }
+    ]
+
+    let totalPromptTokens = 0
+    let totalCompletionTokens = 0
+
+    let response = await client.chat.completions.create({
+      model,
+      messages,
+      tools: openAiTools as any,
+      tool_choice: 'auto',
+    })
+
+    totalPromptTokens += response.usage?.prompt_tokens ?? 0
+    totalCompletionTokens += response.usage?.completion_tokens ?? 0
+
+    let responseMessage = response.choices[0].message
+    
+    // Tool call loop (OpenAI)
+    let rounds = 0
+    while (rounds++ < 5 && responseMessage.tool_calls?.length) {
+      messages.push(responseMessage)
+
+      for (const toolCall of responseMessage.tool_calls) {
+        const args = JSON.parse(toolCall.function.arguments)
+        const result = await executeTool(toolCall.function.name, args)
+        
+        messages.push({
+          tool_call_id: toolCall.id,
+          role: 'tool',
+          name: toolCall.function.name,
+          content: JSON.stringify(result),
+        })
+      }
+
+      response = await client.chat.completions.create({
+        model,
+        messages,
+        tools: openAiTools as any,
+      })
+
+      totalPromptTokens += response.usage?.prompt_tokens ?? 0
+      totalCompletionTokens += response.usage?.completion_tokens ?? 0
+      responseMessage = response.choices[0].message
+    }
+
+    return {
+      text: responseMessage.content || '',
+      promptTokens: totalPromptTokens,
+      completionTokens: totalCompletionTokens,
+    }
   }
 
   // ─── Case: Gemini (Default) ────────────────────────────────────────────────
