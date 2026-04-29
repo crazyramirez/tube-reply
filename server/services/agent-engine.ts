@@ -12,6 +12,7 @@ import { useDb } from '../utils/db'
 import { videos, comments, knowledgeBase, oauthTokens, agentMessages, videoTranscripts } from '../db/schema'
 import { getAiProvider, getSetting } from '../utils/settings'
 import { openaiGenerate, getOpenAIClient } from '../utils/openai'
+import { fetchAndCacheTranscript } from './captions-service'
 
 // ─── DB search tools ─────────────────────────────────────────────────────────
 
@@ -101,6 +102,26 @@ async function searchVideoTranscripts(query: string, videoKeyword?: string, limi
   const db = useDb()
   const cap = Math.min(Math.max(1, limit), 10)
   
+  // If a video keyword is provided, we check if we have the transcript for THAT video
+  if (videoKeyword) {
+    const targetVideo = await db.query.videos.findFirst({
+      where: like(videos.title, `%${videoKeyword}%`),
+      columns: { id: true, title: true }
+    })
+
+    if (targetVideo) {
+      const existing = await db.query.videoTranscripts.findFirst({
+        where: eq(videoTranscripts.videoId, targetVideo.id),
+        columns: { id: true }
+      })
+
+      // Trigger fetch if missing (await it to ensure results are available for the search below)
+      if (!existing) {
+        await fetchAndCacheTranscript(targetVideo.id).catch(() => {})
+      }
+    }
+  }
+
   let cond = like(videoTranscripts.transcript, `%${query}%`)
   if (videoKeyword) {
     cond = and(cond, like(videos.title, `%${videoKeyword}%`)) as any

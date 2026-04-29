@@ -2,7 +2,8 @@ import { eq } from 'drizzle-orm'
 import { useDb } from '../utils/db'
 import { generateWithRetry } from '../utils/gemini'
 import { logger } from '../utils/logger'
-import { videos, videoSummaries } from '../db/schema'
+import { videos, videoSummaries, videoTranscripts } from '../db/schema'
+import { getVideoTranscript } from './captions-service'
 
 export async function generateVideoSummary(videoId: string): Promise<void> {
   const db = useDb()
@@ -18,6 +19,11 @@ export async function generateVideoSummary(videoId: string): Promise<void> {
   })
   if (!video) return
 
+  // Try to get transcript ONLY if it's already cached.
+  // We don't want to trigger a new YouTube API call here to save quota,
+  // unless the transcript was already fetched by context-builder or agent.
+  const transcript = await getVideoTranscript(videoId, true)
+
   const prompt = `Summarize this YouTube video for use as context when replying to comments.
 Be concise. Max 400 words. Include:
 - Main topic in 1 sentence
@@ -26,8 +32,9 @@ Be concise. Max 400 words. Include:
 - Any specific links, tools, or resources mentioned
 
 Video title: ${video.title}
-Video description: ${(video.description ?? '').substring(0, 4000)}
+Video description: ${(video.description ?? '').substring(0, 3000)}
 Video tags: ${video.tags ? (JSON.parse(video.tags) as string[]).join(', ') : 'none'}
+${transcript ? `\nVIDEO TRANSCRIPT (spoken content):\n${transcript.substring(0, 8000)}` : ''}
 
 Return ONLY a JSON object with this schema:
 {
