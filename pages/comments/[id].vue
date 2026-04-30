@@ -151,8 +151,9 @@ const showDeleteReplyModal = ref(false);
 const savingReplyEdit = ref(false);
 const activeMenuId = ref<string | null>(null);
 
-const { data, refresh, error } = await useFetch<CommentDetailResponse>(
+const { data, refresh, error, pending } = useFetch<CommentDetailResponse>(
   () => `/api/comments/${id}?t=${Date.now()}`,
+  { lazy: true },
 );
 
 const { data: commenterHistory } = useFetch<CommenterHistory>(
@@ -431,10 +432,16 @@ async function manualSync() {
       method: "POST",
       headers: useCsrfHeaders(),
     });
-    toast.add({ title: t("comment_detail.sync_completed") || "Sync completed", color: "green" });
+    toast.add({
+      title: t("comment_detail.sync_completed") || "Sync completed",
+      color: "green",
+    });
     await refresh();
   } catch (err) {
-    toast.add({ title: t("comment_detail.sync_failed") || "Sync failed", color: "red" });
+    toast.add({
+      title: t("comment_detail.sync_failed") || "Sync failed",
+      color: "red",
+    });
   } finally {
     syncing.value = false;
   }
@@ -751,11 +758,16 @@ async function saveReplyEdit() {
       headers: useCsrfHeaders(),
     });
     toast.add({ title: t("comment_detail.reply_updated"), color: "green" });
-    
+
     // Update local state if the edited reply was the one linked to active suggestion
-    if (activeSuggestion.value && data.value?.publishedReply && (data.value.publishedReply as any).suggestionId === activeSuggestion.value.id) {
-       activeSuggestion.value.editedText = editedReplyText.value;
-       editedText.value = editedReplyText.value;
+    if (
+      activeSuggestion.value &&
+      data.value?.publishedReply &&
+      (data.value.publishedReply as any).suggestionId ===
+        activeSuggestion.value.id
+    ) {
+      activeSuggestion.value.editedText = editedReplyText.value;
+      editedText.value = editedReplyText.value;
     }
 
     editingReplyId.value = null;
@@ -962,12 +974,59 @@ async function confirmDeleteReply() {
       </UButton>
     </div>
 
-    <div v-else-if="!data" class="flex items-center justify-center py-20">
-      <div class="text-center">
+    <!-- Skeleton Loader -->
+    <div
+      v-else-if="pending && !data"
+      class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-fade-in"
+    >
+      <!-- Left Skeleton -->
+      <div class="lg:col-span-5 space-y-6">
+        <div class="glass-card p-6 h-[600px] space-y-8">
+          <div class="flex items-center justify-between">
+            <div class="h-4 w-32 bg-white/5 rounded-lg animate-pulse"></div>
+            <div class="h-6 w-20 bg-white/5 rounded-full animate-pulse"></div>
+          </div>
+          <div
+            class="h-20 w-full bg-white/[0.03] rounded-2xl animate-pulse"
+          ></div>
+          <div class="space-y-4">
+            <div
+              class="h-12 w-[85%] bg-white/5 rounded-2xl rounded-tl-none animate-pulse"
+            ></div>
+            <div
+              class="h-12 w-[85%] bg-white/5 rounded-2xl rounded-tl-none animate-pulse self-start"
+            ></div>
+            <div
+              class="h-24 w-[85%] bg-white/5 rounded-2xl rounded-tr-none animate-pulse self-end ml-auto"
+            ></div>
+          </div>
+          <div class="mt-auto pt-10">
+            <div class="h-14 w-full bg-white/5 rounded-xl animate-pulse"></div>
+          </div>
+        </div>
+        <div class="h-32 w-full bg-white/5 rounded-2xl animate-pulse"></div>
+      </div>
+      <!-- Right Skeleton -->
+      <div class="lg:col-span-7 space-y-6">
+        <div class="glass-card p-6 space-y-6">
+          <div class="grid grid-cols-2 gap-6">
+            <div class="h-12 w-full bg-white/5 rounded-xl animate-pulse"></div>
+            <div class="h-12 w-full bg-white/5 rounded-xl animate-pulse"></div>
+          </div>
+        </div>
+        <div class="glass-card p-6 space-y-6">
+          <div class="flex items-center justify-between">
+            <div class="h-4 w-24 bg-white/5 rounded-lg animate-pulse"></div>
+            <div class="h-4 w-32 bg-white/5 rounded-lg animate-pulse"></div>
+          </div>
+          <div
+            class="h-48 w-full bg-white/[0.03] rounded-2xl animate-pulse"
+          ></div>
+          <div class="h-10 w-full bg-white/5 rounded-full animate-pulse"></div>
+        </div>
         <div
-          class="w-8 h-8 border-2 border-indigo-500/40 border-t-indigo-500 rounded-full animate-spin mx-auto mb-3"
-        />
-        <p class="text-slate-500 text-sm">{{ $t("comment_detail.loading") }}</p>
+          class="h-24 w-full bg-emerald-500/10 rounded-2xl animate-pulse"
+        ></div>
       </div>
     </div>
 
@@ -989,10 +1048,12 @@ async function confirmDeleteReply() {
               <span class="font-bold text-sm text-slate-200 tracking-tight">{{
                 $t("comment_detail.conversation_flow")
               }}</span>
-              <div class="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black shadow-sm">
+              <div
+                class="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black shadow-sm"
+              >
                 {{ data.replies?.length + 1 }}
               </div>
-              <span class="text-[8px] text-slate-600 ml-2"
+              <span class="text-[10px] text-slate-600 ml-2"
                 >({{ userLangName }})</span
               >
             </div>
@@ -1000,7 +1061,7 @@ async function confirmDeleteReply() {
               <button
                 @click="manualSync"
                 :disabled="syncing"
-                class="flex items-center justify-center p-1.5 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 hover:border-indigo-500/30 transition-all duration-300"
+                class="flex items-center justify-center p-1.5 rounded-full bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 hover:border-indigo-500/30 transition-all duration-300"
                 :title="$t('comment_detail.manual_sync') || 'Manual Sync'"
               >
                 <UIcon
@@ -1013,7 +1074,7 @@ async function confirmDeleteReply() {
                 :color="confidenceColor"
                 variant="subtle"
                 size="xs"
-                class="rounded-full px-3 py-1 font-bold uppercase"
+                class="rounded-full px-3 py-1.5 font-bold uppercase"
               >
                 {{ $t("status." + selectedStatus) }}
               </UBadge>

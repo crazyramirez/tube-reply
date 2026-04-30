@@ -1,4 +1,4 @@
-import { eq, and, desc, count, isNull, sql, inArray, ne } from 'drizzle-orm'
+import { eq, and, or, desc, count, isNull, sql, inArray, ne } from 'drizzle-orm'
 import { useDb } from '../utils/db'
 import { getAuthenticatedYouTube, refreshChannelMetadata } from '../utils/youtube'
 import { logger } from '../utils/logger'
@@ -351,6 +351,12 @@ export async function syncSingleThread(targetId: string): Promise<void> {
       "comment-sync",
       `On-demand sync completed for thread ${threadId} (Target: ${targetId})`
     );
+
+    // Trigger automation rules (AI suggestions, etc.) immediately for this thread
+    const { applyRulesToComment } = await import("./automation-engine");
+    await applyRulesToComment(threadId).catch((err) => {
+      logger.warn("comment-sync", `Immediate automation failed for ${threadId}`, { error: err.message });
+    });
   } catch (err: any) {
     const msg = err?.message ?? "";
     await logger.error("comment-sync", `On-demand sync failed for ${targetId}`, err);
@@ -442,6 +448,7 @@ async function syncChannelComments(
           const authorId = (reply.snippet?.authorChannelId as unknown as { value?: string } | null)?.value ?? null
           const isOwnerReply = authorId === ownerChannelId
 
+          // REOPEN LOGIC: Now handled centrally in upsertComment
           const replyIsNew = await upsertComment(db, {
             id: reply.id,
             videoId,
@@ -462,33 +469,6 @@ async function syncChannelComments(
 
           if (replyIsNew) {
             newCount++
-          }
-
-          // ROBUST REOPEN LOGIC: 
-          // If this is a reply from a user (not the owner) AND it was published AFTER 
-          // we last processed this thread (or if it's a brand new reply to a finished thread),
-          // we must reopen the thread.
-          if (!isOwnerReply) {
-            const parent = await db.query.comments.findFirst({
-              where: eq(comments.id, top.id),
-              columns: { status: true, processedAt: true }
-            })
-            
-            if (parent && (parent.status === 'published' || parent.status === 'dismissed' || parent.status === 'skipped')) {
-              const lastProcessed = parent.processedAt ? new Date(parent.processedAt).getTime() : 0
-              const replyTime = new Date(reply.snippet.publishedAt || 0).getTime()
-              
-              if (replyTime > lastProcessed) {
-                await db.update(comments)
-                  .set({ 
-                    status: 'pending', 
-                    updatedAt: new Date().toISOString(),
-                    processedAt: null 
-                  })
-                  .where(eq(comments.id, top.id))
-                await logger.info('comment-sync', `Reopened thread ${top.id} due to activity from ${reply.snippet.authorDisplayName} after last processing`)
-              }
-            }
           }
         }
 
@@ -699,6 +679,7 @@ async function syncVideoComments(
         const authorId = (reply.snippet?.authorChannelId as unknown as { value?: string } | null)?.value ?? null
         const isOwnerReply = authorId === ownerChannelId
 
+        // REOPEN LOGIC: Now handled centrally in upsertComment
         const replyIsNew = await upsertComment(db, {
           id: reply.id,
           videoId,
@@ -719,23 +700,6 @@ async function syncVideoComments(
         
         if (replyIsNew) {
           newCount++
-        }
-
-        if (!isOwnerReply) {
-          const parent = await db.query.comments.findFirst({
-            where: eq(comments.id, top.id),
-            columns: { status: true, processedAt: true }
-          })
-          if (parent && (parent.status === 'published' || parent.status === 'dismissed' || parent.status === 'skipped')) {
-            const lastProcessed = parent.processedAt ? new Date(parent.processedAt).getTime() : 0
-            const replyTime = new Date(reply.snippet.publishedAt || 0).getTime()
-            
-            if (replyTime > lastProcessed) {
-              await db.update(comments)
-                .set({ status: 'pending', updatedAt: new Date().toISOString(), processedAt: null })
-                .where(eq(comments.id, top.id))
-            }
-          }
         }
       }
     }
@@ -831,115 +795,105 @@ export async function upsertComment(
       textOriginal: data.textOriginal,
       likeCount: data.likeCount,
       detectedLang: data.detectedLang,
-      langConfidence: data.langConfidence,
-      publishedAt: data.publishedAt,
-      updatedAt: data.updatedAt,
-      status,
-      // Default activity to self for new threads
-      lastActivityAt: data.parentId ? null : data.publishedAt,
-      lastActivityText: data.parentId ? null : data.text,
-      lastActivityAuthor: data.parentId ? null : data.authorName,
+      ...data,
+      status: data.parentId ? 'published' : 'pending',
+      lastActivityAt: data.publishedAt,
+      lastActivityText: data.text,
+      lastActivityAuthor: data.authorName,
+      fetchedAt: new Date().toISOString()
     })
 
-    // Propagate image to old comments if this is a new author seen in this sync
+    // Proactive image propagation for new author
     if (data.authorChannelId && data.authorProfileImageUrl && updatedAuthors && !updatedAuthors.has(data.authorChannelId)) {
       const updatedCount = await db.update(comments)
         .set({ authorProfileImageUrl: data.authorProfileImageUrl })
         .where(eq(comments.authorChannelId, data.authorChannelId))
       
       updatedAuthors.add(data.authorChannelId)
-      if (updatedCount > 1) {
+      if (updatedCount > 0) {
          console.log(`[comment-sync] Propagated image for author ${data.authorName} (${data.authorChannelId}) to ${updatedCount} comments`)
       }
     }
-
-    // If it's a reply, update the parent's activity metadata
-    if (data.parentId) {
-      const isOwnerReply = data.authorChannelId && data.authorChannelId === ownerChannelId
+  } else {
+    // 1. DATA INTEGRITY: Ensure videoId is correct
+    if (existing.videoId !== data.videoId) {
+      await logger.warn('comment-sync', `Correcting videoId mismatch for comment ${data.id}`, { old: existing.videoId, new: data.videoId })
       await db.update(comments)
-        .set({
-          lastActivityAt: data.publishedAt,
-          lastActivityText: data.text,
-          lastActivityAuthor: data.authorName,
-          updatedAt: new Date().toISOString(),
-          ...(isOwnerReply ? { status: 'published', processedAt: new Date().toISOString() } : {})
-        })
-        .where(eq(comments.id, data.parentId))
+        .set({ videoId: data.videoId, updatedAt: new Date().toISOString() })
+        .where(eq(comments.id, data.id))
     }
 
-    return true
+    // 2. Update if text or likes changed
+    if (existing.updatedAt !== data.updatedAt || existing.text !== data.text || existing.likeCount !== data.likeCount) {
+      await db.update(comments)
+        .set({ 
+          text: data.text, 
+          textOriginal: data.textOriginal,
+          updatedAt: data.updatedAt, 
+          likeCount: data.likeCount,
+          authorProfileImageUrl: data.authorProfileImageUrl,
+          translatedText: null, // Clear cache on edit
+          translationLang: null  // Clear cache on edit
+        })
+        .where(eq(comments.id, data.id))
+    }
+
+    // 3. Proactive image update for existing author
+    if (data.authorChannelId && data.authorProfileImageUrl && updatedAuthors && !updatedAuthors.has(data.authorChannelId)) {
+      if (existing.authorProfileImageUrl !== data.authorProfileImageUrl) {
+          const updatedCount = await db.update(comments)
+            .set({ authorProfileImageUrl: data.authorProfileImageUrl })
+            .where(eq(comments.authorChannelId, data.authorChannelId))
+          
+          updatedAuthors.add(data.authorChannelId)
+          if (updatedCount > 0) {
+             console.log(`[comment-sync] Propagated image update for author ${data.authorName} to ${updatedCount} comments`)
+          }
+      }
+    }
   }
 
-  // 1. DATA INTEGRITY: Ensure videoId is correct (corrects legacy or cross-sync issues)
-  if (existing.videoId !== data.videoId) {
-    await logger.warn('comment-sync', `Correcting videoId mismatch for comment ${data.id}`, { old: existing.videoId, new: data.videoId })
+  // --- THREAD STATUS RECONCILIATION ---
+  // This logic runs for both NEW and EXISTING comments during any sync
+  // It ensures the thread status matches the LATEST activity author.
+  if (data.parentId) {
+    const isOwnerReply = data.authorChannelId && data.authorChannelId === ownerChannelId
     await db.update(comments)
-      .set({ videoId: data.videoId, updatedAt: new Date().toISOString() })
-      .where(eq(comments.id, data.id))
-  }
-
-  // Mark as published if owner replied externally or if this IS an owner-started thread
-  const isOwnerActivity = data.ownerAlreadyReplied || (data.authorChannelId && data.authorChannelId === ownerChannelId)
-  
-  if (isOwnerActivity && !data.parentId && existing.status !== 'published') {
-    await db.update(comments)
-      .set({ 
-        status: 'published', 
-        processedAt: new Date().toISOString(),
-        authorProfileImageUrl: data.authorProfileImageUrl // Backfill
+      .set({
+        lastActivityAt: data.publishedAt,
+        lastActivityText: data.text,
+        lastActivityAuthor: data.authorName,
+        updatedAt: new Date().toISOString(),
+        ...(isOwnerReply ? { status: 'published', processedAt: new Date().toISOString() } : { status: 'pending', processedAt: null })
       })
-      .where(eq(comments.id, data.id))
-  }
-  
-  // If it's a reply from the owner, mark the parent thread as published
-  if (data.parentId && data.authorChannelId === ownerChannelId) {
+      .where(and(
+        eq(comments.id, data.parentId),
+        or(
+          isNull(comments.lastActivityAt),
+          sql`${data.publishedAt} >= ${comments.lastActivityAt}`
+        )
+      ))
+  } else {
+    // For top-level comments, check if it's the latest activity (meaning no replies yet)
+    const isOwner = data.authorChannelId && data.authorChannelId === ownerChannelId
     await db.update(comments)
-      .set({ 
-        status: 'published', 
-        processedAt: new Date().toISOString()
+      .set({
+        lastActivityAt: data.publishedAt,
+        lastActivityText: data.text,
+        lastActivityAuthor: data.authorName,
+        updatedAt: new Date().toISOString(),
+        ...(isOwner ? { status: 'published', processedAt: new Date().toISOString() } : { status: 'pending', processedAt: null })
       })
-      .where(eq(comments.id, data.parentId))
+      .where(and(
+        eq(comments.id, data.id),
+        or(
+          isNull(comments.lastActivityAt),
+          sql`${data.publishedAt} >= ${comments.lastActivityAt}`
+        )
+      ))
   }
 
-  // Update if text or likes changed (or YouTube marks it as updated)
-  if (existing.updatedAt !== data.updatedAt || existing.text !== data.text || existing.textOriginal !== data.textOriginal || existing.likeCount !== data.likeCount) {
-    await logger.info('comment-sync', `Updating comment ${data.id} - detected changes`, {
-      text: existing.text !== data.text,
-      orig: existing.textOriginal !== data.textOriginal,
-      likes: existing.likeCount !== data.likeCount,
-      time: existing.updatedAt !== data.updatedAt
-    })
-    console.log(`[SYNC] Updating ${data.id}. Old text: "${existing.text}", New text: "${data.text}"`)
-    await db.update(comments)
-      .set({ 
-        text: data.text, 
-        textOriginal: data.textOriginal,
-        updatedAt: data.updatedAt, 
-        likeCount: data.likeCount,
-        authorProfileImageUrl: data.authorProfileImageUrl,
-        translatedText: null, // Clear cache on edit
-        translationLang: null  // Clear cache on edit
-      })
-      .where(eq(comments.id, data.id))
-  }
-
-  // Proactive image update: If we have a channelId and an image, 
-  // and we haven't updated this author yet in this sync run, propagate it.
-  if (data.authorChannelId && data.authorProfileImageUrl && updatedAuthors && !updatedAuthors.has(data.authorChannelId)) {
-     // Check if it's actually different or missing from THIS comment to decide if we bother
-     if (existing.authorProfileImageUrl !== data.authorProfileImageUrl) {
-        const updatedCount = await db.update(comments)
-          .set({ authorProfileImageUrl: data.authorProfileImageUrl })
-          .where(eq(comments.authorChannelId, data.authorChannelId))
-        
-        updatedAuthors.add(data.authorChannelId)
-        if (updatedCount > 0) {
-           console.log(`[comment-sync] Updated/Propagated image for existing author ${data.authorName} (${data.authorChannelId}) to ${updatedCount} comments`)
-        }
-     }
-  }
-
-  return false
+  return !existing
 }
 
 /**

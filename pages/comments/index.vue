@@ -862,7 +862,7 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
               />
 
               <div
-                class="text-xs text-slate-200 leading-relaxed italic font-medium"
+                class="text-xs text-slate-200 leading-relaxed italic font-medium line-clamp-3"
               >
                 "<span
                   v-html="

@@ -112,12 +112,14 @@ export async function applyRulesToComment(commentId: string): Promise<void> {
     where: eq(automationRules.isActive, true),
   })
 
+  let ruleMatched = false
   for (const rule of rules) {
     try {
       const conditions: AutomationCondition[] = JSON.parse(rule.conditions)
       const allMatch = conditions.every(c => evalCondition(c, comment as CommentRow))
       if (!allMatch) continue
 
+      ruleMatched = true
       const params = rule.actionParams ? JSON.parse(rule.actionParams) : null
       await applyAction(rule.action as AutomationAction, params, comment as CommentRow)
 
@@ -127,6 +129,20 @@ export async function applyRulesToComment(commentId: string): Promise<void> {
         .where(eq(automationRules.id, rule.id))
     } catch (err) {
       await logger.warn('automation-engine', `Rule ${rule.id} failed`, { error: (err as Error).message })
+    }
+  }
+
+  // Fallback: If no specific rule matched and global auto-suggest is enabled, trigger it
+  if (!ruleMatched) {
+    const { getAutoSuggestEnabled } = await import('../utils/settings')
+    if (await getAutoSuggestEnabled()) {
+      const { generateSuggestion } = await import('./suggestion-engine')
+      // Only suggest if not already suggested/published
+      if (comment.status === 'pending') {
+        await generateSuggestion(comment.id, null, null).catch((err) => {
+          logger.warn('automation-engine', `Global auto-suggest failed for ${comment.id}`, { error: err.message })
+        })
+      }
     }
   }
 }
