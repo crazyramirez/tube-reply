@@ -751,6 +751,13 @@ async function saveReplyEdit() {
       headers: useCsrfHeaders(),
     });
     toast.add({ title: t("comment_detail.reply_updated"), color: "green" });
+    
+    // Update local state if the edited reply was the one linked to active suggestion
+    if (activeSuggestion.value && data.value?.publishedReply && (data.value.publishedReply as any).suggestionId === activeSuggestion.value.id) {
+       activeSuggestion.value.editedText = editedReplyText.value;
+       editedText.value = editedReplyText.value;
+    }
+
     editingReplyId.value = null;
     await refresh();
   } catch (err: any) {

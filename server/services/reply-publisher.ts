@@ -58,7 +58,8 @@ export async function publishReply(commentId: string, suggestionId: number): Pro
       status: 'published',
       lastActivityAt: new Date().toISOString(),
       lastActivityText: finalText,
-      lastActivityAuthor: 'You'
+      lastActivityAuthor: 'You',
+      fetchedAt: new Date().toISOString(), // Prevent immediate on-demand sync from overwriting with old YouTube data
     })
     .where(eq(comments.id, commentId))
 
@@ -96,9 +97,35 @@ export async function updateReply(youtubeReplyId: string, text: string): Promise
     .where(eq(comments.id, youtubeReplyId))
 
   // Also update in publishedReplies table if it exists there
-  await db.update(publishedReplies)
+  const [pub] = await db.update(publishedReplies)
     .set({ finalText: text, publishedAt: new Date().toISOString() })
     .where(eq(publishedReplies.youtubeReplyId, youtubeReplyId))
+    .returning({ commentId: publishedReplies.commentId, suggestionId: publishedReplies.suggestionId })
+
+  // If it's a known published reply, update parent and suggestion too
+  if (pub) {
+    // 1. Update parent comment metadata
+    await db.update(comments)
+      .set({ 
+        lastActivityText: text,
+        fetchedAt: new Date().toISOString() // Prevent immediate on-demand sync from overwriting
+      })
+      .where(eq(comments.id, pub.commentId))
+
+    // 2. Update associated suggestion if any
+    if (pub.suggestionId) {
+      await db.update(suggestedReplies)
+        .set({ editedText: text })
+        .where(eq(suggestedReplies.id, pub.suggestionId))
+    }
+  } else {
+    // If it's not in publishedReplies, it might be a top-level comment edited by owner
+    // or a reply that was synced but not published through our app.
+    // We still update fetchedAt to prevent sync overwrite.
+    await db.update(comments)
+      .set({ fetchedAt: new Date().toISOString() })
+      .where(eq(comments.id, youtubeReplyId))
+  }
 
   await logger.info('reply-publisher', 'Reply updated', { youtubeReplyId })
 
