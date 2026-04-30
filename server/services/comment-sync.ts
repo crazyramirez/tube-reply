@@ -319,9 +319,9 @@ export async function syncSingleThread(targetId: string): Promise<void> {
     for (const reply of threadReplies) {
       if (!reply.id || !reply.snippet) continue;
       const authorId = (reply.snippet?.authorChannelId as any)?.value ?? null;
-      if (authorId === ownerChannelId) {
-        console.log(`[SYNC] YouTube returned reply ${reply.id}: "${reply.snippet.textDisplay}"`);
-      }
+      // if (authorId === ownerChannelId) {
+      //   console.log(`[SYNC] YouTube returned reply ${reply.id}: "${reply.snippet.textDisplay}"`);
+      // }
       const replyLang = detectLanguage(reply.snippet.textDisplay ?? "");
 
       await upsertComment(
