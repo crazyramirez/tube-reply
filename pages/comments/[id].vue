@@ -1118,17 +1118,29 @@ async function confirmDeleteReply() {
 
               <div
                 class="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl rounded-tl-none p-4 text-sm text-slate-200 leading-relaxed shadow-sm relative group/bubble"
-                :class="editingReplyId === data.comment.id ? 'w-full' : 'max-w-[85%]'"
+                :class="
+                  editingReplyId === data.comment.id ? 'w-full' : 'max-w-[85%]'
+                "
               >
                 <!-- Kebab Menu for Main Comment (if Owner) -->
                 <div
-                  v-if="data.ownerChannelId && data.comment.authorChannelId === data.ownerChannelId && editingReplyId !== data.comment.id"
+                  v-if="
+                    data.ownerChannelId &&
+                    data.comment.authorChannelId === data.ownerChannelId &&
+                    editingReplyId !== data.comment.id
+                  "
                   class="absolute top-2 right-2 transition-opacity"
-                  :class="activeMenuId === data.comment.id ? 'opacity-100' : 'opacity-0 group-hover/bubble:opacity-100'"
+                  :class="
+                    activeMenuId === data.comment.id
+                      ? 'opacity-100'
+                      : 'opacity-0 group-hover/bubble:opacity-100'
+                  "
                 >
                   <UDropdown
                     :open="activeMenuId === data.comment.id"
-                    @update:open="(val) => activeMenuId = val ? data.comment.id : null"
+                    @update:open="
+                      (val) => (activeMenuId = val ? data.comment.id : null)
+                    "
                     :items="[
                       [
                         {
@@ -1147,17 +1159,26 @@ async function confirmDeleteReply() {
                         },
                       ],
                     ]"
-                    :ui="{ width: 'w-32', background: 'bg-slate-900 border border-white/10' }"
+                    :ui="{
+                      width: 'w-32',
+                      background: 'bg-slate-900 border border-white/10',
+                    }"
                   >
                     <button
                       class="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-500 hover:text-white transition-all"
                     >
-                      <UIcon name="i-heroicons-ellipsis-vertical" class="w-4 h-4" />
+                      <UIcon
+                        name="i-heroicons-ellipsis-vertical"
+                        class="w-4 h-4"
+                      />
                     </button>
                   </UDropdown>
                 </div>
 
-                <div v-if="editingReplyId === data.comment.id" class="space-y-3 w-full">
+                <div
+                  v-if="editingReplyId === data.comment.id"
+                  class="space-y-3 w-full"
+                >
                   <textarea
                     v-model="editedReplyText"
                     class="w-full bg-black/40 border border-indigo-500/30 rounded-xl p-4 text-md text-slate-200 focus:outline-none focus:border-indigo-500/50 transition-all resize-y min-h-[120px]"
@@ -1317,11 +1338,17 @@ async function confirmDeleteReply() {
                   <div
                     v-if="reply.isOwner && editingReplyId !== reply.id"
                     class="absolute top-2 right-2 transition-opacity"
-                    :class="activeMenuId === reply.id ? 'opacity-100' : 'opacity-0 group-hover/bubble:opacity-100'"
+                    :class="
+                      activeMenuId === reply.id
+                        ? 'opacity-100'
+                        : 'opacity-0 group-hover/bubble:opacity-100'
+                    "
                   >
                     <UDropdown
                       :open="activeMenuId === reply.id"
-                      @update:open="(val) => activeMenuId = val ? reply.id : null"
+                      @update:open="
+                        (val) => (activeMenuId = val ? reply.id : null)
+                      "
                       :items="[
                         [
                           {
@@ -1340,17 +1367,26 @@ async function confirmDeleteReply() {
                           },
                         ],
                       ]"
-                      :ui="{ width: 'w-32', background: 'bg-slate-900 border border-white/10' }"
+                      :ui="{
+                        width: 'w-32',
+                        background: 'bg-slate-900 border border-white/10',
+                      }"
                     >
                       <button
                         class="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-500 hover:text-white transition-all"
                       >
-                        <UIcon name="i-heroicons-ellipsis-vertical" class="w-4 h-4" />
+                        <UIcon
+                          name="i-heroicons-ellipsis-vertical"
+                          class="w-4 h-4"
+                        />
                       </button>
                     </UDropdown>
                   </div>
 
-                  <div v-if="editingReplyId === reply.id" class="space-y-3 w-full">
+                  <div
+                    v-if="editingReplyId === reply.id"
+                    class="space-y-3 w-full"
+                  >
                     <textarea
                       v-model="editedReplyText"
                       class="w-full bg-black/40 border border-emerald-500/30 rounded-xl p-4 text-md text-emerald-50 focus:outline-none focus:border-emerald-500/50 transition-all resize-y min-h-[120px]"
@@ -1856,7 +1892,10 @@ async function confirmDeleteReply() {
                 <div
                   class="shrink-0 opacity-0 group-hover:opacity-40 group-hover:translate-x-1 transition-all duration-500 pr-2"
                 >
-                  <UIcon name="i-heroicons-chevron-right" class="w-5 h-5 text-slate-400" />
+                  <UIcon
+                    name="i-heroicons-chevron-right"
+                    class="w-5 h-5 text-slate-400"
+                  />
                 </div>
               </a>
             </div>
@@ -1905,8 +1944,9 @@ async function confirmDeleteReply() {
                   class="text-md md:text-lg text-emerald-50/90 italic leading-relaxed relative z-10"
                 >
                   "{{
-                    stripHtml(data.replies.filter((r) => r.isOwner).at(-1)?.text) ||
-                    stripHtml(data.comment.text)
+                    stripHtml(
+                      data.replies.filter((r) => r.isOwner).at(-1)?.text,
+                    ) || stripHtml(data.comment.text)
                   }}"
                 </p>
               </div>
@@ -2033,7 +2073,10 @@ async function confirmDeleteReply() {
                 <div
                   class="shrink-0 opacity-0 group-hover:opacity-40 group-hover:translate-x-1 transition-all duration-500 pr-2"
                 >
-                  <UIcon name="i-heroicons-chevron-right" class="w-5 h-5 text-slate-400" />
+                  <UIcon
+                    name="i-heroicons-chevron-right"
+                    class="w-5 h-5 text-slate-400"
+                  />
                 </div>
               </a>
             </div>
