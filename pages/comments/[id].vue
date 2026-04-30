@@ -151,7 +151,7 @@ const savingReplyEdit = ref(false);
 const activeMenuId = ref<string | null>(null);
 
 const { data, refresh, error } = await useFetch<CommentDetailResponse>(
-  `/api/comments/${id}`,
+  () => `/api/comments/${id}?t=${Date.now()}`,
 );
 
 const { data: commenterHistory } = useFetch<CommenterHistory>(

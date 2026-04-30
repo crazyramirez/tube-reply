@@ -12,7 +12,10 @@ export default defineEventHandler(async (event) => {
 
   // On-demand sync with YouTube (Costs ~1-2 units)
   // Ensures consistency and latest state before serving the data
-  await syncSingleThread(id).catch(() => {})
+  await logger.info('api', `On-demand sync triggered for comment ${id}`)
+  await syncSingleThread(id).catch((err) => {
+    logger.error('api', `Sync failed for ${id}`, err)
+  })
 
   const [comment] = await db
     .select({

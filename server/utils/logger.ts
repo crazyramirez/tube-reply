@@ -13,6 +13,7 @@ async function log(level: LogLevel, source: string, message: string, details?: u
       details: details ? JSON.stringify(details) : null,
       stackTrace: error?.stack ?? null,
     })
+    console.log(`[${level.toUpperCase()}] [${source}] ${message}`, details ?? "")
   }
   catch {
     // Fallback to console if DB is unavailable

@@ -214,7 +214,7 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
   }
 }
 
-export async function syncSingleThread(threadId: string): Promise<void> {
+export async function syncSingleThread(targetId: string): Promise<void> {
   const db = useDb();
   const token = await db.query.oauthTokens.findFirst();
   if (!token) return;
@@ -223,7 +223,34 @@ export async function syncSingleThread(threadId: string): Promise<void> {
     const yt = await getAuthenticatedYouTube();
     const ownerChannelId = token.channelId;
 
-    // 1. Fetch thread (Costs 1 unit)
+    await logger.info("comment-sync", `Starting on-demand sync for ${targetId}`);
+
+    // 1. Fetch the specific comment first (works for both top-level and replies)
+    // Costs 1 unit
+    const commentRes = await yt.comments.list({
+      part: ["snippet"],
+      id: [targetId],
+    });
+
+    const ytComment = commentRes.data.items?.[0];
+    if (ytComment) {
+      console.log(`[SYNC] YouTube returned for ${targetId}: "${ytComment.snippet?.textDisplay}"`);
+    }
+    if (!ytComment) {
+      await logger.warn("comment-sync", `Comment ${targetId} not found on YouTube`);
+      const existing = await db.query.comments.findFirst({
+        where: eq(comments.id, targetId),
+      });
+      if (existing) {
+        await db.update(comments).set({ isLive: false }).where(eq(comments.id, targetId));
+      }
+      return;
+    }
+
+    // 2. Identify the thread ID (if it's a reply, use parentId; if it's a thread, use its own id)
+    const threadId = ytComment.snippet?.parentId || targetId;
+
+    // 3. Fetch the full thread (Costs 1 unit)
     const res = await yt.commentThreads.list({
       part: ["snippet", "replies"],
       id: [threadId],
@@ -231,18 +258,10 @@ export async function syncSingleThread(threadId: string): Promise<void> {
 
     const thread = res.data.items?.[0];
     if (!thread) {
-      // If not found, it might have been deleted on YouTube
-      // We check if it's already in our DB and mark as not live if so
-      const existing = await db.query.comments.findFirst({
-        where: eq(comments.id, threadId),
-      });
-      if (existing) {
-        await db
-          .update(comments)
-          .set({ isLive: false, updatedAt: new Date().toISOString() })
-          .where(eq(comments.id, threadId));
-      }
-      return;
+       // If thread not found but comment was found? Should not happen for valid comments.
+       // But let's upsert the single comment we found at least.
+       await logger.warn("comment-sync", `Thread ${threadId} not found for comment ${targetId}`);
+       return;
     }
 
     const top = thread.snippet?.topLevelComment;
@@ -258,11 +277,8 @@ export async function syncSingleThread(threadId: string): Promise<void> {
     // Initial replies from thread snippet
     let threadReplies = thread.replies?.comments ?? [];
 
-    // If there are more replies, fetch them all (Costs 1 unit)
-    if (
-      thread.snippet?.totalReplyCount &&
-      thread.snippet.totalReplyCount > threadReplies.length
-    ) {
+    // ALWAYS fetch replies directly if they exist to bypass commentThreads cache (Costs 1 unit)
+    if (thread.snippet?.totalReplyCount && thread.snippet.totalReplyCount > 0) {
       const repliesRes = await yt.comments.list({
         part: ["snippet"],
         parentId: top.id,
@@ -302,8 +318,11 @@ export async function syncSingleThread(threadId: string): Promise<void> {
     // Upsert all replies
     for (const reply of threadReplies) {
       if (!reply.id || !reply.snippet) continue;
-      const replyLang = detectLanguage(reply.snippet.textDisplay ?? "");
       const authorId = (reply.snippet?.authorChannelId as any)?.value ?? null;
+      if (authorId === ownerChannelId) {
+        console.log(`[SYNC] YouTube returned reply ${reply.id}: "${reply.snippet.textDisplay}"`);
+      }
+      const replyLang = detectLanguage(reply.snippet.textDisplay ?? "");
 
       await upsertComment(
         db,
@@ -330,17 +349,11 @@ export async function syncSingleThread(threadId: string): Promise<void> {
 
     await logger.info(
       "comment-sync",
-      `On-demand sync completed for thread ${threadId}`
+      `On-demand sync completed for thread ${threadId} (Target: ${targetId})`
     );
   } catch (err: any) {
     const msg = err?.message ?? "";
-    if (msg.includes("404") || msg.includes("notFound")) {
-       // Mark as not live
-       await db.update(comments).set({ isLive: false }).where(eq(comments.id, threadId));
-    }
-    await logger.warn("comment-sync", `On-demand sync failed for thread ${threadId}`, {
-      error: msg,
-    });
+    await logger.error("comment-sync", `On-demand sync failed for ${targetId}`, err);
   }
 }
 
@@ -775,7 +788,7 @@ export async function upsertComment(
 ): Promise<boolean> {
   const existing = await db.query.comments.findFirst({
     where: eq(comments.id, data.id),
-    columns: { id: true, videoId: true, updatedAt: true, status: true, authorProfileImageUrl: true, authorChannelId: true },
+    columns: { id: true, videoId: true, updatedAt: true, text: true, textOriginal: true, likeCount: true, status: true, authorProfileImageUrl: true, authorChannelId: true },
   })
 
   // SMART SYNC: Always update/insert the authors table
@@ -877,24 +890,35 @@ export async function upsertComment(
       })
       .where(eq(comments.id, data.id))
   }
+  
   // If it's a reply from the owner, mark the parent thread as published
-  else if (data.parentId && data.authorChannelId === ownerChannelId) {
+  if (data.parentId && data.authorChannelId === ownerChannelId) {
     await db.update(comments)
       .set({ 
         status: 'published', 
-        processedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        processedAt: new Date().toISOString()
       })
       .where(eq(comments.id, data.parentId))
   }
-  // Update if text changed (comment was edited)
-  else if (existing.updatedAt !== data.updatedAt) {
+
+  // Update if text or likes changed (or YouTube marks it as updated)
+  if (existing.updatedAt !== data.updatedAt || existing.text !== data.text || existing.textOriginal !== data.textOriginal || existing.likeCount !== data.likeCount) {
+    await logger.info('comment-sync', `Updating comment ${data.id} - detected changes`, {
+      text: existing.text !== data.text,
+      orig: existing.textOriginal !== data.textOriginal,
+      likes: existing.likeCount !== data.likeCount,
+      time: existing.updatedAt !== data.updatedAt
+    })
+    console.log(`[SYNC] Updating ${data.id}. Old text: "${existing.text}", New text: "${data.text}"`)
     await db.update(comments)
       .set({ 
         text: data.text, 
+        textOriginal: data.textOriginal,
         updatedAt: data.updatedAt, 
         likeCount: data.likeCount,
-        authorProfileImageUrl: data.authorProfileImageUrl 
+        authorProfileImageUrl: data.authorProfileImageUrl,
+        translatedText: null, // Clear cache on edit
+        translationLang: null  // Clear cache on edit
       })
       .where(eq(comments.id, data.id))
   }
