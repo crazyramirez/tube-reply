@@ -52,7 +52,7 @@ export function isYouTubeShort(duration: string | null): boolean {
   if (!match) return false
   const minutes = parseInt(match[1] || '0')
   const seconds = parseInt(match[2] || '0')
-  return (minutes * 60) + seconds < 60
+  return (minutes * 60) + seconds < 120
 }
 
 /**
@@ -259,6 +259,11 @@ export async function buildContext(commentId: string, langOverride: string | nul
     orderBy: [desc(knowledgeBase.priority)],
   })
 
+  const noShortsRule = ruleEntries.some(e => 
+    (e.content.toLowerCase().includes('short') || e.content.toLowerCase().includes('corto')) &&
+    (e.content.toLowerCase().includes('nunca') || e.content.toLowerCase().includes('no ') || e.content.toLowerCase().includes('never'))
+  )
+
   const allFaqInfo = await db.query.knowledgeBase.findMany({
     where: eq(knowledgeBase.isActive, true),
     orderBy: [desc(knowledgeBase.priority)],
@@ -279,12 +284,22 @@ export async function buildContext(commentId: string, langOverride: string | nul
     ...scoredKb,
   ]
 
-  const recentVideos = await db.query.videos.findMany({
+  const recentVideosRaw = await db.query.videos.findMany({
     columns: { id: true, title: true, thumbnailUrl: true, duration: true },
     where: ne(videos.id, video.id),
     orderBy: [desc(videos.publishedAt)],
-    limit: MAX_RECENT_VIDEOS,
+    limit: MAX_RECENT_VIDEOS * 2, // Fetch more to allow filtering
   })
+
+  const recentVideos = recentVideosRaw
+    .map(v => ({
+      id: v.id,
+      title: v.title,
+      thumbnailUrl: v.thumbnailUrl,
+      isShort: isYouTubeShort(v.duration),
+    }))
+    .filter(v => !noShortsRule || !v.isShort)
+    .slice(0, MAX_RECENT_VIDEOS)
 
   // Compute comment age in days
   const commentDate = new Date(comment.publishedAt)

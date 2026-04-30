@@ -127,7 +127,7 @@ function scoreRow(row: VideoRow, keywords: string[]): number {
   return score
 }
 
-async function searchVideos(query: string, excludeVideoId: string): Promise<Array<{ id: string; title: string; thumbnailUrl: string | null; isShort: boolean }>> {
+async function searchVideos(query: string, excludeVideoId: string, filterShorts = false): Promise<Array<{ id: string; title: string; thumbnailUrl: string | null; isShort: boolean }>> {
   const db = useDb()
   const keywords = extractKeywords(query)
   if (!keywords.length) return []
@@ -195,12 +195,14 @@ async function searchVideos(query: string, excludeVideoId: string): Promise<Arra
   const scored = rows.map(r => ({ row: r, score: scoreRow(r, keywords) }))
   scored.sort((a, b) => b.score - a.score)
 
-  return scored.slice(0, 10).map(({ row: v }) => ({
+  const results = scored.map(({ row: v }) => ({
     id: v.id,
     title: v.title,
     thumbnailUrl: v.thumbnailUrl,
     isShort: isYouTubeShort(v.duration),
   }))
+
+  return filterShorts ? results.filter(v => !v.isShort).slice(0, 10) : results.slice(0, 10)
 }
 
 export async function getAiSuggestionRaw(
@@ -223,10 +225,16 @@ export async function getAiSuggestionRaw(
   const ctx = await buildContext(commentId, langOverride, additionalContext)
   const prompt = buildPrompt(ctx, finalUserLang)
 
+  const noShortsRule = ctx.knowledgeBaseEntries.some(e => 
+    e.type === 'rule' && 
+    (e.content.toLowerCase().includes('short') || e.content.toLowerCase().includes('corto')) &&
+    (e.content.toLowerCase().includes('nunca') || e.content.toLowerCase().includes('no '))
+  )
+
   const provider = await getAiProvider()
   const { text: rawText, promptTokens, completionTokens } = provider === 'openai'
-    ? await openai.openaiGenerateWithTools(prompt, (q) => searchVideos(q, comment.videoId))
-    : await gemini.geminiGenerateWithTools(prompt, (q) => searchVideos(q, comment.videoId))
+    ? await openai.openaiGenerateWithTools(prompt, (q) => searchVideos(q, comment.videoId, noShortsRule))
+    : await gemini.geminiGenerateWithTools(prompt, (q) => searchVideos(q, comment.videoId, noShortsRule))
 
   let parsed: AIOutput
   try {

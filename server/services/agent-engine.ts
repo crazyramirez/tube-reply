@@ -13,6 +13,7 @@ import { videos, comments, knowledgeBase, oauthTokens, agentMessages, videoTrans
 import { getAiProvider, getSetting } from '../utils/settings'
 import { openaiGenerate, getOpenAIClient } from '../utils/openai'
 import { fetchAndCacheTranscript } from './captions-service'
+import { isYouTubeShort } from './context-builder'
 
 // ─── DB search tools ─────────────────────────────────────────────────────────
 
@@ -98,7 +99,7 @@ interface TranscriptSearchResult {
   language: string
 }
 
-async function searchVideoTranscripts(query: string, videoKeyword?: string, limit = 5): Promise<TranscriptSearchResult[]> {
+async function searchVideoTranscripts(query: string, videoKeyword?: string, limit = 5, filterShorts = false): Promise<TranscriptSearchResult[]> {
   const db = useDb()
   const cap = Math.min(Math.max(1, limit), 10)
   
@@ -132,13 +133,14 @@ async function searchVideoTranscripts(query: string, videoKeyword?: string, limi
     videoTitle: videos.title,
     transcript: videoTranscripts.transcript,
     language: videoTranscripts.language,
+    duration: videos.duration,
   })
     .from(videoTranscripts)
     .innerJoin(videos, eq(videoTranscripts.videoId, videos.id))
     .where(cond)
-    .limit(cap)
+    .limit(filterShorts ? cap * 2 : cap)
 
-  return rows.map(r => {
+  const results = rows.map(r => {
     const index = r.transcript.toLowerCase().indexOf(query.toLowerCase())
     const start = Math.max(0, index - 150)
     const end = Math.min(r.transcript.length, index + 150)
@@ -151,11 +153,16 @@ async function searchVideoTranscripts(query: string, videoKeyword?: string, limi
       videoTitle: r.videoTitle,
       transcriptSnippet: snippet,
       language: r.language,
+      isShort: isYouTubeShort(r.duration),
     }
   })
+
+  return filterShorts 
+    ? results.filter(r => !r.isShort).slice(0, cap)
+    : results.slice(0, cap)
 }
 
-async function executeTool(name: string, args: Record<string, unknown>): Promise<unknown> {
+async function executeTool(name: string, args: Record<string, unknown>, filterShorts = false): Promise<unknown> {
   if (name === 'search_comments') {
     const rows = await searchCommentsByText(String(args.query ?? ''), Number(args.limit ?? 8))
     return rows.length
@@ -199,7 +206,8 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
     const rows = await searchVideoTranscripts(
       String(args.query ?? ''), 
       args.video_keyword ? String(args.video_keyword) : undefined,
-      Number(args.limit ?? 5)
+      Number(args.limit ?? 5),
+      filterShorts
     )
     return rows.length
       ? rows.map(r => ({
@@ -301,43 +309,46 @@ async function buildChannelContext(): Promise<ChannelContext> {
   }).from(oauthTokens).limit(1)
 
   // 1. Get Top Videos (Views)
-  const topByViews = await db.select({
+  const topByViewsRaw = await db.select({
     id: videos.id,
     title: videos.title,
     viewCount: videos.viewCount,
     commentCount: videos.commentCount,
     publishedAt: videos.publishedAt,
     tags: videos.tags,
+    duration: videos.duration,
   }).from(videos)
     .orderBy(desc(videos.viewCount))
-    .limit(8)
+    .limit(15)
 
   // 2. Get Top Videos (Engagement)
   const engagementRateExpr = sql<number>`CAST(${videos.commentCount} AS FLOAT) / NULLIF(${videos.viewCount}, 0) * 100`
-  const topByEngagement = await db.select({
+  const topByEngagementRaw = await db.select({
     id: videos.id,
     title: videos.title,
     viewCount: videos.viewCount,
     commentCount: videos.commentCount,
     publishedAt: videos.publishedAt,
     tags: videos.tags,
-    engagementRate: engagementRateExpr
+    engagementRate: engagementRateExpr,
+    duration: videos.duration,
   }).from(videos)
     .where(sql`${videos.viewCount} >= 100`)
     .orderBy(desc(engagementRateExpr))
-    .limit(5)
+    .limit(10)
 
   // 3. Get Recent Videos
-  const recentVideos = await db.select({
+  const recentVideosRaw = await db.select({
     id: videos.id,
     title: videos.title,
     viewCount: videos.viewCount,
     commentCount: videos.commentCount,
     publishedAt: videos.publishedAt,
     tags: videos.tags,
+    duration: videos.duration,
   }).from(videos)
     .orderBy(desc(videos.publishedAt))
-    .limit(6)
+    .limit(12)
 
   // 4. Counts (Optimized with count())
   const [{ total: totalComments }] = await db.select({ total: count() }).from(comments)
@@ -372,13 +383,34 @@ async function buildChannelContext(): Promise<ChannelContext> {
     .orderBy(desc(knowledgeBase.priority))
     .limit(40)
 
+  const noShortsRule = kbEntries.some(e => 
+    e.type === 'rule' && 
+    (e.content.toLowerCase().includes('short') || e.content.toLowerCase().includes('corto')) &&
+    (e.content.toLowerCase().includes('nunca') || e.content.toLowerCase().includes('no '))
+  )
+
+  const topByViews = topByViewsRaw
+    .map(formatStats)
+    .filter(v => !noShortsRule || !isYouTubeShort(v.duration))
+    .slice(0, 8)
+
+  const topByEngagement = topByEngagementRaw
+    .map(formatStats)
+    .filter(v => !noShortsRule || !isYouTubeShort(v.duration))
+    .slice(0, 5)
+
+  const recentVideos = recentVideosRaw
+    .map(formatStats)
+    .filter(v => !noShortsRule || !isYouTubeShort(v.duration))
+    .slice(0, 6)
+
   return {
     channelName: channel?.channelTitle ?? null,
     subscriberCount: channel?.subscriberCount ?? null,
     videoCount: channel?.videoCount ?? null,
-    topByViews: topByViews.map(formatStats),
-    topByEngagement: topByEngagement.map(formatStats),
-    recentVideos: recentVideos.map(formatStats),
+    topByViews,
+    topByEngagement,
+    recentVideos,
     totalComments,
     pendingComments,
     publishedReplies,
@@ -568,6 +600,12 @@ export async function runAgentChat(
 
     let responseMessage = response.choices[0].message
     
+    const noShortsRule = ctx.kbEntries.some(e => 
+      e.type === 'rule' && 
+      (e.content.toLowerCase().includes('short') || e.content.toLowerCase().includes('corto')) &&
+      (e.content.toLowerCase().includes('nunca') || e.content.toLowerCase().includes('no '))
+    )
+
     // Tool call loop (OpenAI)
     let rounds = 0
     while (rounds++ < 5 && responseMessage.tool_calls?.length) {
@@ -575,7 +613,7 @@ export async function runAgentChat(
 
       for (const toolCall of responseMessage.tool_calls) {
         const args = JSON.parse(toolCall.function.arguments)
-        const result = await executeTool(toolCall.function.name, args)
+        const result = await executeTool(toolCall.function.name, args, noShortsRule)
         
         messages.push({
           tool_call_id: toolCall.id,
@@ -640,26 +678,32 @@ export async function runAgentChat(
   promptTokens += response.usageMetadata?.promptTokenCount ?? 0
   completionTokens += response.usageMetadata?.candidatesTokenCount ?? 0
 
-  // Tool call loop
-  let iterations = 0
-  while (iterations++ < 5) {
-    const fcs = response.functionCalls
-    if (!fcs?.length) break
-
-    // Add model's function calls to content history
-    contents.push({ role: 'model', parts: fcs.map(fc => ({ functionCall: fc })) })
-
-    const toolResponses = await Promise.all(
-      fcs.map(async (fc) => ({
-        functionResponse: {
-          name: fc.name,
-          response: { result: await executeTool(fc.name, fc.args as Record<string, unknown>) },
-        },
-      })),
+    const noShortsRule = ctx.kbEntries.some(e => 
+      e.type === 'rule' && 
+      (e.content.toLowerCase().includes('short') || e.content.toLowerCase().includes('corto')) &&
+      (e.content.toLowerCase().includes('nunca') || e.content.toLowerCase().includes('no '))
     )
 
-    // Add tool responses to content history
-    contents.push({ role: 'user', parts: toolResponses })
+    // Tool call loop
+    let iterations = 0
+    while (iterations++ < 5) {
+      const fcs = response.functionCalls
+      if (!fcs?.length) break
+
+      // Add model's function calls to content history
+      contents.push({ role: 'model', parts: fcs.map(fc => ({ functionCall: fc })) })
+
+      const toolResponses = await Promise.all(
+        fcs.map(async (fc) => ({
+          functionResponse: {
+            name: fc.name,
+            response: { result: await executeTool(fc.name, fc.args as Record<string, unknown>, noShortsRule) },
+          },
+        })),
+      )
+
+      // Add tool responses to content history
+      contents.push({ role: 'user', parts: toolResponses })
 
     response = await ai.models.generateContent({
       model,
