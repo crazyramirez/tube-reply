@@ -210,7 +210,137 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
     }
   }
   finally {
-    isRunning = false
+    isRunning = false;
+  }
+}
+
+export async function syncSingleThread(threadId: string): Promise<void> {
+  const db = useDb();
+  const token = await db.query.oauthTokens.findFirst();
+  if (!token) return;
+
+  try {
+    const yt = await getAuthenticatedYouTube();
+    const ownerChannelId = token.channelId;
+
+    // 1. Fetch thread (Costs 1 unit)
+    const res = await yt.commentThreads.list({
+      part: ["snippet", "replies"],
+      id: [threadId],
+    });
+
+    const thread = res.data.items?.[0];
+    if (!thread) {
+      // If not found, it might have been deleted on YouTube
+      // We check if it's already in our DB and mark as not live if so
+      const existing = await db.query.comments.findFirst({
+        where: eq(comments.id, threadId),
+      });
+      if (existing) {
+        await db
+          .update(comments)
+          .set({ isLive: false, updatedAt: new Date().toISOString() })
+          .where(eq(comments.id, threadId));
+      }
+      return;
+    }
+
+    const top = thread.snippet?.topLevelComment;
+    const videoId = thread.snippet?.videoId;
+    if (!top?.id || !top.snippet || !videoId) return;
+
+    // Ensure video exists
+    await ensureVideoExists(yt, db, videoId);
+
+    const lang = detectLanguage(top.snippet.textDisplay ?? "");
+    const updatedAuthors = new Set<string>();
+
+    // Initial replies from thread snippet
+    let threadReplies = thread.replies?.comments ?? [];
+
+    // If there are more replies, fetch them all (Costs 1 unit)
+    if (
+      thread.snippet?.totalReplyCount &&
+      thread.snippet.totalReplyCount > threadReplies.length
+    ) {
+      const repliesRes = await yt.comments.list({
+        part: ["snippet"],
+        parentId: top.id,
+        maxResults: 100,
+      });
+      threadReplies = repliesRes.data.items ?? [];
+    }
+
+    const ownerAlreadyReplied = threadReplies.some((r) => {
+      const authorId = (r.snippet?.authorChannelId as any)?.value;
+      return authorId === ownerChannelId;
+    });
+
+    // Upsert top comment
+    await upsertComment(
+      db,
+      {
+        id: top.id,
+        videoId,
+        parentId: null,
+        authorName: top.snippet.authorDisplayName ?? "Unknown",
+        authorChannelId: (top.snippet.authorChannelId as any)?.value ?? null,
+        authorProfileImageUrl: top.snippet.authorProfileImageUrl ?? null,
+        text: top.snippet.textDisplay ?? "",
+        textOriginal: top.snippet.textOriginal ?? null,
+        likeCount: top.snippet.likeCount ?? 0,
+        detectedLang: lang.lang,
+        langConfidence: lang.confidence,
+        publishedAt: top.snippet.publishedAt ?? new Date().toISOString(),
+        updatedAt: top.snippet.updatedAt ?? new Date().toISOString(),
+        ownerAlreadyReplied,
+      },
+      ownerChannelId,
+      updatedAuthors
+    );
+
+    // Upsert all replies
+    for (const reply of threadReplies) {
+      if (!reply.id || !reply.snippet) continue;
+      const replyLang = detectLanguage(reply.snippet.textDisplay ?? "");
+      const authorId = (reply.snippet?.authorChannelId as any)?.value ?? null;
+
+      await upsertComment(
+        db,
+        {
+          id: reply.id,
+          videoId,
+          parentId: top.id,
+          authorName: reply.snippet.authorDisplayName ?? "Unknown",
+          authorChannelId: authorId,
+          authorProfileImageUrl: reply.snippet.authorProfileImageUrl ?? null,
+          text: reply.snippet.textDisplay ?? "",
+          textOriginal: reply.snippet.textOriginal ?? null,
+          likeCount: reply.snippet.likeCount ?? 0,
+          detectedLang: replyLang.lang,
+          langConfidence: replyLang.confidence,
+          publishedAt: reply.snippet.publishedAt ?? new Date().toISOString(),
+          updatedAt: reply.snippet.updatedAt ?? new Date().toISOString(),
+          ownerAlreadyReplied: false,
+        },
+        ownerChannelId,
+        updatedAuthors
+      );
+    }
+
+    await logger.info(
+      "comment-sync",
+      `On-demand sync completed for thread ${threadId}`
+    );
+  } catch (err: any) {
+    const msg = err?.message ?? "";
+    if (msg.includes("404") || msg.includes("notFound")) {
+       // Mark as not live
+       await db.update(comments).set({ isLive: false }).where(eq(comments.id, threadId));
+    }
+    await logger.warn("comment-sync", `On-demand sync failed for thread ${threadId}`, {
+      error: msg,
+    });
   }
 }
 
@@ -637,7 +767,7 @@ type CommentInsert = {
   ownerAlreadyReplied: boolean
 }
 
-async function upsertComment(
+export async function upsertComment(
   db: ReturnType<typeof useDb>, 
   data: CommentInsert, 
   ownerChannelId: string | null,

@@ -4,10 +4,15 @@ import { comments, videos, suggestedReplies, publishedReplies, bannedAuthors, oa
 import { getUserLanguage, getUserLanguageCode } from '../../../utils/settings'
 import { translateText } from '../../../utils/translate'
 import { fetchAndCacheTranscript } from '../../../services/captions-service'
+import { syncSingleThread } from '../../../services/comment-sync'
 
 export default defineEventHandler(async (event) => {
   const db = useDb()
   const id = getRouterParam(event, 'id')!
+
+  // On-demand sync with YouTube (Costs ~1-2 units)
+  // Ensures consistency and latest state before serving the data
+  await syncSingleThread(id).catch(() => {})
 
   const [comment] = await db
     .select({
@@ -27,6 +32,7 @@ export default defineEventHandler(async (event) => {
       cachedTranslation: comments.translatedText,
       cachedTranslationLang: comments.translationLang,
       isLive: comments.isLive,
+      updatedAt: comments.updatedAt,
     })
     .from(comments)
     .leftJoin(authors, eq(comments.authorChannelId, authors.channelId))
@@ -85,6 +91,7 @@ export default defineEventHandler(async (event) => {
       detectedLang: comments.detectedLang,
       cachedTranslation: comments.translatedText,
       cachedTranslationLang: comments.translationLang,
+      updatedAt: comments.updatedAt,
     })
     .from(comments)
     .leftJoin(authors, eq(comments.authorChannelId, authors.channelId))
@@ -126,7 +133,8 @@ export default defineEventHandler(async (event) => {
         text: p.finalText,
         publishedAt: p.publishedAt,
         isOwner: true,
-        isLocal: !p.youtubeReplyId
+        isLocal: !p.youtubeReplyId,
+        updatedAt: p.publishedAt // For local/published replies, we use publishedAt as updatedAt initially
       })
     }
   })

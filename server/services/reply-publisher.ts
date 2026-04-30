@@ -70,3 +70,58 @@ export async function publishReply(commentId: string, suggestionId: number): Pro
 
   return { youtubeReplyId }
 }
+
+export async function updateReply(youtubeReplyId: string, text: string): Promise<{ ok: boolean }> {
+  const db = useDb()
+  
+  // Guard: comments.update costs 50 quota units
+  await assertQuotaAvailable(50)
+
+  // Call YouTube API
+  const yt = await getAuthenticatedYouTube()
+  await yt.comments.update({
+    part: ['snippet'],
+    requestBody: {
+      id: youtubeReplyId,
+      snippet: {
+        textOriginal: text,
+      },
+    },
+  })
+
+  // Update local DB
+  // First, check if it's in our comments table (synced from YouTube)
+  await db.update(comments)
+    .set({ text, updatedAt: new Date().toISOString() })
+    .where(eq(comments.id, youtubeReplyId))
+
+  // Also update in publishedReplies table if it exists there
+  await db.update(publishedReplies)
+    .set({ finalText: text, publishedAt: new Date().toISOString() })
+    .where(eq(publishedReplies.youtubeReplyId, youtubeReplyId))
+
+  await logger.info('reply-publisher', 'Reply updated', { youtubeReplyId })
+
+  return { ok: true }
+}
+
+export async function deleteReply(youtubeReplyId: string): Promise<{ ok: boolean }> {
+  const db = useDb()
+
+  // Guard: comments.delete costs 50 quota units
+  await assertQuotaAvailable(50)
+
+  // Call YouTube API
+  const yt = await getAuthenticatedYouTube()
+  await yt.comments.delete({
+    id: youtubeReplyId,
+  })
+
+  // Update local DB
+  await db.delete(comments).where(eq(comments.id, youtubeReplyId))
+  await db.delete(publishedReplies).where(eq(publishedReplies.youtubeReplyId, youtubeReplyId))
+
+  await logger.info('reply-publisher', 'Reply deleted', { youtubeReplyId })
+
+  return { ok: true }
+}

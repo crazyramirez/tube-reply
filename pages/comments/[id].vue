@@ -143,6 +143,13 @@ const unbanning = ref(false);
 const isEditing = ref(false);
 const regenerating = ref(false);
 
+const editingReplyId = ref<string | null>(null);
+const editedReplyText = ref("");
+const deletingReplyId = ref<string | null>(null);
+const showDeleteReplyModal = ref(false);
+const savingReplyEdit = ref(false);
+const activeMenuId = ref<string | null>(null);
+
 const { data, refresh, error } = await useFetch<CommentDetailResponse>(
   `/api/comments/${id}`,
 );
@@ -698,6 +705,59 @@ async function confirmUnban() {
     unbanning.value = false;
   }
 }
+
+function startEditingReply(reply: any) {
+  editingReplyId.value = reply.id;
+  editedReplyText.value = reply.text;
+}
+
+function cancelEditingReply() {
+  editingReplyId.value = null;
+  editedReplyText.value = "";
+}
+
+async function saveReplyEdit() {
+  if (!editingReplyId.value) return;
+  savingReplyEdit.value = true;
+  try {
+    await $fetch(`/api/comments/replies/${editingReplyId.value}`, {
+      method: "PATCH",
+      body: { text: editedReplyText.value },
+      headers: useCsrfHeaders(),
+    });
+    toast.add({ title: t("comment_detail.reply_updated"), color: "green" });
+    editingReplyId.value = null;
+    await refresh();
+  } catch (err: any) {
+    toast.add({
+      title: err.data?.statusMessage ?? "Failed to update reply",
+      color: "red",
+    });
+  } finally {
+    savingReplyEdit.value = false;
+  }
+}
+
+async function confirmDeleteReply() {
+  if (!deletingReplyId.value) return;
+  deleting.value = true;
+  try {
+    await $fetch(`/api/comments/replies/${deletingReplyId.value}`, {
+      method: "DELETE",
+      headers: useCsrfHeaders(),
+    });
+    toast.add({ title: t("comment_detail.reply_deleted"), color: "green" });
+    showDeleteReplyModal.value = false;
+    await refresh();
+  } catch (err: any) {
+    toast.add({
+      title: err.data?.statusMessage ?? "Failed to delete reply",
+      color: "red",
+    });
+  } finally {
+    deleting.value = false;
+  }
+}
 </script>
 
 <style scoped lang="postcss">
@@ -1011,7 +1071,7 @@ async function confirmUnban() {
                   }}</span>
                 </template>
                 <span class="text-[9px] text-slate-600 uppercase">{{
-                  timeAgo(data.comment.publishedAt)
+                  timeAgo(data.comment.updatedAt || data.comment.publishedAt)
                 }}</span>
                 <!-- Language badge -->
                 <span
@@ -1052,9 +1112,74 @@ async function confirmUnban() {
               />
 
               <div
-                class="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl rounded-tl-none p-4 text-sm text-slate-200 leading-relaxed shadow-sm max-w-[85%]"
+                class="bg-indigo-500/10 border border-indigo-500/20 rounded-2xl rounded-tl-none p-4 text-sm text-slate-200 leading-relaxed shadow-sm relative group/bubble"
+                :class="editingReplyId === data.comment.id ? 'w-full' : 'max-w-[85%]'"
               >
-                <div v-html="renderCommentHtml(data.comment.text)"></div>
+                <!-- Kebab Menu for Main Comment (if Owner) -->
+                <div
+                  v-if="data.ownerChannelId && data.comment.authorChannelId === data.ownerChannelId && editingReplyId !== data.comment.id"
+                  class="absolute top-2 right-2 transition-opacity"
+                  :class="activeMenuId === data.comment.id ? 'opacity-100' : 'opacity-0 group-hover/bubble:opacity-100'"
+                >
+                  <UDropdown
+                    :open="activeMenuId === data.comment.id"
+                    @update:open="(val) => activeMenuId = val ? data.comment.id : null"
+                    :items="[
+                      [
+                        {
+                          label: $t('comment_detail.edit'),
+                          icon: 'i-heroicons-pencil-square',
+                          click: () => startEditingReply(data.comment),
+                        },
+                        {
+                          label: $t('comment_detail.delete'),
+                          icon: 'i-heroicons-trash',
+                          color: 'red',
+                          click: () => {
+                            deletingReplyId = data.comment.id;
+                            showDeleteReplyModal = true;
+                          },
+                        },
+                      ],
+                    ]"
+                    :ui="{ width: 'w-32', background: 'bg-slate-900 border border-white/10' }"
+                  >
+                    <button
+                      class="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-500 hover:text-white transition-all"
+                    >
+                      <UIcon name="i-heroicons-ellipsis-vertical" class="w-4 h-4" />
+                    </button>
+                  </UDropdown>
+                </div>
+
+                <div v-if="editingReplyId === data.comment.id" class="space-y-3 w-full">
+                  <textarea
+                    v-model="editedReplyText"
+                    class="w-full bg-black/40 border border-indigo-500/30 rounded-xl p-4 text-md text-slate-200 focus:outline-none focus:border-indigo-500/50 transition-all resize-y min-h-[120px]"
+                    rows="4"
+                  ></textarea>
+                  <div class="flex justify-end gap-3">
+                    <button
+                      @click="cancelEditingReply"
+                      class="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                      {{ $t("comment_detail.cancel") }}
+                    </button>
+                    <button
+                      @click="saveReplyEdit"
+                      :disabled="savingReplyEdit"
+                      class="text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1"
+                    >
+                      <UIcon
+                        v-if="savingReplyEdit"
+                        name="i-heroicons-arrow-path"
+                        class="w-3 h-3 animate-spin"
+                      />
+                      {{ $t("comment_detail.save") }}
+                    </button>
+                  </div>
+                </div>
+                <div v-else v-html="renderCommentHtml(data.comment.text)"></div>
 
                 <!-- Translation -->
                 <div
@@ -1163,7 +1288,7 @@ async function confirmUnban() {
                     </span>
                   </template>
                   <span class="text-[9px] text-slate-600 uppercase ml-1">{{
-                    timeAgo(reply.publishedAt)
+                    timeAgo(reply.updatedAt || reply.publishedAt)
                   }}</span>
                   <!-- Reply Language badge -->
                   <span
@@ -1175,14 +1300,79 @@ async function confirmUnban() {
                   </span>
                 </div>
                 <div
-                  class="p-4 text-sm leading-relaxed shadow-sm max-w-[85%]"
-                  :class="
+                  class="p-4 text-sm leading-relaxed shadow-sm relative group/bubble"
+                  :class="[
                     reply.isOwner
                       ? 'bg-emerald-500/10 border border-emerald-500/20 rounded-2xl rounded-tr-none text-emerald-50'
-                      : 'bg-white/[0.04] border border-white/[0.08] rounded-2xl rounded-tl-none text-slate-200'
-                  "
+                      : 'bg-white/[0.04] border border-white/[0.08] rounded-2xl rounded-tl-none text-slate-200',
+                    editingReplyId === reply.id ? 'w-full' : 'max-w-[85%]',
+                  ]"
                 >
-                  <div v-html="renderCommentHtml(reply.text)"></div>
+                  <!-- Kebab Menu for Owner Replies -->
+                  <div
+                    v-if="reply.isOwner && editingReplyId !== reply.id"
+                    class="absolute top-2 right-2 transition-opacity"
+                    :class="activeMenuId === reply.id ? 'opacity-100' : 'opacity-0 group-hover/bubble:opacity-100'"
+                  >
+                    <UDropdown
+                      :open="activeMenuId === reply.id"
+                      @update:open="(val) => activeMenuId = val ? reply.id : null"
+                      :items="[
+                        [
+                          {
+                            label: $t('comment_detail.edit'),
+                            icon: 'i-heroicons-pencil-square',
+                            click: () => startEditingReply(reply),
+                          },
+                          {
+                            label: $t('comment_detail.delete'),
+                            icon: 'i-heroicons-trash',
+                            color: 'red',
+                            click: () => {
+                              deletingReplyId = reply.id;
+                              showDeleteReplyModal = true;
+                            },
+                          },
+                        ],
+                      ]"
+                      :ui="{ width: 'w-32', background: 'bg-slate-900 border border-white/10' }"
+                    >
+                      <button
+                        class="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-500 hover:text-white transition-all"
+                      >
+                        <UIcon name="i-heroicons-ellipsis-vertical" class="w-4 h-4" />
+                      </button>
+                    </UDropdown>
+                  </div>
+
+                  <div v-if="editingReplyId === reply.id" class="space-y-3 w-full">
+                    <textarea
+                      v-model="editedReplyText"
+                      class="w-full bg-black/40 border border-emerald-500/30 rounded-xl p-4 text-md text-emerald-50 focus:outline-none focus:border-emerald-500/50 transition-all resize-y min-h-[120px]"
+                      rows="4"
+                    ></textarea>
+                    <div class="flex justify-end gap-3">
+                      <button
+                        @click="cancelEditingReply"
+                        class="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-300 transition-colors"
+                      >
+                        {{ $t("comment_detail.cancel") }}
+                      </button>
+                      <button
+                        @click="saveReplyEdit"
+                        :disabled="savingReplyEdit"
+                        class="text-[10px] font-black uppercase tracking-widest text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1"
+                      >
+                        <UIcon
+                          v-if="savingReplyEdit"
+                          name="i-heroicons-arrow-path"
+                          class="w-3 h-3 animate-spin"
+                        />
+                        {{ $t("comment_detail.save") }}
+                      </button>
+                    </div>
+                  </div>
+                  <div v-else v-html="renderCommentHtml(reply.text)"></div>
 
                   <!-- Translation for replies -->
                   <div
@@ -2032,6 +2222,17 @@ async function confirmUnban() {
       :loading="unbanning"
       type="success"
       @confirm="confirmUnban"
+    />
+
+    <UiConfirmModal
+      v-model="showDeleteReplyModal"
+      :title="$t('comment_detail.delete_reply_modal_title')"
+      :description="$t('comment_detail.delete_reply_modal_desc')"
+      :confirm-text="$t('comment_detail.delete_now')"
+      :cancel-text="$t('comment_detail.cancel')"
+      :loading="deleting"
+      type="danger"
+      @confirm="confirmDeleteReply"
     />
   </div>
 </template>
