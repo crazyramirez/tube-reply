@@ -863,14 +863,13 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
               <div
                 class="text-[11px] sm:text-[14px] text-slate-200 leading-relaxed italic font-medium line-clamp-3"
               >
-                "<span
+                <span
                   v-html="
                     renderCommentHtml(
                       c.isLastAuthorOwner ? c.text : c.lastText || c.text,
                     )
                   "
-                ></span
-                >"
+                ></span>
               </div>
 
               <!-- Opportunity Tag -->
