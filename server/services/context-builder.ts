@@ -347,12 +347,19 @@ export async function buildContext(commentId: string, langOverride: string | nul
 }
 
 export function buildPrompt(ctx: CommentContext, userLang: string = "Spanish"): string {
-  const kbText = ctx.knowledgeBaseEntries.length > 0
-    ? ctx.knowledgeBaseEntries.map((e) => {
+  const kbRules = ctx.knowledgeBaseEntries.filter(e => e.type === 'rule')
+  const kbInfo = ctx.knowledgeBaseEntries.filter(e => e.type !== 'rule')
+
+  const kbText = kbInfo.length > 0
+    ? kbInfo.map((e) => {
         const tagsStr = e.tags.length > 0 ? ` [tags: ${e.tags.join(', ')}]` : ''
         return `[${e.type.toUpperCase()}]${tagsStr} ${e.title}:\n${e.content}`
       }).join('\n\n')
-    : 'No knowledge base entries configured yet.'
+    : 'No general knowledge base entries configured yet.'
+
+  const rulesText = kbRules.length > 0
+    ? kbRules.map(e => `- ${e.content}`).join('\n')
+    : ''
 
   const repliesText = ctx.existingReplies.length > 0
     ? ctx.existingReplies.map(r => `- ${r.author}: "${r.text}"`).join('\n')
@@ -367,13 +374,14 @@ export function buildPrompt(ctx: CommentContext, userLang: string = "Spanish"): 
     question: 'User has a specific question. Answer directly and concisely. Check VIDEO FAQs first — if the exact question is answered there, use that answer. Call search_videos if the answer lives in a specific video. Use KB entries if they contain relevant information.',
     help_needed: 'User needs assistance — show empathy first. Provide actionable, step-by-step guidance if possible. If the solution is in a tutorial video, find and share it. Be warm and encouraging.',
     complaint: 'User has a problem or complaint. Acknowledge the issue without being defensive. Offer a concrete solution, alternative, or next step. If it relates to a video, verify the video context before referencing it.',
-    compliment: 'User is being appreciative/positive. Respond warmly and authentically. Keep it brief — 1-2 sentences. Optionally mention related content they might enjoy without being pushy.',
+    compliment: 'User is being appreciative/positive. Respond warmly and authentically. Keep it brief — 1-2 sentences. DO NOT suggest other videos or links unless they specifically ask for more content or tutorials.',
     general: 'Engage naturally with the comment. Match the tone and energy. Be friendly and genuine.',
   }
 
   const systemPrompt = `You are an AI assistant that helps a YouTube channel owner respond to comments.
 
 ABSOLUTE RULES — NEVER VIOLATE:
+${rulesText}
 1. NEVER invent, fabricate or assume YouTube video URLs, IDs, or titles
 2. Only reference videos from RECENT VIDEOS below OR results returned by the search_videos tool
 3. VIDEO SEARCH — follow this decision tree EVERY TIME (applies to comments in ANY language):
@@ -405,7 +413,7 @@ ABSOLUTE RULES — NEVER VIOLATE:
    - HIGH IMPORTANCE (≥10 likes): lean toward the longer end of the range
 8. If an existing reply already covers this topic, acknowledge it or build on it — never repeat verbatim
 9. NEVER use Markdown links (e.g., [Title](URL)) as they don't render in YouTube. Use plain URLs.
-10. SEARCH PREFERENCE: When a user asks for a tutorial/explanation, PREFER long-form videos over Shorts. Shorts are usually too brief for full answers.
+10. SEARCH PREFERENCE: Follow all mandatory rules above regarding video types. Generally, long-form videos are preferred over Shorts for full answers.
 11. TEMPORAL AWARENESS: If the comment is old (≥180 days), acknowledge that context may have changed if relevant (prices, availability, links, etc.)
 12. VIDEO FAQs are pre-analyzed Q&A pairs extracted from the video. Use them to answer questions directly when they match — this is the most accurate source for video-specific answers.
 13. FORCED LANGUAGE: The "verification_translation" MUST BE IN ${userLang.toUpperCase()}. This is for the channel owner who speaks ${userLang.toUpperCase()}. NEVER return this field in English unless ${userLang.toUpperCase()} is English.
@@ -416,6 +424,7 @@ ABSOLUTE RULES — NEVER VIOLATE:
     - Only use the FIRST NAME (no surnames).
     - Example: "Hola Ana, ..." instead of "Hola @anasanchez4431, ...".
     - If you cannot decode a clear name, just use a general greeting.
+16. NO UNNECESSARY SUGGESTIONS: Do not suggest or link other videos for simple compliments or appreciation comments (e.g., "Me encanta", "Te ha quedado muy bonito", "Nice video"). Only suggest videos when the user asks a question, makes a request, or if it genuinely adds value to a technical/design discussion.
 
 INTENT-BASED GUIDANCE (comment intent: ${ctx.comment.intent}):
 ${intentGuide[ctx.comment.intent]}
@@ -423,7 +432,7 @@ ${intentGuide[ctx.comment.intent]}
 CHANNEL STYLE & PERSONA:
 ${ctx.channelStyle ?? 'No channel style configured. Use a friendly and professional tone.'}
 
-KNOWLEDGE BASE:
+KNOWLEDGE BASE & GUIDELINES:
 ${kbText}
 
 Return ONLY valid JSON matching this exact schema. No markdown, no explanation outside JSON:

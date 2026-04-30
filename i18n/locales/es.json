@@ -299,7 +299,7 @@
     "sync_failed": "Error al sincronizar",
     "connect_failed": "Error al obtener URL de autorización",
     "language_title": "Idioma",
-    "language_subtitle": "Selecciona el idioma de la interfaz",
+    "language_subtitle": "El idioma principal de la aplicación. Los comentarios se traduciran automaticamente al idioma seleccionado.",
     "language_english": "English",
     "language_spanish": "Español",
     "ai_settings_title": "Inteligencia Artificial",

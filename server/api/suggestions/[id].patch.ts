@@ -1,7 +1,7 @@
 import { eq, inArray } from 'drizzle-orm'
 import { useDb } from '../../utils/db'
 import { suggestedReplies, videos } from '../../db/schema'
-import { getAiProvider } from '../../utils/settings'
+import { getAiProvider, getUserLanguageCode } from '../../utils/settings'
 import * as gemini from '../../utils/gemini'
 import * as openai from '../../utils/openai'
 
@@ -56,22 +56,32 @@ export default defineEventHandler(async (event) => {
 
   // 2. Sync Verification Translation
   let verificationTranslation = suggestion.verificationTranslation
-  try {
-    const provider = await getAiProvider()
-    const prompt = `Translate the following YouTube comment reply to ${userLang}. 
+  
+  // Skip translation if the reply language matches the user's language
+  const userLangCode = body.userLangCode || (await getUserLanguageCode())
+  const effectiveReplyLang = (body.replyLang || suggestion.detectedCommentLang || '').split('-')[0].toLowerCase()
+  
+  if (effectiveReplyLang !== userLangCode && editedText.length > 5) {
+    try {
+      const provider = await getAiProvider()
+      const prompt = `Translate the following YouTube comment reply to ${userLang}. 
 Maintain the tone and any technical terms. 
 Return ONLY the translation, no preamble.
 
 REPLY TO TRANSLATE:
 "${editedText}"`
 
-    const aiRes = provider === 'openai'
-      ? await openai.openaiGenerate(prompt)
-      : await gemini.generateWithRetry(prompt)
-    
-    verificationTranslation = aiRes.text.trim().replace(/^"|"$/g, '')
-  } catch (err) {
-    console.error('[suggestion-patch] Translation failed:', err)
+      const aiRes = provider === 'openai'
+        ? await openai.openaiGenerate(prompt)
+        : await gemini.generateWithRetry(prompt)
+      
+      verificationTranslation = aiRes.text.trim().replace(/^"|"$/g, '')
+    } catch (err) {
+      console.error('[suggestion-patch] Translation failed:', err)
+    }
+  } else {
+    // If languages match, we don't need a translation
+    verificationTranslation = ''
   }
 
   await db.update(suggestedReplies)

@@ -74,7 +74,10 @@ const langFlag: Record<string, string> = {
   cs: "🇨🇿",
 };
 
-const userLangName = computed(() => languageNames[locale.value] || "Spanish");
+const baseLocale = computed(() => locale.value.split("-")[0].toLowerCase());
+const userLangName = computed(
+  () => languageNames[baseLocale.value] || "Spanish",
+);
 
 const toast = useToast();
 const generating = ref(false);
@@ -90,7 +93,7 @@ watch(editedText, (newText) => {
   if (!newText || newText.length < 10 || !activeSuggestion.value) return;
 
   const targetLang = selectedLang.value || data.value?.comment?.detectedLang;
-  if (targetLang === locale.value) return;
+  if (targetLang === baseLocale.value) return;
 
   if (translateTimeout) clearTimeout(translateTimeout);
 
@@ -428,6 +431,7 @@ async function saveEdit() {
     body: {
       editedText: editedText.value,
       userLang: userLangName.value,
+      replyLang: selectedLang.value || data.value?.comment?.detectedLang,
     },
     headers: useCsrfHeaders(),
   });
@@ -515,7 +519,7 @@ const finalText = computed(
 const showTranslationVerification = computed(() => {
   if (!activeSuggestion.value?.verificationTranslation) return false;
   const replyLang = selectedLang.value || data.value?.comment?.detectedLang;
-  return replyLang !== locale.value;
+  return replyLang !== baseLocale.value;
 });
 
 const confidence = computed(() => activeSuggestion.value?.confidenceScore ?? 0);

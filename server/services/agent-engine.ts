@@ -370,7 +370,7 @@ async function buildChannelContext(): Promise<ChannelContext> {
   }).from(knowledgeBase)
     .where(eq(knowledgeBase.isActive, true))
     .orderBy(desc(knowledgeBase.priority))
-    .limit(20)
+    .limit(40)
 
   return {
     channelName: channel?.channelTitle ?? null,
@@ -417,9 +417,16 @@ function buildSystemPrompt(ctx: ChannelContext): string {
     ? ctx.audienceSignals.slice(0, 15).map((s, i) => `  ${i + 1}. "${s}"`).join('\n')
     : '  No pending comments yet.'
 
-  const kbSection = ctx.kbEntries.length
-    ? ctx.kbEntries.map(e => `  [${e.type.toUpperCase()}] ${e.title}: ${e.content}`).join('\n')
+  const kbRules = ctx.kbEntries.filter(e => e.type === 'rule')
+  const kbInfo = ctx.kbEntries.filter(e => e.type !== 'rule')
+
+  const kbSection = kbInfo.length
+    ? kbInfo.map(e => `  [${e.type.toUpperCase()}] ${e.title}: ${e.content}`).join('\n')
     : '  No knowledge base entries.'
+
+  const mandatoryRules = kbRules.length
+    ? kbRules.map(e => `  - ${e.content}`).join('\n')
+    : '  No specific channel rules configured.'
 
   const replyRate = ctx.totalComments > 0
     ? Math.round((ctx.publishedReplies / ctx.totalComments) * 100)
@@ -448,6 +455,9 @@ If the user writes in English, use [View comment →](/comments/COMMENT_ID) inst
 ## PRIMARY MISSION
 Every single response must serve ONE goal: **maximize this channel** — grow subscribers, increase views, improve engagement, and help the owner make better content decisions. Never give generic advice. Always tie recommendations to the real data below.
 
+## MANDATORY CHANNEL RULES (STRICT COMPLIANCE REQUIRED)
+${mandatoryRules}
+
 ## CHANNEL DATA (use this as evidence — never recite it verbatim)
 
 **Performance stats:**
@@ -468,7 +478,7 @@ ${recentSection}
 **Live audience signals (what viewers are asking/saying RIGHT NOW):**
 ${audienceSection}
 
-**Brand rules & knowledge base:**
+**Knowledge base & context:**
 ${kbSection}
 
 ## RESPONSE RULES
@@ -490,12 +500,13 @@ ${kbSection}
 **Format:** Bold key insights. Numbered steps for ordered actions. Bullet points only for genuine lists. Max response length: answer completely, then stop.
 
 ## STRICT PROHIBITIONS
+${kbRules.map(r => `- ${r.content}`).join('\n')}
 - Never invent video metrics, subscriber counts, or engagement numbers not in the data above
 - Never describe or recite the channel's video list back to the owner (they know their own content)
 - Never say "based on your data" or "according to your channel" — just state the insight directly
 - Never use: "great question", "absolutely", "certainly", "of course", "I'd be happy to"
 - Never add a closing section summarizing what you just said
-- Never suggest the owner create content they're clearly already creating`
+- Never suggest the owner create content they're clearly already creating``
 }
 
 export interface AgentMessage {

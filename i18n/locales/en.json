@@ -298,7 +298,7 @@
     "sync_failed": "Sync failed",
     "connect_failed": "Failed to get authorization URL",
     "language_title": "Language",
-    "language_subtitle": "Select the app interface language",
+    "language_subtitle": "The main app language. Comments will be automatically translated to the selected language",
     "language_english": "English",
     "language_spanish": "Español",
     "ai_settings_title": "Artificial Intelligence",

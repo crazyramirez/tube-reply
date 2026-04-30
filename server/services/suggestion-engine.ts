@@ -232,8 +232,8 @@ export async function getAiSuggestionRaw(
   try {
     parsed = JSON.parse(rawText) as AIOutput
     const userLangCode = await getUserLanguageCode()
-    const detectedBase = parsed.detected_language?.split('-')[0].toLowerCase()
-    if (detectedBase === userLangCode) {
+    const replyLangCode = (langOverride || parsed.detected_language || '').split('-')[0].toLowerCase()
+    if (replyLangCode === userLangCode) {
       parsed.verification_translation = ''
     }
   } catch {
