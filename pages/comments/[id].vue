@@ -980,10 +980,11 @@ async function confirmDeleteReply() {
                 class="w-4 h-4 text-indigo-400"
               />
               <span class="font-bold text-sm text-slate-200 tracking-tight">{{
-                $t("comment_detail.conversation_flow", {
-                  n: data.replies?.length + 1,
-                })
+                $t("comment_detail.conversation_flow")
               }}</span>
+              <div class="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black shadow-sm">
+                {{ data.replies?.length + 1 }}
+              </div>
               <span class="text-[8px] text-slate-600 ml-2"
                 >({{ userLangName }})</span
               >
