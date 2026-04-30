@@ -712,17 +712,20 @@ async function confirmUnban() {
 }
 
 function startEditingReply(reply: any) {
+  activeMenuId.value = null;
   editingReplyId.value = reply.id;
   editedReplyText.value = reply.text;
 }
 
 function cancelEditingReply() {
+  activeMenuId.value = null;
   editingReplyId.value = null;
   editedReplyText.value = "";
 }
 
 async function saveReplyEdit() {
   if (!editingReplyId.value) return;
+  activeMenuId.value = null; // Close any menu immediately
   savingReplyEdit.value = true;
   try {
     await $fetch(`/api/comments/replies/${editingReplyId.value}`, {
