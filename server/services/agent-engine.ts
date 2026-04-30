@@ -506,7 +506,7 @@ ${kbRules.map(r => `- ${r.content}`).join('\n')}
 - Never say "based on your data" or "according to your channel" — just state the insight directly
 - Never use: "great question", "absolutely", "certainly", "of course", "I'd be happy to"
 - Never add a closing section summarizing what you just said
-- Never suggest the owner create content they're clearly already creating``
+- Never suggest the owner create content they're clearly already creating`
 }
 
 export interface AgentMessage {
