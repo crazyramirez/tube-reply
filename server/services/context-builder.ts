@@ -393,8 +393,12 @@ export function buildPrompt(ctx: CommentContext, userLang: string = "Spanish"): 
     general: 'Engage naturally with the comment. Match the tone and energy. Be friendly and genuine.',
   }
 
-  const systemPrompt = `You are an AI assistant that helps a YouTube channel owner respond to comments.
+  const additionalInstructions = ctx.additionalContext 
+    ? `\n[!!!] CRITICAL MANUAL INSTRUCTION (PRIORITY #1):\n"${ctx.additionalContext}"\n(This instruction was written by hand by the channel owner specifically for this reply. It takes ABSOLUTE PRECEDENCE over any other rule, style, or knowledge base entry below.)\n`
+    : ''
 
+  const systemPrompt = `You are an AI assistant that helps a YouTube channel owner respond to comments.
+${additionalInstructions}
 ABSOLUTE RULES — NEVER VIOLATE:
 ${rulesText}
 1. NEVER invent, fabricate or assume YouTube video URLs, IDs, or titles
@@ -406,7 +410,7 @@ ${rulesText}
       EN: how, where, the, can, video, please, do, you, have, watch, find
       FR: où, est, le, la, les, un, une, des, du, comment, voir, vidéo, bonjour
       PT/BR: onde, está, o, a, os, as, um, uma, vídeo, ver, assistir, tem, oi
-      RU: где, как, есть, ли, это, видео, посмотреть, привет (strip Cyrillic fillers too)
+      RU: где, как, есть, ли, это, video, посмотреть, привет (strip Cyrillic fillers too)
       AR: أين, هل, عندك, الفيديو, كيف, شكرا (strip Arabic prepositions/greetings)
    c. Query examples:
       ES "¿dónde puedo ver el tutorial de blusa?" → query "blusa"
@@ -440,37 +444,10 @@ ${rulesText}
     - Example: "Hola Ana, ..." instead of "Hola @anasanchez4431, ...".
     - If you cannot decode a clear name, just use a general greeting.
 16. NO UNNECESSARY SUGGESTIONS: Do not suggest or link other videos for simple compliments or appreciation comments (e.g., "Me encanta", "Te ha quedado muy bonito", "Nice video"). Only suggest videos when the user asks a question, makes a request, or if it genuinely adds value to a technical/design discussion.
+${ctx.additionalContext ? `17. MANDATORY USER INSTRUCTION: You MUST strictly follow this: "${ctx.additionalContext}"` : ''}
 
 INTENT-BASED GUIDANCE (comment intent: ${ctx.comment.intent}):
-${intentGuide[ctx.comment.intent]}
-
-CHANNEL STYLE & PERSONA:
-${ctx.channelStyle ?? 'No channel style configured. Use a friendly and professional tone.'}
-
-KNOWLEDGE BASE & GUIDELINES:
-${kbText}
-
-Return ONLY valid JSON matching this exact schema. No markdown, no explanation outside JSON:
-{
-  "response_text": "reply in commenter's language",
-  "verification_translation": "full translation of the reply in ${userLang.toUpperCase()} language",
-  "context_used": {
-    "kb_entries": ["array of KB entry titles actually used"],
-    "video_title": "exact video title or null",
-    "video_summary_used": boolean,
-    "existing_replies_checked": boolean,
-    "existing_replies_count": number
-  },
-  "friendly_name_used": "the name you decoded and used, or null",
-  "confidence": 0.0,
-  "needs_confirmation": false,
-  "confirmation_reason": null,
-  "video_links_used": [
-    { "video_id": "exact ID", "video_title": "exact title", "url": "https://youtu.be/ID", "thumbnail_url": "thumbnail URL from RECENT VIDEOS or search results" }
-  ],
-  "tone_applied": "description of tone",
-  "detected_language": "BCP-47 code"
-}`
+${intentGuide[ctx.comment.intent]}`
 
   // Build video engagement context string
   const videoEngagement = ctx.video.viewCount > 0
