@@ -1061,7 +1061,7 @@ async function confirmDeleteReply() {
               <button
                 @click="manualSync"
                 :disabled="syncing"
-                class="flex items-center justify-center p-1.5 rounded-full bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 hover:border-indigo-500/30 transition-all duration-300"
+                class="flex items-center justify-center px-2 py-0.3 sm:py-1.5 sm:px-2 rounded-full bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 hover:border-indigo-500/30 transition-all duration-300"
                 :title="$t('comment_detail.manual_sync') || 'Manual Sync'"
               >
                 <UIcon
@@ -1556,9 +1556,10 @@ async function confirmDeleteReply() {
                 name="i-heroicons-chat-bubble-left-right"
                 class="w-5 h-5 group-hover:scale-110 transition-transform"
               />
-              <span class="text-xs font-black uppercase tracking-[0.2em]">{{
-                $t("comment_detail.continue_thread")
-              }}</span>
+              <span
+                class="text-[10px] font-black uppercase tracking-[0.2em] md:text-xs"
+                >{{ $t("comment_detail.continue_thread") }}</span
+              >
             </button>
             <div v-else class="text-center py-2">
               <span
@@ -1886,10 +1887,10 @@ async function confirmDeleteReply() {
               ></div>
               <UIcon
                 name="i-heroicons-rocket-launch"
-                class="w-8 h-8 group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-500 text-white"
+                class="w-6 h-6 group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-500 text-white"
               />
               <span
-                class="font-black uppercase tracking-[0.4em] text-sm text-white"
+                class="font-black uppercase tracking-[0.25em] text-sm text-white"
                 >{{ $t("comment_detail.deploy_to_youtube") }}</span
               >
             </button>

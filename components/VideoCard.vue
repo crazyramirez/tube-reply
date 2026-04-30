@@ -73,9 +73,7 @@ const formatNumber = (n: number | null | undefined) => {
       </div>
 
       <!-- Play Button Overlay (Premium) -->
-      <div
-        class="absolute inset-0 flex items-center justify-center z-30"
-      >
+      <div class="absolute inset-0 flex items-center justify-center z-30">
         <div
           class="absolute inset-0 bg-indigo-950/0 backdrop-blur-0 group-hover/thumb:bg-indigo-950/40 group-hover/thumb:backdrop-blur-[4px] transition-all duration-700 ease-out will-change-[backdrop-filter]"
         ></div>
@@ -113,7 +111,10 @@ const formatNumber = (n: number | null | undefined) => {
           class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-red-500 shadow-2xl border border-white/10 flex items-center justify-center"
           title="Short Video"
         >
-          <UIcon name="i-heroicons-bolt-solid" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
+          <UIcon
+            name="i-heroicons-bolt-solid"
+            class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white"
+          />
         </div>
       </div>
 
@@ -129,10 +130,7 @@ const formatNumber = (n: number | null | undefined) => {
         <div
           class="px-1.5 py-0.5 rounded-full bg-black/40 text-[8px] sm:text-[9px] font-black text-white backdrop-blur-md border border-white/5 flex items-center gap-1.5"
         >
-          <UIcon
-            name="i-heroicons-eye-solid"
-            class="w-3 h-3 text-slate-400"
-          />
+          <UIcon name="i-heroicons-eye-solid" class="w-3 h-3 text-slate-400" />
           {{ formatNumber(viewCount) }}
         </div>
         <div
@@ -147,9 +145,12 @@ const formatNumber = (n: number | null | undefined) => {
         </div>
       </div>
     </a>
-    <div v-else class="group/thumb relative aspect-[16/10] overflow-hidden block bg-slate-950">
-       <!-- Duplicate content or use a slot/component if this was more complex -->
-       <img
+    <div
+      v-else
+      class="group/thumb relative aspect-[16/10] overflow-hidden block bg-slate-950"
+    >
+      <!-- Duplicate content or use a slot/component if this was more complex -->
+      <img
         v-if="thumbnailUrl && !failedThumbnails[id]"
         :src="getCleanThumbnailUrl(id, thumbnailUrl)"
         :alt="title"
@@ -164,7 +165,9 @@ const formatNumber = (n: number | null | undefined) => {
     </div>
 
     <!-- Content Section -->
-    <div class="p-4 sm:p-6 pb-0 flex flex-col flex-1 gap-4 group/content relative">
+    <div
+      class="p-4 sm:p-6 pb-0 flex flex-col flex-1 gap-4 group/content relative"
+    >
       <!-- Full Area Link Overlay -->
       <NuxtLink
         v-if="manageLink"
@@ -175,7 +178,7 @@ const formatNumber = (n: number | null | undefined) => {
 
       <div class="flex flex-col gap-4 relative z-20 pointer-events-none">
         <h3
-          class="text-sm font-black text-white line-clamp-3 sm:line-clamp-2 leading-tight group-hover/content:text-indigo-300 transition-colors tracking-tight"
+          class="text-[12px] sm:text-[15px] font-black text-white line-clamp-3 sm:line-clamp-2 leading-tight group-hover/content:text-indigo-300 transition-colors tracking-tight"
           :title="title"
         >
           {{ title }}
@@ -245,7 +248,6 @@ const formatNumber = (n: number | null | undefined) => {
       />
       {{ $t("analytics.manage_comments") }}
     </NuxtLink>
-
   </div>
 </template>
 

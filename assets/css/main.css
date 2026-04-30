@@ -228,7 +228,7 @@ option {
 }
 
 .premium-btn-success {
-  @apply rounded-2xl bg-emerald-500 text-emerald-950 font-black transition-all duration-500 hover:bg-emerald-400 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
+  @apply rounded-xl bg-emerald-500 text-emerald-950 font-black transition-all duration-500 hover:bg-emerald-400 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
   box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
 }
 

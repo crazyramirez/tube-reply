@@ -9,15 +9,15 @@ const generating = ref(false);
 const copiedHook = ref(false);
 const selectedIdea = ref<VideoIdeaCluster | null>(null);
 
-const { data: ideas, refresh, pending, error } = useFetch<VideoIdeaCluster[]>(
-  "/api/insights/video-ideas",
-  { lazy: true },
-);
+const {
+  data: ideas,
+  refresh,
+  pending,
+  error,
+} = useFetch<VideoIdeaCluster[]>("/api/insights/video-ideas", { lazy: true });
 
-const isAnalyzing = computed(() => 
-  generating.value || 
-  pending.value || 
-  error.value?.statusCode === 429
+const isAnalyzing = computed(
+  () => generating.value || pending.value || error.value?.statusCode === 429,
 );
 
 // Auto-refresh if there's a conflict (another process is running)
@@ -141,18 +141,22 @@ const STEPS = [
 const activeStep = ref(0);
 let _stepTimer: ReturnType<typeof setInterval> | null = null;
 
-watch(isAnalyzing, (val) => {
-  if (val && import.meta.client) {
-    activeStep.value = 0;
-    if (_stepTimer) clearInterval(_stepTimer);
-    _stepTimer = setInterval(() => {
-      if (activeStep.value < STEPS.length - 1) activeStep.value++;
-    }, 1300);
-  } else {
-    if (_stepTimer) clearInterval(_stepTimer);
-    _stepTimer = null;
-  }
-}, { immediate: true });
+watch(
+  isAnalyzing,
+  (val) => {
+    if (val && import.meta.client) {
+      activeStep.value = 0;
+      if (_stepTimer) clearInterval(_stepTimer);
+      _stepTimer = setInterval(() => {
+        if (activeStep.value < STEPS.length - 1) activeStep.value++;
+      }, 1300);
+    } else {
+      if (_stepTimer) clearInterval(_stepTimer);
+      _stepTimer = null;
+    }
+  },
+  { immediate: true },
+);
 
 onUnmounted(() => {
   if (_stepTimer) clearInterval(_stepTimer);
@@ -188,7 +192,9 @@ onUnmounted(() => {
         class="rounded-xl font-bold shrink-0"
         @click="regenerate"
       >
-        {{ generating ? $t("insights.analyzing") : $t("insights.refresh") }}
+        <span class="hidden sm:inline">
+          {{ generating ? $t("insights.analyzing") : $t("insights.refresh") }}
+        </span>
       </UButton>
     </div>
 
@@ -274,7 +280,7 @@ onUnmounted(() => {
               "
             />
 
-            <div class="flex items-start gap-3 pl-1">
+            <div class="flex items-start gap-3 pl-1 py-2 sm:py-0">
               <!-- Mission number -->
               <span
                 class="font-mono text-[11px] font-black mt-0.5 shrink-0 transition-colors duration-200"
@@ -284,7 +290,7 @@ onUnmounted(() => {
                     : 'text-slate-700'
                 "
               >
-                {{ String(idx + 1).padStart(2, '0') }}
+                {{ String(idx + 1).padStart(2, "0") }}
               </span>
 
               <div class="min-w-0 flex-1">
@@ -331,7 +337,7 @@ onUnmounted(() => {
                     class="text-[9px] font-black uppercase tracking-wider"
                     :class="demandSignal(idea.demandCount).text"
                   >
-                    {{ $t('insights.signals', { n: idea.demandCount }) }}
+                    {{ $t("insights.signals", { n: idea.demandCount }) }}
                   </span>
                 </div>
               </div>
@@ -340,12 +346,12 @@ onUnmounted(() => {
 
           <!-- Refresh hint -->
           <p class="text-[10px] text-slate-700 text-center mt-1 font-medium">
-            {{ $t('insights.refresh_hint') }} ·
+            {{ $t("insights.refresh_hint") }} ·
             <button
               class="text-indigo-600 hover:text-indigo-400 transition-colors font-bold"
               @click="regenerate"
             >
-              {{ $t('insights.force_analysis') }}
+              {{ $t("insights.force_analysis") }}
             </button>
           </p>
         </template>
@@ -360,33 +366,52 @@ onUnmounted(() => {
           class="rounded-3xl overflow-hidden border border-indigo-500/20 bg-[#0b1120]/80 backdrop-blur-xl"
         >
           <!-- Scan Header -->
-          <div class="relative p-8 border-b border-white/[0.05] overflow-hidden">
-            <div class="absolute inset-0 bg-gradient-to-br from-indigo-600/[0.07] to-transparent pointer-events-none" />
-            <div class="ai-scan bg-gradient-to-r from-transparent via-indigo-400/60 to-transparent pointer-events-none" />
+          <div
+            class="relative p-8 border-b border-white/[0.05] overflow-hidden"
+          >
+            <div
+              class="absolute inset-0 bg-gradient-to-br from-indigo-600/[0.07] to-transparent pointer-events-none"
+            />
+            <div
+              class="ai-scan bg-gradient-to-r from-transparent via-indigo-400/60 to-transparent pointer-events-none"
+            />
             <div class="relative">
               <div class="flex items-center gap-2 mb-5">
                 <div class="relative flex">
-                  <div class="w-2 h-2 rounded-full bg-indigo-500 animate-ping absolute opacity-60" />
+                  <div
+                    class="w-2 h-2 rounded-full bg-indigo-500 animate-ping absolute opacity-60"
+                  />
                   <div class="w-2 h-2 rounded-full bg-indigo-500 relative" />
                 </div>
-                <span class="text-[10px] font-black text-indigo-400 uppercase tracking-[0.35em]">Neural Analysis</span>
+                <span
+                  class="text-[10px] font-black text-indigo-400 uppercase tracking-[0.35em]"
+                  >Neural Analysis</span
+                >
               </div>
               <Transition name="step-fade" mode="out-in">
                 <div :key="activeStep" class="mb-5">
                   <p class="text-xl font-black text-white leading-tight">
                     {{ STEPS[activeStep].label }}
                   </p>
-                  <p class="text-[11px] text-slate-500 mt-1">Analyzing your audience data...</p>
+                  <p class="text-[11px] text-slate-500 mt-1">
+                    Analyzing your audience data...
+                  </p>
                 </div>
               </Transition>
               <div class="flex items-center gap-3">
-                <div class="flex-1 h-[2px] bg-white/[0.05] rounded-full overflow-hidden">
+                <div
+                  class="flex-1 h-[2px] bg-white/[0.05] rounded-full overflow-hidden"
+                >
                   <div
                     class="h-full bg-gradient-to-r from-indigo-600 to-indigo-400 rounded-full transition-all duration-700 ease-out"
-                    :style="{ width: `${Math.round(((activeStep + 1) / STEPS.length) * 100)}%` }"
+                    :style="{
+                      width: `${Math.round(((activeStep + 1) / STEPS.length) * 100)}%`,
+                    }"
                   />
                 </div>
-                <span class="text-[10px] font-black text-indigo-400 tabular-nums shrink-0">
+                <span
+                  class="text-[10px] font-black text-indigo-400 tabular-nums shrink-0"
+                >
                   {{ Math.round(((activeStep + 1) / STEPS.length) * 100) }}%
                 </span>
               </div>
@@ -399,7 +424,11 @@ onUnmounted(() => {
               v-for="(step, i) in STEPS"
               :key="i"
               class="flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-300 border"
-              :class="i === activeStep ? 'bg-indigo-500/[0.07] border-indigo-500/20' : 'border-transparent'"
+              :class="
+                i === activeStep
+                  ? 'bg-indigo-500/[0.07] border-indigo-500/20'
+                  : 'border-transparent'
+              "
             >
               <div
                 class="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 border"
@@ -411,27 +440,50 @@ onUnmounted(() => {
                       : 'bg-white/[0.02] border-white/[0.05]'
                 "
               >
-                <UIcon v-if="i < activeStep" name="i-heroicons-check" class="w-3 h-3 text-emerald-400" />
+                <UIcon
+                  v-if="i < activeStep"
+                  name="i-heroicons-check"
+                  class="w-3 h-3 text-emerald-400"
+                />
                 <div
                   v-else-if="i === activeStep"
                   class="w-2.5 h-2.5 border-[1.5px] border-indigo-400 border-t-transparent rounded-full animate-spin"
                 />
-                <UIcon v-else :name="step.icon" class="w-3 h-3 text-slate-700" />
+                <UIcon
+                  v-else
+                  :name="step.icon"
+                  class="w-3 h-3 text-slate-700"
+                />
               </div>
               <span
                 class="text-xs font-bold transition-colors duration-300"
                 :class="
-                  i < activeStep ? 'text-slate-600' : i === activeStep ? 'text-white' : 'text-slate-700'
+                  i < activeStep
+                    ? 'text-slate-600'
+                    : i === activeStep
+                      ? 'text-white'
+                      : 'text-slate-700'
                 "
-              >{{ step.label }}</span>
-              <span v-if="i < activeStep" class="ml-auto text-[9px] font-black text-emerald-600/70 uppercase tracking-wider">done</span>
-              <span v-else-if="i === activeStep" class="ml-auto text-[9px] font-black text-indigo-400 uppercase tracking-wider animate-pulse">live</span>
+                >{{ step.label }}</span
+              >
+              <span
+                v-if="i < activeStep"
+                class="ml-auto text-[9px] font-black text-emerald-600/70 uppercase tracking-wider"
+                >done</span
+              >
+              <span
+                v-else-if="i === activeStep"
+                class="ml-auto text-[9px] font-black text-indigo-400 uppercase tracking-wider animate-pulse"
+                >live</span
+              >
             </div>
           </div>
 
           <!-- Wave visualization -->
           <div class="px-6 pb-6">
-            <div class="flex items-end gap-[3px] h-8 px-4 rounded-2xl bg-white/[0.02] border border-white/[0.04] justify-center overflow-hidden">
+            <div
+              class="flex items-end gap-[3px] h-8 px-4 rounded-2xl bg-white/[0.02] border border-white/[0.04] justify-center overflow-hidden"
+            >
               <div
                 v-for="n in 30"
                 :key="n"
@@ -799,8 +851,12 @@ onUnmounted(() => {
 
 <style scoped>
 @keyframes ai-scan {
-  from { top: 0; }
-  to { top: 100%; }
+  from {
+    top: 0;
+  }
+  to {
+    top: 100%;
+  }
 }
 .ai-scan {
   position: absolute;
@@ -811,8 +867,15 @@ onUnmounted(() => {
 }
 
 @keyframes wave-bar {
-  0%, 100% { transform: scaleY(0.15); opacity: 0.3; }
-  50% { transform: scaleY(1); opacity: 0.8; }
+  0%,
+  100% {
+    transform: scaleY(0.15);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 0.8;
+  }
 }
 .wave-bar {
   height: 28px;
@@ -822,7 +885,9 @@ onUnmounted(() => {
 
 .step-fade-enter-active,
 .step-fade-leave-active {
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
 }
 .step-fade-enter-from {
   opacity: 0;

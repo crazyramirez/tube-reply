@@ -48,7 +48,6 @@ watch(
   { deep: true },
 );
 
-
 watch(status, (newVal) => {
   lastStatus.value = newVal;
 });
@@ -828,7 +827,7 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
 
               <div class="flex flex-col min-w-0">
                 <span
-                  class="font-black text-base text-white truncate tracking-tight leading-none"
+                  class="font-black text-base text-white truncate tracking-tight leading-none text-xs sm:text-lg"
                 >
                   {{ c.authorName }}
                 </span>
@@ -862,7 +861,7 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
               />
 
               <div
-                class="text-xs text-slate-200 leading-relaxed italic font-medium line-clamp-3"
+                class="text-[11px] sm:text-[14px] text-slate-200 leading-relaxed italic font-medium line-clamp-3"
               >
                 "<span
                   v-html="
