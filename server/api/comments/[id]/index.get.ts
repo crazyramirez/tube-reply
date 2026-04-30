@@ -10,12 +10,38 @@ export default defineEventHandler(async (event) => {
   const db = useDb()
   const id = getRouterParam(event, 'id')!
 
-  // On-demand sync with YouTube (Costs ~1-2 units)
-  // Ensures consistency and latest state before serving the data
-  await logger.info('api', `On-demand sync triggered for comment ${id}`)
-  await syncSingleThread(id).catch((err) => {
-    logger.error('api', `Sync failed for ${id}`, err)
-  })
+  // Check when this comment was last fetched to avoid abusive syncing
+  const [existingMeta] = await db
+    .select({ fetchedAt: comments.fetchedAt })
+    .from(comments)
+    .where(eq(comments.id, id))
+    .limit(1)
+
+  const SYNC_COOLDOWN_HOURS = 4
+  const SYNC_COOLDOWN_MS = SYNC_COOLDOWN_HOURS * 60 * 60 * 1000
+  let shouldSync = true
+
+  if (existingMeta && existingMeta.fetchedAt) {
+    const lastFetched = new Date(existingMeta.fetchedAt).getTime()
+    if (Date.now() - lastFetched < SYNC_COOLDOWN_MS) {
+      shouldSync = false
+      await logger.info('api', `Skipping sync for ${id}, last fetched ${((Date.now() - lastFetched) / 1000 / 60).toFixed(1)} mins ago`)
+    }
+  }
+
+  if (shouldSync) {
+    // On-demand sync with YouTube (Costs ~1-2 units)
+    // Ensures consistency and latest state before serving the data
+    await logger.info('api', `On-demand sync triggered for comment ${id}`)
+    await syncSingleThread(id).catch((err) => {
+      logger.error('api', `Sync failed for ${id}`, err)
+    })
+    
+    // Update fetchedAt to start the cooldown
+    await db.update(comments)
+      .set({ fetchedAt: new Date().toISOString() })
+      .where(eq(comments.id, id))
+  }
 
   const [comment] = await db
     .select({

@@ -81,6 +81,7 @@ const userLangName = computed(
 
 const toast = useToast();
 const generating = ref(false);
+const syncing = ref(false);
 const showAiInstructions = ref(false);
 const publishing = ref(false);
 const showPublishModal = ref(false);
@@ -420,6 +421,22 @@ async function generateSuggestion() {
     toast.add({ title: t("comment_detail.generation_failed"), color: "red" });
   } finally {
     generating.value = false;
+  }
+}
+
+async function manualSync() {
+  syncing.value = true;
+  try {
+    await $fetch(`/api/comments/${id}/sync`, {
+      method: "POST",
+      headers: useCsrfHeaders(),
+    });
+    toast.add({ title: t("comment_detail.sync_completed") || "Sync completed", color: "green" });
+    await refresh();
+  } catch (err) {
+    toast.add({ title: t("comment_detail.sync_failed") || "Sync failed", color: "red" });
+  } finally {
+    syncing.value = false;
   }
 }
 
@@ -971,14 +988,28 @@ async function confirmDeleteReply() {
                 >({{ userLangName }})</span
               >
             </div>
-            <UBadge
-              :color="confidenceColor"
-              variant="subtle"
-              size="xs"
-              class="rounded-full px-3 py-1 font-bold uppercase"
-            >
-              {{ $t("status." + selectedStatus) }}
-            </UBadge>
+            <div class="flex items-center gap-2">
+              <button
+                @click="manualSync"
+                :disabled="syncing"
+                class="flex items-center justify-center p-1.5 rounded-lg bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 hover:border-indigo-500/30 transition-all duration-300"
+                :title="$t('comment_detail.manual_sync') || 'Manual Sync'"
+              >
+                <UIcon
+                  name="i-heroicons-arrow-path"
+                  class="w-3.5 h-3.5"
+                  :class="{ 'animate-spin': syncing }"
+                />
+              </button>
+              <UBadge
+                :color="confidenceColor"
+                variant="subtle"
+                size="xs"
+                class="rounded-full px-3 py-1 font-bold uppercase"
+              >
+                {{ $t("status." + selectedStatus) }}
+              </UBadge>
+            </div>
           </div>
 
           <div

@@ -193,7 +193,10 @@
     "click_to_open": "Click a link to open or text to edit",
     "go_back": "Go back to list",
     "commenter_history": "Commenter History",
-    "comments_total": "comments"
+    "comments_total": "comments",
+    "manual_sync": "Manual Sync",
+    "sync_completed": "Sync completed",
+    "sync_failed": "Sync failed"
   },
   "knowledge_base": {
     "center_label": "Intelligence Center",

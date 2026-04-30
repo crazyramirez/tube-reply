@@ -193,7 +193,10 @@
     "click_to_open": "Haz clic en un enlace para abrir o en el texto para editar",
     "go_back": "Volver a la lista",
     "commenter_history": "Historial del Comentarista",
-    "comments_total": "comentarios"
+    "comments_total": "comentarios",
+    "manual_sync": "Sincronización Manual",
+    "sync_completed": "Sincronización finalizada",
+    "sync_failed": "Error al sincronizar"
   },
   "knowledge_base": {
     "center_label": "Centro de Inteligencia",
