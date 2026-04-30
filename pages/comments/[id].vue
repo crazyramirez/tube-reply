@@ -171,6 +171,11 @@ function parseOpportunityFlags(
   }
 }
 
+function stripHtml(text?: string | null): string {
+  if (!text) return "";
+  return text.replace(/<[^>]*>/g, "");
+}
+
 async function continueConversation() {
   regenerating.value = true;
   try {
@@ -1900,8 +1905,8 @@ async function confirmDeleteReply() {
                   class="text-md md:text-lg text-emerald-50/90 italic leading-relaxed relative z-10"
                 >
                   "{{
-                    data.replies.filter((r) => r.isOwner).at(-1)?.text ||
-                    data.comment.text
+                    stripHtml(data.replies.filter((r) => r.isOwner).at(-1)?.text) ||
+                    stripHtml(data.comment.text)
                   }}"
                 </p>
               </div>
