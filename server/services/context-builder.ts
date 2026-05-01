@@ -169,7 +169,7 @@ export async function buildContext(commentId: string, langOverride: string | nul
     existingReplies: existingReplies.map(r => ({ author: r.authorName, text: r.text.substring(0, MAX_REPLY_CHARS) })),
     knowledgeBaseEntries: filteredKb.map(e => ({ type: e.type, title: e.title, content: e.content.substring(0, MAX_KB_CONTENT_CHARS), tags: e.tags ? (JSON.parse(e.tags) as string[]) : [] })),
     channelStyle: mergedStyle,
-    recentVideos: recentVideos.map(v => ({ id: v.id, title: v.title, thumbnailUrl: v.thumbnailUrl, isShort: isYouTubeShort(v.duration) })),
+    recentVideos: recentVideos.map(v => ({ id: v.id, title: v.title, thumbnailUrl: v.thumbnailUrl, isShort: v.isShort })),
     friendlyName: extractFriendlyName(comment.authorName),
     additionalContext,
   }
@@ -186,6 +186,11 @@ export function buildPrompt(ctx: CommentContext, userLang: string = "Spanish"): 
     ? `\n[!!!] CRITICAL MANUAL INSTRUCTION (PRIORITY #1):\n"${ctx.additionalContext}"\n(This instruction was written by hand and takes ABSOLUTE PRECEDENCE over any other rule or style below.)\n`
     : ''
 
+  const styleText = ctx.channelStyle ? `\nVOICE & STYLE GUIDELINES:\n${ctx.channelStyle}\n` : ''
+  const knowledgeBaseText = kbInfo.length > 0 ? `\nKNOWLEDGE BASE / FAQS:\n${kbText}\n` : ''
+  const repliesText = ctx.existingReplies.length > 0 ? `\nEXISTING REPLIES IN THIS THREAD:\n${ctx.existingReplies.map(r => `- ${r.author}: "${r.text}"`).join('\n')}\n` : ''
+  const transcriptText = ctx.videoTranscript ? `\nRELEVANT VIDEO TRANSCRIPT EXCERPT:\n"${ctx.videoTranscript}"\n` : ''
+
   const systemPrompt = `You are an AI assistant that helps a YouTube channel owner respond to comments.
 ${additionalInstructions}
 ABSOLUTE RULES — NEVER VIOLATE:
@@ -197,7 +202,7 @@ ${rulesText}
 5. If an existing reply covers this, acknowledge it.
 6. NO UNNECESSARY SUGGESTIONS: Do not suggest videos for simple compliments.
 ${ctx.additionalContext ? `7. MANDATORY USER INSTRUCTION: You MUST strictly follow this: "${ctx.additionalContext}"` : ''}
-
+${styleText}${knowledgeBaseText}
 VIDEO SEARCH RULES:
 - Use search_videos tool if commenter asks for a specific topic/tutorial.
 - Extract 2-4 keywords (nouns).
@@ -227,7 +232,7 @@ IMPORTANCE: ${ctx.comment.likeCount} likes
 VIDEO TITLE: ${ctx.video.title}
 ${videoEngagement}
 SUMMARY: ${ctx.videoSummary ?? 'No summary.'}
-
+${transcriptText}${repliesText}
 RECENT VIDEOS:
 ${recentVideosText}
 
