@@ -677,38 +677,63 @@ async function triggerSync() {
     <!-- Empty (search) -->
     <div
       v-else-if="!pending && !data?.items?.length && search"
-      class="bg-white/[0.02] border border-white/[0.06] border-dashed rounded-2xl py-20 text-center"
+      class="relative overflow-hidden rounded-3xl bg-slate-900/40 border border-white/5 backdrop-blur-xl p-8 sm:p-14 max-w-2xl mx-auto my-6 text-center transition-all duration-500 hover:shadow-[0_40px_80px_-15px_rgba(0,0,0,0.7),0_0_30px_rgba(99,102,241,0.06)] group animate-slide-up"
     >
-      <UIcon
-        name="i-heroicons-magnifying-glass"
-        class="w-12 h-12 mx-auto mb-3 text-slate-700"
-      />
-      <p class="text-slate-500 text-sm mb-3">
-        {{ $t("comments.search_no_results", { q: search }) }}
+      <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-rose-500/5 pointer-events-none" />
+      <div class="relative w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+        <div class="absolute inset-0 rounded-full bg-indigo-500/10 border border-indigo-500/20 animate-ping scale-110 pointer-events-none opacity-30" />
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-white/10 flex items-center justify-center backdrop-blur-sm shadow-[0_0_20px_rgba(99,102,241,0.15)] group-hover:scale-110 transition-all duration-500">
+          <UIcon
+            name="i-heroicons-magnifying-glass"
+            class="w-8 h-8 text-indigo-400 group-hover:text-indigo-300 transition-colors"
+          />
+        </div>
+      </div>
+      <h3 class="text-xl sm:text-2xl font-extrabold text-white mb-2 tracking-tight">
+        Sin resultados para tu búsqueda
+      </h3>
+      <p class="text-slate-400 text-sm max-w-sm mx-auto leading-relaxed mb-6">
+        No pudimos encontrar ningún comentario que coincida con "{{ search }}". Intenta buscar con otros términos.
       </p>
       <button
         @click="clearSearch"
-        class="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl"
+        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs font-bold text-indigo-300 hover:text-white hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all duration-300 cursor-pointer select-none group/btn"
       >
-        <UIcon name="i-heroicons-x-mark" class="w-3.5 h-3.5" />
-        {{ $t("comments.search_clear") }}
+        <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
+        <span>{{ $t("comments.search_clear") }}</span>
       </button>
     </div>
 
     <!-- Empty -->
     <div
       v-else-if="!pending && !data?.items?.length"
-      class="bg-white/[0.02] border border-white/[0.06] border-dashed rounded-2xl py-20 text-center"
+      class="relative overflow-hidden rounded-3xl bg-slate-900/40 border border-white/5 backdrop-blur-xl p-8 sm:p-14 max-w-2xl mx-auto my-6 text-center transition-all duration-500 hover:shadow-[0_40px_80px_-15px_rgba(0,0,0,0.7),0_0_30px_rgba(16,185,129,0.06)] group animate-slide-up"
     >
-      <UIcon
-        name="i-heroicons-check-circle"
-        class="w-12 h-12 mx-auto mb-3 text-emerald-700"
-      />
-      <p class="text-slate-500 text-sm">
-        {{
-          $t(`comments.no_comments_${status === "inbox" ? "inbox" : status}`)
-        }}
+      <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5 pointer-events-none" />
+      <div class="relative w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+        <!-- Accent Glow Ring -->
+        <div class="absolute inset-0 rounded-full bg-emerald-500/10 border border-emerald-500/20 animate-ping scale-110 pointer-events-none opacity-40" />
+        <!-- Glowing Center Icon Glass Case -->
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-white/10 flex items-center justify-center backdrop-blur-sm shadow-[0_0_20px_rgba(16,185,129,0.15)] group-hover:scale-110 transition-all duration-500">
+          <UIcon
+            name="i-heroicons-check-circle"
+            class="w-8 h-8 text-emerald-400 group-hover:text-emerald-300 transition-colors"
+          />
+        </div>
+      </div>
+      <h3 class="text-xl sm:text-2xl font-extrabold text-white mb-2 tracking-tight">
+        {{ $t(`comments.no_comments_${status === "inbox" ? "inbox" : status}`) }}
+      </h3>
+      <p class="text-slate-400 text-sm max-w-sm mx-auto leading-relaxed mb-6">
+        No hay comentarios pendientes en esta sección. Tu bandeja de entrada está perfectamente organizada y todo al día.
       </p>
+      <button
+        @click="refresh()"
+        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-slate-300 hover:text-white hover:bg-white/10 hover:border-emerald-500/30 transition-all duration-300 cursor-pointer select-none group/btn"
+      >
+        <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 group-hover/btn:rotate-180 transition-transform duration-500" />
+        <span>Refrescar bandeja</span>
+      </button>
     </div>
 
     <!-- Grid View -->
