@@ -319,7 +319,7 @@ function validateOutput(raw: AIOutput, allVideoIds: Set<string>): AIOutput {
   const hadHallucination = validatedLinks.length < (raw.video_links_used?.length ?? 0)
   return {
     response_text: raw.response_text ?? '',
-    verification_translation: raw.verification_translation ?? raw.response_text ?? '',
+    verification_translation: (raw.verification_translation?.trim().toLowerCase() === raw.response_text?.trim().toLowerCase()) ? '' : (raw.verification_translation ?? ''),
     context_used: raw.context_used ?? {
       kb_entries: [],
       video_title: null,

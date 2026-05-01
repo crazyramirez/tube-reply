@@ -553,7 +553,18 @@ const finalText = computed(
 );
 
 const showTranslationVerification = computed(() => {
-  if (!activeSuggestion.value?.verificationTranslation) return false;
+  const vt = activeSuggestion.value?.verificationTranslation;
+  if (!vt) return false;
+
+  // If the verification translation matches the edited text, or original response text, don't show it!
+  const cleanedVt = vt.trim().toLowerCase();
+  const cleanedEdited = editedText.value?.trim().toLowerCase();
+  const cleanedOrig = activeSuggestion.value?.responseText?.trim().toLowerCase();
+
+  if (cleanedVt === cleanedEdited || cleanedVt === cleanedOrig) {
+    return false;
+  }
+
   const replyLang = selectedLang.value || data.value?.comment?.detectedLang;
   return replyLang !== baseLocale.value;
 });
