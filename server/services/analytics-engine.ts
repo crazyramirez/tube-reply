@@ -82,7 +82,7 @@ export async function getAnalyticsOverview() {
     else if (s === 'negative') negative++
     else if (s === 'curious') curious++
     else neutral++
-    if (c.detectedLang) langCount[c.detectedLang] = (langCount[c.detectedLang] ?? 0) + 1
+    if (c.detectedLang && c.detectedLang !== 'und' && c.detectedLang !== 'null') langCount[c.detectedLang] = (langCount[c.detectedLang] ?? 0) + 1
   }
   const total = recentComments.length || 1
 
@@ -293,7 +293,7 @@ export async function getAudienceStats() {
       total: count(comments.id),
     })
     .from(comments)
-    .where(and(isNull(comments.parentId), sql`${comments.detectedLang} IS NOT NULL`, ne(comments.detectedLang, '')))
+    .where(and(isNull(comments.parentId), sql`${comments.detectedLang} IS NOT NULL`, ne(comments.detectedLang, ''), ne(comments.detectedLang, 'und'), ne(comments.detectedLang, 'null')))
     .groupBy(comments.detectedLang)
     .orderBy(desc(count(comments.id)))
     .limit(10)

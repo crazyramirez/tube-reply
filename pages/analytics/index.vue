@@ -8,6 +8,52 @@ import type {
 
 definePageMeta({ middleware: "auth" });
 
+const langFlag: Record<string, string> = {
+  es: "🇪🇸",
+  en: "🇬🇧",
+  pt: "🇧🇷",
+  fr: "🇫🇷",
+  de: "🇩🇪",
+  it: "🇮🇹",
+  ja: "🇯🇵",
+  zh: "🇨🇳",
+  ar: "🇸🇦",
+  ko: "🇰🇷",
+  ru: "🇷🇺",
+  nl: "🇳🇱",
+  pl: "🇵🇱",
+  tr: "🇹🇷",
+  sv: "🇸🇪",
+  no: "🇳🇴",
+  da: "🇩🇰",
+  fi: "🇫🇮",
+  ca: "🇨🇦",
+  cs: "🇨🇿",
+};
+
+const languageNames: Record<string, string> = {
+  en: "English",
+  es: "Spanish",
+  pt: "Portuguese",
+  fr: "French",
+  de: "German",
+  it: "Italian",
+  nl: "Dutch",
+  pl: "Polish",
+  ru: "Russian",
+  ja: "Japanese",
+  zh: "Chinese",
+  ar: "Arabic",
+  ko: "Korean",
+  tr: "Turkish",
+  sv: "Swedish",
+  no: "Norwegian",
+  da: "Danish",
+  fi: "Finnish",
+  ca: "Catalan",
+  cs: "Czech",
+};
+
 useHead({
   meta: [{ name: "referrer", content: "no-referrer" }],
 });
@@ -388,10 +434,13 @@ function replyRateColor(rate: number) {
             :key="l.lang"
             class="flex items-center gap-3"
           >
-            <span class="text-base w-6">{{ FLAG[l.lang] ?? "🌐" }}</span>
-            <span class="text-xs font-bold text-slate-300 uppercase w-8">{{
-              l.lang
-            }}</span>
+            <span class="text-base shrink-0 w-6">{{ langFlag[l.lang.split('-')[0].toLowerCase().trim()] ?? "🌐" }}</span>
+            <span class="text-xs font-bold text-slate-300 uppercase w-10 sm:hidden shrink-0">
+              {{ l.lang.toUpperCase() }}
+            </span>
+            <span class="text-xs font-bold text-slate-300 uppercase hidden sm:inline w-36 truncate shrink-0">
+              {{ languageNames[l.lang.split('-')[0].toLowerCase().trim()] ? `${l.lang.toUpperCase()} (${languageNames[l.lang.split('-')[0].toLowerCase().trim()]})` : l.lang.toUpperCase() }}
+            </span>
             <div
               class="flex-1 h-2.5 rounded-full bg-white/[0.05] overflow-hidden"
             >
