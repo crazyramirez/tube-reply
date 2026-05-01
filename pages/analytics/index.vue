@@ -12,28 +12,27 @@ useHead({
   meta: [{ name: "referrer", content: "no-referrer" }],
 });
 
-const { data: overview, refresh: refreshOverview } = useFetch<AnalyticsOverview>(
-  "/api/analytics/overview",
-  { lazy: true },
+const { data: overview, refresh: refreshOverview } =
+  useFetch<AnalyticsOverview>("/api/analytics/overview", { lazy: true });
+const { data: sentiment, refresh: refreshSentiment } = useFetch<
+  SentimentDataPoint[]
+>("/api/analytics/sentiment", { lazy: true });
+const { data: topics, refresh: refreshTopics } = useFetch<TopicCluster[]>(
+  "/api/analytics/topics",
+  {
+    lazy: true,
+  },
 );
-const { data: sentiment, refresh: refreshSentiment } = useFetch<SentimentDataPoint[]>(
-  "/api/analytics/sentiment",
-  { lazy: true },
-);
-const { data: topics, refresh: refreshTopics } = useFetch<TopicCluster[]>("/api/analytics/topics", {
-  lazy: true,
-});
 const { data: audience, refresh: refreshAudience } = useFetch<{
   superfans: any[];
   languageDistribution: any[];
 }>("/api/analytics/audience", { lazy: true });
-const { data: videoStats, refresh: refreshVideoStats } = useFetch<VideoCommentStats[]>(
-  "/api/analytics/video-stats",
-  {
-    query: { limit: 12 },
-    lazy: true,
-  },
-);
+const { data: videoStats, refresh: refreshVideoStats } = useFetch<
+  VideoCommentStats[]
+>("/api/analytics/video-stats", {
+  query: { limit: 12 },
+  lazy: true,
+});
 
 const lastVideos = computed(() => videoStats.value?.slice(0, 12) || []);
 
@@ -47,7 +46,9 @@ async function refreshAll() {
   ]);
 }
 
-const { data: ytStatus, refresh: refreshStatus } = await useFetch<any>("/api/youtube/status");
+const { data: ytStatus, refresh: refreshStatus } = await useFetch<any>(
+  "/api/youtube/status",
+);
 const syncLoading = ref(false);
 let pollInterval: any = null;
 
@@ -577,7 +578,7 @@ function replyRateColor(rate: number) {
           </h2>
         </div>
         <NuxtLink
-          to="/comments"
+          to="/videos"
           class="text-xs font-bold text-slate-500 hover:text-white uppercase tracking-widest transition-colors"
         >
           {{ $t("analytics.view_all") }} →
