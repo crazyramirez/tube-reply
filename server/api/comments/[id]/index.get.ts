@@ -73,9 +73,17 @@ export default defineEventHandler(async (event) => {
   const userLangCode = await getUserLanguageCode()
   const userLangName = await getUserLanguage()
 
+  let currentDetectedLang = comment.detectedLang
+  if (!currentDetectedLang || currentDetectedLang === 'und' || currentDetectedLang === 'null') {
+    currentDetectedLang = userLangCode
+    await db.update(comments)
+      .set({ detectedLang: userLangCode })
+      .where(eq(comments.id, id))
+  }
+
   // Translate main comment if needed (with caching)
   let translatedText = comment.cachedTranslation
-  if (comment.detectedLang && comment.detectedLang !== userLangCode) {
+  if (currentDetectedLang && currentDetectedLang !== userLangCode) {
     if (!translatedText || comment.cachedTranslationLang !== userLangCode) {
       translatedText = await translateText(comment.text, userLangName)
       // Cache it
@@ -209,6 +217,7 @@ export default defineEventHandler(async (event) => {
   return {
     comment: {
       ...comment,
+      detectedLang: currentDetectedLang,
       isBanned,
       translatedText,
       status: (hasOwnerReplied && (comment.status === 'suggested' || comment.status === 'skipped')) ? 'published' : comment.status

@@ -752,7 +752,7 @@ export async function upsertComment(
 ): Promise<boolean> {
   const existing = await db.query.comments.findFirst({
     where: eq(comments.id, data.id),
-    columns: { id: true, videoId: true, updatedAt: true, text: true, textOriginal: true, likeCount: true, status: true, authorProfileImageUrl: true, authorChannelId: true },
+    columns: { id: true, videoId: true, updatedAt: true, text: true, textOriginal: true, likeCount: true, status: true, authorProfileImageUrl: true, authorChannelId: true, detectedLang: true },
   })
 
   // SMART SYNC: Always update/insert the authors table
@@ -783,6 +783,13 @@ export async function upsertComment(
       status = 'published'
     }
 
+    const { getUserLanguageCode } = await import('../utils/settings')
+    const userLangCode = await getUserLanguageCode()
+    let detectedLang = data.detectedLang
+    if (!detectedLang || detectedLang === 'und' || detectedLang === 'null') {
+      detectedLang = userLangCode
+    }
+
     await db.insert(comments).values({
       id: data.id,
       videoId: data.videoId,
@@ -794,7 +801,7 @@ export async function upsertComment(
 
       textOriginal: data.textOriginal,
       likeCount: data.likeCount,
-      detectedLang: data.detectedLang,
+      detectedLang: detectedLang,
       ...data,
       status: data.parentId ? 'published' : 'pending',
       lastActivityAt: data.publishedAt,
@@ -815,6 +822,15 @@ export async function upsertComment(
       }
     }
   } else {
+    // 0. Fallback for language if it was 'und', null, or empty
+    const { getUserLanguageCode } = await import('../utils/settings')
+    const userLangCode = await getUserLanguageCode()
+    if (!existing.detectedLang || existing.detectedLang === 'und' || existing.detectedLang === 'null') {
+      await db.update(comments)
+        .set({ detectedLang: userLangCode, updatedAt: new Date().toISOString() })
+        .where(eq(comments.id, data.id))
+    }
+
     // 1. DATA INTEGRITY: Ensure videoId is correct
     if (existing.videoId !== data.videoId) {
       await logger.warn('comment-sync', `Correcting videoId mismatch for comment ${data.id}`, { old: existing.videoId, new: data.videoId })
