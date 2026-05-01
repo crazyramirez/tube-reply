@@ -481,12 +481,12 @@ async function triggerSync() {
       <!-- Video Filter -->
       <div
         v-if="videoId"
-        class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 shadow-lg shadow-indigo-500/5"
+        class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 shadow-lg shadow-indigo-500/5 max-w-full"
       >
-        <UIcon name="i-heroicons-funnel" class="w-4 h-4 text-indigo-400" />
-        <span class="text-xs font-bold text-indigo-300">
-          Filtered by:
-          <span class="text-white">{{
+        <UIcon name="i-heroicons-funnel" class="w-4 h-4 text-indigo-400 shrink-0" />
+        <span class="text-xs font-bold text-indigo-300 flex items-center gap-1 min-w-0">
+          <span class="shrink-0">Filtered by:</span>
+          <span class="text-white truncate max-w-[120px] sm:max-w-[220px]">{{
             data?.items?.[0]?.videoTitle || videoId
           }}</span>
         </span>
@@ -495,7 +495,7 @@ async function triggerSync() {
             videoId = '';
             router.replace({ query: { ...route.query, videoId: undefined } });
           "
-          class="ml-2 p-1 hover:bg-white/10 rounded-lg transition-colors group"
+          class="ml-1 p-1 hover:bg-white/10 rounded-lg transition-colors group shrink-0"
           title="Clear filter"
         >
           <UIcon
@@ -508,12 +508,12 @@ async function triggerSync() {
       <!-- Author Filter -->
       <div
         v-if="authorId"
-        class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-violet-500/10 border border-violet-500/20 shadow-lg shadow-violet-500/5"
+        class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-violet-500/10 border border-violet-500/20 shadow-lg shadow-violet-500/5 max-w-full"
       >
-        <UIcon name="i-heroicons-user" class="w-4 h-4 text-violet-400" />
-        <span class="text-xs font-bold text-violet-300">
-          Author:
-          <span class="text-white">{{
+        <UIcon name="i-heroicons-user" class="w-4 h-4 text-violet-400 shrink-0" />
+        <span class="text-xs font-bold text-violet-300 flex items-center gap-1 min-w-0">
+          <span class="shrink-0">Author:</span>
+          <span class="text-white truncate max-w-[120px] sm:max-w-[220px]">{{
             data?.items?.[0]?.authorName || authorId
           }}</span>
         </span>
@@ -522,7 +522,7 @@ async function triggerSync() {
             authorId = '';
             router.replace({ query: { ...route.query, authorId: undefined } });
           "
-          class="ml-2 p-1 hover:bg-white/10 rounded-lg transition-colors group"
+          class="ml-1 p-1 hover:bg-white/10 rounded-lg transition-colors group shrink-0"
           title="Clear filter"
         >
           <UIcon
