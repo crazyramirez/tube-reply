@@ -317,7 +317,9 @@ watch(justAutoSuggestCompleted, (done) => {
   if (done) refresh();
 });
 
-const { data: ytStatus, refresh: refreshStatus } = await useFetch<any>("/api/youtube/status");
+const { data: ytStatus, refresh: refreshStatus } = await useFetch<any>(
+  "/api/youtube/status",
+);
 const syncLoading = ref(false);
 let pollInterval: any = null;
 
@@ -415,63 +417,63 @@ async function triggerSync() {
         >
           <!-- Desktop: List view -->
           <button
-          class="hidden lg:flex p-2 rounded-lg transition-all duration-200 cursor-pointer"
-          :class="
-            viewMode === 'list'
-              ? 'bg-white/10 text-white shadow-sm'
-              : 'text-slate-500 hover:text-slate-300'
-          "
-          @click="viewMode = 'list'"
-          :title="$t('comments.list_view')"
-        >
-          <UIcon name="i-heroicons-bars-3" class="w-5 h-5" />
-        </button>
-        <!-- Desktop: Grid view -->
-        <button
-          class="hidden lg:flex p-2 rounded-lg transition-all duration-200 cursor-pointer"
-          :class="
-            viewMode === 'grid'
-              ? 'bg-white/10 text-white shadow-sm'
-              : 'text-slate-500 hover:text-slate-300'
-          "
-          @click="viewMode = 'grid'"
-          :title="$t('comments.grid_view')"
-        >
-          <UIcon name="i-heroicons-squares-2x2" class="w-5 h-5" />
-        </button>
+            class="hidden lg:flex p-2 rounded-lg transition-all duration-200 cursor-pointer"
+            :class="
+              viewMode === 'list'
+                ? 'bg-white/10 text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-300'
+            "
+            @click="viewMode = 'list'"
+            :title="$t('comments.list_view')"
+          >
+            <UIcon name="i-heroicons-bars-3" class="w-5 h-5" />
+          </button>
+          <!-- Desktop: Grid view -->
+          <button
+            class="hidden lg:flex p-2 rounded-lg transition-all duration-200 cursor-pointer"
+            :class="
+              viewMode === 'grid'
+                ? 'bg-white/10 text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-300'
+            "
+            @click="viewMode = 'grid'"
+            :title="$t('comments.grid_view')"
+          >
+            <UIcon name="i-heroicons-squares-2x2" class="w-5 h-5" />
+          </button>
 
-        <!-- Mobile: Column switcher -->
-        <button
-          class="lg:hidden flex p-2 rounded-lg transition-all duration-200 cursor-pointer"
-          :class="
-            mobileColumns === 1
-              ? 'bg-white/10 text-white shadow-sm'
-              : 'text-slate-500 hover:text-slate-300'
-          "
-          @click="
-            mobileColumns = 1;
-            viewMode = 'grid';
-          "
-        >
-          <UIcon name="i-heroicons-stop" class="w-5 h-5" />
-        </button>
-        <button
-          class="lg:hidden flex p-2 rounded-lg transition-all duration-200 cursor-pointer"
-          :class="
-            mobileColumns === 2
-              ? 'bg-white/10 text-white shadow-sm'
-              : 'text-slate-500 hover:text-slate-300'
-          "
-          @click="
-            mobileColumns = 2;
-            viewMode = 'grid';
-          "
-        >
-          <UIcon name="i-heroicons-squares-2x2" class="w-5 h-5" />
-        </button>
+          <!-- Mobile: Column switcher -->
+          <button
+            class="lg:hidden flex p-2 rounded-lg transition-all duration-200 cursor-pointer"
+            :class="
+              mobileColumns === 1
+                ? 'bg-white/10 text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-300'
+            "
+            @click="
+              mobileColumns = 1;
+              viewMode = 'grid';
+            "
+          >
+            <UIcon name="i-heroicons-stop" class="w-5 h-5" />
+          </button>
+          <button
+            class="lg:hidden flex p-2 rounded-lg transition-all duration-200 cursor-pointer"
+            :class="
+              mobileColumns === 2
+                ? 'bg-white/10 text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-300'
+            "
+            @click="
+              mobileColumns = 2;
+              viewMode = 'grid';
+            "
+          >
+            <UIcon name="i-heroicons-squares-2x2" class="w-5 h-5" />
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
     <!-- Active Filters -->
     <div
@@ -483,8 +485,13 @@ async function triggerSync() {
         v-if="videoId"
         class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 shadow-lg shadow-indigo-500/5 max-w-full"
       >
-        <UIcon name="i-heroicons-funnel" class="w-4 h-4 text-indigo-400 shrink-0" />
-        <span class="text-xs font-bold text-indigo-300 flex items-center gap-1 min-w-0">
+        <UIcon
+          name="i-heroicons-funnel"
+          class="w-4 h-4 text-indigo-400 shrink-0"
+        />
+        <span
+          class="text-xs font-bold text-indigo-300 flex items-center gap-1 min-w-0"
+        >
           <span class="shrink-0">Filtered by:</span>
           <span class="text-white truncate max-w-[120px] sm:max-w-[220px]">{{
             data?.items?.[0]?.videoTitle || videoId
@@ -510,8 +517,13 @@ async function triggerSync() {
         v-if="authorId"
         class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-violet-500/10 border border-violet-500/20 shadow-lg shadow-violet-500/5 max-w-full"
       >
-        <UIcon name="i-heroicons-user" class="w-4 h-4 text-violet-400 shrink-0" />
-        <span class="text-xs font-bold text-violet-300 flex items-center gap-1 min-w-0">
+        <UIcon
+          name="i-heroicons-user"
+          class="w-4 h-4 text-violet-400 shrink-0"
+        />
+        <span
+          class="text-xs font-bold text-violet-300 flex items-center gap-1 min-w-0"
+        >
           <span class="shrink-0">Author:</span>
           <span class="text-white truncate max-w-[120px] sm:max-w-[220px]">{{
             data?.items?.[0]?.authorName || authorId
@@ -679,21 +691,32 @@ async function triggerSync() {
       v-else-if="!pending && !data?.items?.length && search"
       class="relative overflow-hidden rounded-3xl bg-slate-900/40 border border-white/5 backdrop-blur-xl p-8 sm:p-14 max-w-2xl mx-auto my-6 text-center transition-all duration-500 hover:shadow-[0_40px_80px_-15px_rgba(0,0,0,0.7),0_0_30px_rgba(99,102,241,0.06)] group animate-slide-up"
     >
-      <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-rose-500/5 pointer-events-none" />
-      <div class="relative w-24 h-24 mx-auto mb-6 flex items-center justify-center">
-        <div class="absolute inset-0 rounded-full bg-indigo-500/10 border border-indigo-500/20 animate-ping scale-110 pointer-events-none opacity-30" />
-        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-white/10 flex items-center justify-center backdrop-blur-sm shadow-[0_0_20px_rgba(99,102,241,0.15)] group-hover:scale-110 transition-all duration-500">
+      <div
+        class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-rose-500/5 pointer-events-none"
+      />
+      <div
+        class="relative w-24 h-24 mx-auto mb-6 flex items-center justify-center"
+      >
+        <div
+          class="absolute inset-0 rounded-full bg-indigo-500/10 border border-indigo-500/20 animate-ping scale-110 pointer-events-none opacity-30"
+        />
+        <div
+          class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-white/10 flex items-center justify-center backdrop-blur-sm shadow-[0_0_20px_rgba(99,102,241,0.15)] group-hover:scale-110 transition-all duration-500"
+        >
           <UIcon
             name="i-heroicons-magnifying-glass"
             class="w-8 h-8 text-indigo-400 group-hover:text-indigo-300 transition-colors"
           />
         </div>
       </div>
-      <h3 class="text-xl sm:text-2xl font-extrabold text-white mb-2 tracking-tight">
+      <h3
+        class="text-xl sm:text-2xl font-extrabold text-white mb-2 tracking-tight"
+      >
         Sin resultados para tu búsqueda
       </h3>
       <p class="text-slate-400 text-sm max-w-sm mx-auto leading-relaxed mb-6">
-        No pudimos encontrar ningún comentario que coincida con "{{ search }}". Intenta buscar con otros términos.
+        No pudimos encontrar ningún comentario que coincida con "{{ search }}".
+        Intenta buscar con otros términos.
       </p>
       <button
         @click="clearSearch"
@@ -709,31 +732,37 @@ async function triggerSync() {
       v-else-if="!pending && !data?.items?.length"
       class="relative overflow-hidden rounded-3xl bg-slate-900/40 border border-white/5 backdrop-blur-xl p-8 sm:p-14 max-w-2xl mx-auto my-6 text-center transition-all duration-500 hover:shadow-[0_40px_80px_-15px_rgba(0,0,0,0.7),0_0_30px_rgba(16,185,129,0.06)] group animate-slide-up"
     >
-      <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5 pointer-events-none" />
-      <div class="relative w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+      <div
+        class="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5 pointer-events-none"
+      />
+      <div
+        class="relative w-24 h-24 mx-auto mb-6 flex items-center justify-center"
+      >
         <!-- Accent Glow Ring -->
-        <div class="absolute inset-0 rounded-full bg-emerald-500/10 border border-emerald-500/20 animate-ping scale-110 pointer-events-none opacity-40" />
+        <div
+          class="absolute inset-0 rounded-full bg-emerald-500/10 border border-emerald-500/20 animate-ping scale-110 pointer-events-none opacity-40"
+        />
         <!-- Glowing Center Icon Glass Case -->
-        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-white/10 flex items-center justify-center backdrop-blur-sm shadow-[0_0_20px_rgba(16,185,129,0.15)] group-hover:scale-110 transition-all duration-500">
+        <div
+          class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-white/10 flex items-center justify-center backdrop-blur-sm shadow-[0_0_20px_rgba(16,185,129,0.15)] group-hover:scale-110 transition-all duration-500"
+        >
           <UIcon
             name="i-heroicons-check-circle"
             class="w-8 h-8 text-emerald-400 group-hover:text-emerald-300 transition-colors"
           />
         </div>
       </div>
-      <h3 class="text-xl sm:text-2xl font-extrabold text-white mb-2 tracking-tight">
-        {{ $t(`comments.no_comments_${status === "inbox" ? "inbox" : status}`) }}
+      <h3
+        class="text-xl sm:text-2xl font-extrabold text-white mb-2 tracking-tight"
+      >
+        {{
+          $t(`comments.no_comments_${status === "inbox" ? "inbox" : status}`)
+        }}
       </h3>
       <p class="text-slate-400 text-sm max-w-sm mx-auto leading-relaxed mb-6">
-        No hay comentarios pendientes en esta sección. Tu bandeja de entrada está perfectamente organizada y todo al día.
+        No hay comentarios pendientes en esta sección. Tu bandeja de entrada
+        está perfectamente organizada y todo al día.
       </p>
-      <button
-        @click="refresh()"
-        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-slate-300 hover:text-white hover:bg-white/10 hover:border-emerald-500/30 transition-all duration-300 cursor-pointer select-none group/btn"
-      >
-        <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 group-hover/btn:rotate-180 transition-transform duration-500" />
-        <span>Refrescar bandeja</span>
-      </button>
     </div>
 
     <!-- Grid View -->
