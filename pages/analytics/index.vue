@@ -12,22 +12,22 @@ useHead({
   meta: [{ name: "referrer", content: "no-referrer" }],
 });
 
-const { data: overview } = useFetch<AnalyticsOverview>(
+const { data: overview, refresh: refreshOverview } = useFetch<AnalyticsOverview>(
   "/api/analytics/overview",
   { lazy: true },
 );
-const { data: sentiment } = useFetch<SentimentDataPoint[]>(
+const { data: sentiment, refresh: refreshSentiment } = useFetch<SentimentDataPoint[]>(
   "/api/analytics/sentiment",
   { lazy: true },
 );
-const { data: topics } = useFetch<TopicCluster[]>("/api/analytics/topics", {
+const { data: topics, refresh: refreshTopics } = useFetch<TopicCluster[]>("/api/analytics/topics", {
   lazy: true,
 });
-const { data: audience } = useFetch<{
+const { data: audience, refresh: refreshAudience } = useFetch<{
   superfans: any[];
   languageDistribution: any[];
 }>("/api/analytics/audience", { lazy: true });
-const { data: videoStats } = useFetch<VideoCommentStats[]>(
+const { data: videoStats, refresh: refreshVideoStats } = useFetch<VideoCommentStats[]>(
   "/api/analytics/video-stats",
   {
     query: { limit: 12 },
@@ -36,6 +36,68 @@ const { data: videoStats } = useFetch<VideoCommentStats[]>(
 );
 
 const lastVideos = computed(() => videoStats.value?.slice(0, 12) || []);
+
+async function refreshAll() {
+  await Promise.all([
+    refreshOverview(),
+    refreshSentiment(),
+    refreshTopics(),
+    refreshAudience(),
+    refreshVideoStats(),
+  ]);
+}
+
+const { data: ytStatus, refresh: refreshStatus } = await useFetch<any>("/api/youtube/status");
+const syncLoading = ref(false);
+let pollInterval: any = null;
+
+function startPolling() {
+  if (pollInterval) return;
+  syncLoading.value = true;
+  pollInterval = setInterval(async () => {
+    await refreshStatus();
+    if (ytStatus.value?.lastSync?.status !== "running") {
+      stopPolling();
+      await refreshAll();
+    }
+  }, 3000);
+}
+
+function stopPolling() {
+  if (pollInterval) {
+    clearInterval(pollInterval);
+    pollInterval = null;
+  }
+  syncLoading.value = false;
+}
+
+onMounted(() => {
+  if (ytStatus.value?.lastSync?.status === "running") {
+    startPolling();
+  }
+});
+
+onUnmounted(() => {
+  stopPolling();
+});
+
+const toast = useToast();
+const { t } = useI18n();
+
+async function triggerSync() {
+  syncLoading.value = true;
+  try {
+    await $fetch("/api/youtube/sync", {
+      method: "POST",
+      headers: useCsrfHeaders(),
+    });
+    toast.add({ title: t("settings.sync_started"), color: "blue" });
+    startPolling();
+  } catch (e) {
+    toast.add({ title: t("settings.sync_failed"), color: "red" });
+    syncLoading.value = false;
+  }
+}
 
 const FLAG: Record<string, string> = {
   es: "🇪🇸",
@@ -75,16 +137,32 @@ function replyRateColor(rate: number) {
 <template>
   <div>
     <!-- Header -->
-    <div class="mb-8">
-      <div
-        class="flex items-center gap-2 text-xs font-bold text-indigo-400 uppercase tracking-[0.3em] mb-1"
-      >
-        <UIcon name="i-heroicons-chart-bar" class="w-3.5 h-3.5" />
-        {{ $t("nav.analytics") }}
+    <div class="mb-8 flex items-center justify-between">
+      <div>
+        <div
+          class="flex items-center gap-2 text-xs font-bold text-indigo-400 uppercase tracking-[0.3em] mb-1"
+        >
+          <UIcon name="i-heroicons-chart-bar" class="w-3.5 h-3.5" />
+          {{ $t("nav.analytics") }}
+        </div>
+        <h1 class="text-2xl sm:text-4xl font-black text-white tracking-tighter">
+          {{ $t("analytics.title") }}
+        </h1>
       </div>
-      <h1 class="text-2xl sm:text-4xl font-black text-white tracking-tighter">
-        {{ $t("analytics.title") }}
-      </h1>
+
+      <!-- Manual Sync Button -->
+      <button
+        class="flex items-center justify-center p-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all duration-300 cursor-pointer disabled:opacity-50 group shrink-0 shadow-lg"
+        :disabled="syncLoading"
+        @click="triggerSync()"
+        title="Sincronizar"
+      >
+        <UIcon
+          name="i-heroicons-arrow-path"
+          class="w-5 h-5 transition-transform duration-500"
+          :class="syncLoading ? 'animate-spin' : 'group-hover:rotate-180'"
+        />
+      </button>
     </div>
 
     <!-- Overview Cards -->

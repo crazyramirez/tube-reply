@@ -317,17 +317,54 @@ watch(justAutoSuggestCompleted, (done) => {
   if (done) refresh();
 });
 
-// Solo hacer scroll al principio si cambian REALMENTE los filtros
-watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
-  const hasOldValues = oldVals.some((v) => v !== undefined);
-  const hasChanged = newVals.some((v, i) => v !== oldVals[i]);
+const { data: ytStatus, refresh: refreshStatus } = await useFetch<any>("/api/youtube/status");
+const syncLoading = ref(false);
+let pollInterval: any = null;
 
-  if (hasOldValues && hasChanged) {
-    setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }, 100);
+function startPolling() {
+  if (pollInterval) return;
+  syncLoading.value = true;
+  pollInterval = setInterval(async () => {
+    await refreshStatus();
+    if (ytStatus.value?.lastSync?.status !== "running") {
+      stopPolling();
+      await refresh();
+    }
+  }, 3000);
+}
+
+function stopPolling() {
+  if (pollInterval) {
+    clearInterval(pollInterval);
+    pollInterval = null;
+  }
+  syncLoading.value = false;
+}
+
+onMounted(() => {
+  if (ytStatus.value?.lastSync?.status === "running") {
+    startPolling();
   }
 });
+
+onUnmounted(() => {
+  stopPolling();
+});
+
+async function triggerSync() {
+  syncLoading.value = true;
+  try {
+    await $fetch("/api/youtube/sync", {
+      method: "POST",
+      headers: useCsrfHeaders(),
+    });
+    toast.add({ title: t("settings.sync_started"), color: "blue" });
+    startPolling();
+  } catch (e) {
+    toast.add({ title: t("settings.sync_failed"), color: "red" });
+    syncLoading.value = false;
+  }
+}
 </script>
 
 <template>
@@ -357,12 +394,27 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
         </h1>
       </div>
 
-      <!-- View switcher -->
-      <div
-        class="flex items-center gap-1 p-1 bg-white/[0.03] border border-white/[0.07] rounded-xl"
-      >
-        <!-- Desktop: List view -->
+      <div class="flex items-center gap-3">
+        <!-- Manual Sync Button -->
         <button
+          class="flex items-center justify-center p-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all duration-300 cursor-pointer disabled:opacity-50 group shrink-0 shadow-lg"
+          :disabled="syncLoading"
+          @click="triggerSync()"
+          title="Sincronizar"
+        >
+          <UIcon
+            name="i-heroicons-arrow-path"
+            class="w-5 h-5 transition-transform duration-500"
+            :class="syncLoading ? 'animate-spin' : 'group-hover:rotate-180'"
+          />
+        </button>
+
+        <!-- View switcher -->
+        <div
+          class="flex items-center gap-1 p-1 bg-white/[0.03] border border-white/[0.07] rounded-xl"
+        >
+          <!-- Desktop: List view -->
+          <button
           class="hidden lg:flex p-2 rounded-lg transition-all duration-200 cursor-pointer"
           :class="
             viewMode === 'list'
@@ -419,6 +471,7 @@ watch([status, search, videoId, authorId, intent], (newVals, oldVals) => {
         </button>
       </div>
     </div>
+  </div>
 
     <!-- Active Filters -->
     <div

@@ -185,24 +185,18 @@ const statCards = computed(() => [
           </h1>
         </div>
 
+        <!-- Manual Sync Button -->
         <button
-          class="flex items-center gap-2 px-6 py-3 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-sm font-bold transition-all duration-300 cursor-pointer disabled:opacity-50 group shrink-0 shadow-lg"
+          class="flex items-center justify-center p-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-all duration-300 cursor-pointer disabled:opacity-50 group shrink-0 shadow-lg"
           :disabled="syncLoading"
           @click="triggerSync()"
+          title="Sincronizar"
         >
           <UIcon
             name="i-heroicons-arrow-path"
-            class="w-4 h-4 transition-transform duration-500"
+            class="w-5 h-5 transition-transform duration-500"
             :class="syncLoading ? 'animate-spin' : 'group-hover:rotate-180'"
           />
-          <span class="hidden sm:inline">{{
-            syncLoading
-              ? $t("dashboard.synchronizing")
-              : $t("dashboard.force_sync")
-          }}</span>
-          <span v-if="syncLoading" class="sm:hidden">{{
-            $t("dashboard.synchronizing")
-          }}</span>
         </button>
       </div>
 
