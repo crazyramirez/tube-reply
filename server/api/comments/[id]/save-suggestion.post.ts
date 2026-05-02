@@ -1,6 +1,6 @@
 import { useDb } from '../../../utils/db'
 import { suggestedReplies, comments } from '../../../db/schema'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, inArray } from 'drizzle-orm'
 import { getAiProvider } from '../../../utils/settings'
 
 export default defineEventHandler(async (event) => {
@@ -57,7 +57,10 @@ export default defineEventHandler(async (event) => {
     // Update comment status
     await db.update(comments)
       .set({ status: 'suggested', processedAt: new Date().toISOString() })
-      .where(eq(comments.id, id))
+      .where(and(
+        eq(comments.id, id),
+        inArray(comments.status, ['pending', 'suggested'])
+      ))
 
     return { suggestionId: inserted.id }
   } catch (err: any) {

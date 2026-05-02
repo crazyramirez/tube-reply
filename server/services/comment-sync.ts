@@ -803,7 +803,7 @@ export async function upsertComment(
       likeCount: data.likeCount,
       detectedLang: detectedLang,
       ...data,
-      status: data.parentId ? 'published' : 'pending',
+      status: status,
       lastActivityAt: data.publishedAt,
       lastActivityText: data.text,
       lastActivityAuthor: data.authorName,
@@ -886,7 +886,7 @@ export async function upsertComment(
         eq(comments.id, data.parentId),
         or(
           isNull(comments.lastActivityAt),
-          sql`${data.publishedAt} >= ${comments.lastActivityAt}`
+          sql`${data.publishedAt} > ${comments.lastActivityAt}`
         )
       ))
   } else {
@@ -898,13 +898,13 @@ export async function upsertComment(
         lastActivityText: data.text,
         lastActivityAuthor: data.authorName,
         updatedAt: new Date().toISOString(),
-        ...(isOwner ? { status: 'published', processedAt: new Date().toISOString() } : { status: 'pending', processedAt: null })
+        ...(isOwner ? { status: 'published', processedAt: new Date().toISOString() } : {})
       })
       .where(and(
         eq(comments.id, data.id),
         or(
           isNull(comments.lastActivityAt),
-          sql`${data.publishedAt} >= ${comments.lastActivityAt}`
+          sql`${data.publishedAt} > ${comments.lastActivityAt}`
         )
       ))
   }

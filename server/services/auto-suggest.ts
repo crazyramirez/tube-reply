@@ -3,6 +3,7 @@ import { comments, suggestedReplies } from '../db/schema'
 import { useDb } from '../utils/db'
 import { logger } from '../utils/logger'
 import { generateSuggestion } from './suggestion-engine'
+import { hasOwnerReplied } from './automation-engine'
 
 // In-memory guard — mirrors isRunning in comment-sync.ts (single Nitro process)
 let isAutoSuggesting = false
@@ -48,6 +49,9 @@ export async function autoSuggestPendingComments(): Promise<void> {
 
     for (const row of toProcess) {
       try {
+        const alreadyReplied = await hasOwnerReplied(db, row.id)
+        if (alreadyReplied) continue
+
         await generateSuggestion(row.id)
         succeeded++
         // Respect AI provider rate limits between calls

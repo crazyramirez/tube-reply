@@ -1,6 +1,6 @@
 import { eq, and } from 'drizzle-orm'
 import { useDb } from '../utils/db'
-import { automationRules, comments } from '../db/schema'
+import { automationRules, comments, publishedReplies } from '../db/schema'
 import { logger } from '../utils/logger'
 import type { AutomationCondition, AutomationAction } from '../../shared/types'
 
@@ -95,6 +95,30 @@ async function applyAction(
 
 // ─── Run rules for a single comment ──────────────────────────────────────────
 
+export async function hasOwnerReplied(db: any, commentId: string): Promise<boolean> {
+  const publishedReply = await db.query.publishedReplies.findFirst({
+    where: eq(publishedReplies.commentId, commentId),
+  })
+
+  let ownerRepliedOnYt = false
+  const token = await db.query.oauthTokens.findFirst()
+  const ownerChannelId = token?.channelId
+
+  if (ownerChannelId) {
+    const ownerReplyInComments = await db.query.comments.findFirst({
+      where: and(
+        eq(comments.parentId, commentId),
+        eq(comments.authorChannelId, ownerChannelId)
+      )
+    })
+    if (ownerReplyInComments) {
+      ownerRepliedOnYt = true
+    }
+  }
+
+  return !!(publishedReply || ownerRepliedOnYt)
+}
+
 export async function applyRulesToComment(commentId: string): Promise<void> {
   const db = useDb()
 
@@ -106,7 +130,10 @@ export async function applyRulesToComment(commentId: string): Promise<void> {
       opportunityFlags: true, status: true,
     },
   })
-  if (!comment) return
+  if (!comment || comment.status !== 'pending') return
+
+  const alreadyReplied = await hasOwnerReplied(db, comment.id)
+  if (alreadyReplied) return
 
   const rules = await db.query.automationRules.findMany({
     where: eq(automationRules.isActive, true),

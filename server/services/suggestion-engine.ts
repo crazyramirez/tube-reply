@@ -1,4 +1,4 @@
-import { eq, or, and, sql, desc, ne } from 'drizzle-orm'
+import { eq, or, and, sql, desc, ne, inArray } from 'drizzle-orm'
 import { useDb } from '../utils/db'
 import * as gemini from '../utils/gemini'
 import * as openai from '../utils/openai'
@@ -306,7 +306,10 @@ export async function generateSuggestion(
 
   await db.update(comments)
     .set({ status: 'suggested', processedAt: new Date().toISOString() })
-    .where(eq(comments.id, commentId))
+    .where(and(
+      eq(comments.id, commentId),
+      inArray(comments.status, ['pending', 'suggested'])
+    ))
 
   return { suggestionId: inserted.id }
 }
