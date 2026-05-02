@@ -313,31 +313,34 @@ const statCards = computed(() => [
       v-if="!stats?.recentComments?.length"
       class="relative overflow-hidden rounded-3xl bg-slate-900/40 border border-white/5 backdrop-blur-xl p-8 sm:p-14 text-center mb-12 transition-all duration-500 hover:shadow-[0_40px_80px_-15px_rgba(0,0,0,0.7),0_0_30px_rgba(16,185,129,0.06)] group animate-slide-up"
     >
-      <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5 pointer-events-none" />
-      <div class="relative w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+      <div
+        class="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5 pointer-events-none"
+      />
+      <div
+        class="relative w-24 h-24 mx-auto mb-6 flex items-center justify-center"
+      >
         <!-- Accent Glow Ring -->
-        <div class="absolute inset-0 rounded-full bg-emerald-500/10 border border-emerald-500/20 animate-ping scale-110 pointer-events-none opacity-40" />
+        <div
+          class="absolute inset-0 rounded-full bg-emerald-500/10 border border-emerald-500/20 animate-ping scale-110 pointer-events-none opacity-40"
+        />
         <!-- Glowing Center Icon Glass Case -->
-        <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-white/10 flex items-center justify-center backdrop-blur-sm shadow-[0_0_20px_rgba(16,185,129,0.15)] group-hover:scale-110 transition-all duration-500">
+        <div
+          class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-white/10 flex items-center justify-center backdrop-blur-sm shadow-[0_0_20px_rgba(16,185,129,0.15)] group-hover:scale-110 transition-all duration-500"
+        >
           <UIcon
             name="i-heroicons-inbox"
             class="w-8 h-8 text-emerald-400 group-hover:text-emerald-300 transition-colors"
           />
         </div>
       </div>
-      <h3 class="text-xl sm:text-2xl font-extrabold text-white mb-2 tracking-tight uppercase tracking-wider">
+      <h3
+        class="text-xl sm:text-2xl font-extrabold text-white mb-2 tracking-tight uppercase tracking-wider"
+      >
         {{ $t("dashboard.no_comments") }}
       </h3>
       <p class="text-slate-400 text-sm max-w-sm mx-auto leading-relaxed mb-6">
         {{ $t("dashboard.init_sync") }}
       </p>
-      <button
-        @click="triggerSync()"
-        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-slate-300 hover:text-white hover:bg-white/10 hover:border-emerald-500/30 transition-all duration-300 cursor-pointer select-none group/btn"
-      >
-        <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 group-hover/btn:rotate-180 transition-transform duration-500" />
-        <span>Sincronizar comentarios</span>
-      </button>
     </div>
 
     <div
@@ -510,17 +513,27 @@ const statCards = computed(() => [
       v-if="!stats?.recentVideos?.length"
       class="relative overflow-hidden rounded-3xl bg-slate-900/40 border border-white/5 backdrop-blur-xl p-8 sm:p-12 text-center transition-all duration-500 hover:shadow-[0_40px_80px_-15px_rgba(0,0,0,0.7),0_0_30px_rgba(99,102,241,0.06)] group animate-slide-up"
     >
-      <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-rose-500/5 pointer-events-none" />
-      <div class="relative w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-        <div class="absolute inset-0 rounded-full bg-indigo-500/10 border border-indigo-500/20 animate-ping scale-110 pointer-events-none opacity-30" />
-        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-white/10 flex items-center justify-center backdrop-blur-sm shadow-[0_0_20px_rgba(99,102,241,0.15)] group-hover:scale-110 transition-all duration-500">
+      <div
+        class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-rose-500/5 pointer-events-none"
+      />
+      <div
+        class="relative w-16 h-16 mx-auto mb-4 flex items-center justify-center"
+      >
+        <div
+          class="absolute inset-0 rounded-full bg-indigo-500/10 border border-indigo-500/20 animate-ping scale-110 pointer-events-none opacity-30"
+        />
+        <div
+          class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-white/10 flex items-center justify-center backdrop-blur-sm shadow-[0_0_20px_rgba(99,102,241,0.15)] group-hover:scale-110 transition-all duration-500"
+        >
           <UIcon
             name="i-heroicons-film"
             class="w-6 h-6 text-indigo-400 group-hover:text-indigo-300 transition-colors"
           />
         </div>
       </div>
-      <h3 class="text-lg sm:text-xl font-extrabold text-white mb-1 tracking-tight">
+      <h3
+        class="text-lg sm:text-xl font-extrabold text-white mb-1 tracking-tight"
+      >
         {{ $t("dashboard.no_videos") }}
       </h3>
       <p class="text-slate-400 text-sm max-w-sm mx-auto leading-relaxed">
