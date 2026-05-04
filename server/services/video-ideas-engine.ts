@@ -64,10 +64,30 @@ async function generateVideoIdeas(event?: any): Promise<VideoIdeaCluster[]> {
 
     if (rows.length < 5) return []
 
+    const existingCaches = await db.select({ clusters: videoIdeasCache.clusters }).from(videoIdeasCache)
+    const previousTitles = new Set<string>()
+    for (const cache of existingCaches) {
+      try {
+        const prevClusters = JSON.parse(cache.clusters) as VideoIdeaCluster[]
+        for (const cluster of prevClusters) {
+          if (cluster.suggestedTitle) {
+            previousTitles.add(cluster.suggestedTitle.trim())
+          }
+        }
+      } catch {
+        // ignore parse errors
+      }
+    }
+
+    let previousTitlesPrompt = ''
+    if (previousTitles.size > 0) {
+      previousTitlesPrompt = `\nCRITICAL: Avoid generating similar topics to existing ones. Here are previous video idea titles you have already generated; DO NOT repeat or propose heavily overlapping content/titles:\n${Array.from(previousTitles).map(title => `- "${title}"`).join('\n')}\n`
+    }
+
     const prompt = `You are a World-Class Content Strategist and YouTube Growth Expert.
 Your task is to analyze audience comments and generate EXACTLY 4 "Content Blueprints".
 These are not just titles; they are high-fidelity production guides for videos that the audience is literally begging for.
-
+${previousTitlesPrompt}
 For each of the 4 Blueprints, you must provide:
 1. "topic": Short category (e.g., "Sizing Masterclass").
 2. "suggestedTitle": A high-CTR title.
