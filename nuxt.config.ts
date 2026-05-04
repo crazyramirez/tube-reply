@@ -129,6 +129,9 @@ export default defineNuxtConfig({
     '/**': {
       headers: {
         'X-Robots-Tag': 'noindex, nofollow, noarchive, nosnippet',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     },
   },
@@ -163,6 +166,7 @@ export default defineNuxtConfig({
       title: 'Tube Reply',
       meta: [
         { name: 'robots', content: 'noindex, nofollow, noarchive, nosnippet' },
+        { name: 'googlebot', content: 'noindex, nofollow, noarchive, nosnippet' },
         { name: 'description', content: 'AI-powered YouTube comment management. Sync, generate suggestions, and reply faster.' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'theme-color', content: '#000000' },
