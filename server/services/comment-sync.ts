@@ -59,18 +59,22 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
     // Sync video list if needed
     const existingVideos = await db.query.videos.findMany({ columns: { id: true } })
     if (syncType === 'manual' || existingVideos.length === 0) {
+      await logger.info('comment-sync', 'Syncing video list from YouTube')
       const q = await syncVideoList(yt, db)
       totalQuota += q
+      const newVideoCount = await db.select({ value: count() }).from(videos).then(r => r[0].value)
+      await logger.info('comment-sync', `Video list synced. Total videos in DB: ${newVideoCount}`, { quotaUsed: q })
     }
 
     const ownerChannelId = token.channelId
 
     if (scope === 'recent' || (syncType === 'scheduled' && scope !== 'all')) {
-      await logger.info('comment-sync', 'Starting optimized channel-wide sync')
+      await logger.info('comment-sync', 'Starting optimized channel-wide sync', { ownerChannelId })
       const { found, newCount, quotaUsed, videosInvolved } = await syncChannelComments(yt, db, ownerChannelId)
       totalFound = found
       totalNew = newCount
       totalQuota += quotaUsed
+      await logger.info('comment-sync', `Optimized sync results: found=${found}, new=${newCount}, videos=${videosInvolved}`, { totalQuota })
       
       // Mark as completed
       if (logId) {
@@ -82,6 +86,7 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
             newComments: totalNew,
             quotaUsed: totalQuota,
             completedAt: new Date().toISOString(),
+            errorMessage: null, // Clear any previous error message (e.g. from cleanup logic)
           })
           .where(eq(syncLog.id, logId))
       }
@@ -158,6 +163,7 @@ export async function syncComments(syncType: SyncType = 'scheduled', scope: 'rec
           newComments: totalNew,
           quotaUsed: totalQuota,
           completedAt: new Date().toISOString(),
+          errorMessage: null, // Clear any previous error message
         })
         .where(eq(syncLog.id, logId))
     }

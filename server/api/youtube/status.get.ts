@@ -15,6 +15,26 @@ export default defineEventHandler(async (_event) => {
       orderBy: [desc(syncLog.startedAt)],
     })
 
+    // AUTO-CLEANUP: If the last sync is stuck in 'running' for more than 30 minutes, mark it as failed
+    if (lastSync && lastSync.status === 'running' && lastSync.startedAt) {
+      // SQLite datetime('now') is UTC, so we append Z to ensure JS parses it as UTC
+      const startedAt = new Date(lastSync.startedAt.includes('Z') ? lastSync.startedAt : lastSync.startedAt.replace(' ', 'T') + 'Z').getTime()
+      const now = Date.now()
+      if (!isNaN(startedAt) && now - startedAt > 30 * 60 * 1000) {
+        await db.update(syncLog)
+          .set({ 
+            status: 'failed', 
+            errorMessage: 'Sync timeout/interrupted',
+            completedAt: new Date().toISOString() 
+          })
+          .where(eq(syncLog.id, lastSync.id))
+        
+        // Refresh the local reference
+        lastSync.status = 'failed'
+        lastSync.errorMessage = 'Sync timeout/interrupted'
+      }
+    }
+
     const lastScheduledSync = await db.query.syncLog.findFirst({
       where: eq(syncLog.syncType, 'scheduled'),
       orderBy: [desc(syncLog.startedAt)],
