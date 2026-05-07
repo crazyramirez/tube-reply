@@ -427,7 +427,7 @@
     "analyzing": "Analizando…",
     "refresh": "Actualizar",
     "no_ideas_title": "Sin ideas todavía",
-    "no_ideas_hint": "Se necesitan al menos 3 comentarios tipo pregunta de los últimos 90 días.",
+    "no_ideas_hint": "Se necesitan al menos 3 comentarios de los últimos 90 días para generar ideas.",
     "analyze_button": "Analizar Comentarios",
     "asking_label": "Lo que están preguntando",
     "add_to_kb": "Añadir a Base",
